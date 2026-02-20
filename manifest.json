@@ -1,0 +1,55 @@
+{
+  "name": "KAJISHIFT - 家事代行マッチングサービス",
+  "short_name": "KAJISHIFT",
+  "description": "家事を依頼したい方と家事スキルを活かして働きたい方をマッチングするサービス",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#5B7FA6",
+  "theme_color": "#5B7FA6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "images/common/Gemini_Generated_Image_8i0b6m8i0b6m8i0b_4.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/common/Gemini_Generated_Image_8i0b6m8i0b6m8i0b_4.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "productivity"],
+  "lang": "ja",
+  "dir": "ltr",
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "依頼者ログイン",
+      "short_name": "依頼者",
+      "description": "依頼者としてログイン",
+      "url": "/customer/login.html",
+      "icons": [
+        {
+          "src": "images/common/Gemini_Generated_Image_8i0b6m8i0b6m8i0b_4.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "ワーカーログイン",
+      "short_name": "ワーカー",
+      "description": "ワーカーとしてログイン",
+      "url": "/worker/login.html",
+      "icons": [
+        {
+          "src": "images/common/Gemini_Generated_Image_8i0b6m8i0b6m8i0b6m8i0b_4.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

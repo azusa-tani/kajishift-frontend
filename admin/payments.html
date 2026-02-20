@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>決済・売上管理｜KAJISHIFT管理画面</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+// 認証チェック
+if (typeof checkAuth === 'function') {
+  if (!checkAuth('admin')) {
+    // リダイレクトされる
+  }
+} else {
+  // api.jsが読み込まれる前のフォールバック
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html" class="active">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <span class="admin-name">管理者 太郎</span>
+      <button class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    
+    <section class="admin-page-header">
+      <h1>決済・売上管理</h1>
+    </section>
+
+    <!-- タブナビゲーション -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="payments">決済状況</button>
+      <button class="tab-btn" data-tab="sales">売上レポート</button>
+      <button class="tab-btn" data-tab="remuneration">ワーカー報酬</button>
+      <button class="tab-btn" data-tab="cancellation-fees">キャンセル料</button>
+    </div>
+
+    <!-- 決済状況タブ -->
+    <div class="tab-content active" id="payments-tab">
+      <section class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">決済状況一覧</h2>
+          <div class="filter-row">
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="paid">支払済み</option>
+              <option value="authorized">承認済み</option>
+              <option value="unpaid">未払い</option>
+              <option value="error">決済エラー</option>
+            </select>
+            <button class="btn btn-outline btn-small" onclick="exportPayments(this)">CSVエクスポート</button>
+          </div>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>決済ID</th>
+                <th>予約ID</th>
+                <th>利用者</th>
+                <th>金額</th>
+                <th>状態</th>
+                <th>決済日時</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>#P001</td>
+                <td>#12345</td>
+                <td>山田 太郎</td>
+                <td>¥5,000</td>
+                <td><span class="status-badge active">支払済み</span></td>
+                <td>2024年3月10日 12:30</td>
+                <td><a href="#" class="btn-link">詳細</a></td>
+              </tr>
+              <tr>
+                <td>#P002</td>
+                <td>#12346</td>
+                <td>佐藤 花子</td>
+                <td>¥6,000</td>
+                <td><span class="status-badge active">支払済み</span></td>
+                <td>2024年3月3日 16:45</td>
+                <td><a href="#" class="btn-link">詳細</a></td>
+              </tr>
+              <tr class="error-row">
+                <td>#P003</td>
+                <td>#12347</td>
+                <td>鈴木 一郎</td>
+                <td>¥4,000</td>
+                <td><span class="status-badge error">決済エラー</span></td>
+                <td>2024年3月5日 14:20</td>
+                <td>
+                  <a href="#" class="btn-link">詳細</a>
+                  <button class="btn-link" onclick="viewError('P003')">エラー詳細</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- 売上レポートタブ -->
+    <div class="tab-content" id="sales-tab">
+      <section class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">売上レポート</h2>
+          <div class="filter-row">
+            <select class="form-select">
+              <option>2024年3月</option>
+              <option>2024年2月</option>
+              <option>2024年1月</option>
+            </select>
+            <button class="btn btn-outline btn-small" onclick="exportRevenue(this)">CSVエクスポート</button>
+          </div>
+        </div>
+        <div class="sales-summary">
+          <div class="summary-card">
+            <div class="summary-label">今月の売上</div>
+            <div class="summary-value">¥2,450,000</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">予約数</div>
+            <div class="summary-value">245件</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">平均単価</div>
+            <div class="summary-value">¥10,000</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <div class="chart-placeholder">
+            <p>📊 売上推移グラフ</p>
+            <p class="chart-note">日次/月次売上推移グラフ（実装時はChart.js等を使用）</p>
+          </div>
+        </div>
+        <div class="sales-by-area">
+          <h3>エリア別売上</h3>
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>エリア</th>
+                  <th>予約数</th>
+                  <th>売上</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>札幌市</td>
+                  <td>180件</td>
+                  <td>¥1,800,000</td>
+                </tr>
+                <tr>
+                  <td>江別市</td>
+                  <td>35件</td>
+                  <td>¥350,000</td>
+                </tr>
+                <tr>
+                  <td>北広島市</td>
+                  <td>20件</td>
+                  <td>¥200,000</td>
+                </tr>
+                <tr>
+                  <td>石狩市</td>
+                  <td>10件</td>
+                  <td>¥100,000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ワーカー報酬タブ -->
+    <div class="tab-content" id="remuneration-tab">
+      <section class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">ワーカー報酬管理</h2>
+          <div class="filter-row">
+            <select class="form-select">
+              <option>2024年3月</option>
+              <option>2024年2月</option>
+              <option>2024年1月</option>
+            </select>
+            <button class="btn btn-outline btn-small">CSV/Excel出力</button>
+          </div>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ワーカーID</th>
+                <th>氏名</th>
+                <th>完了件数</th>
+                <th>報酬合計</th>
+                <th>状態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>#W001</td>
+                <td>田中 花子</td>
+                <td>12件</td>
+                <td>¥45,000</td>
+                <td><span class="status-badge active">振込済み</span></td>
+                <td>
+                  <a href="#" class="btn-link">明細</a>
+                  <button class="btn-link" onclick="downloadStatement('W001')">明細書出力</button>
+                </td>
+              </tr>
+              <tr>
+                <td>#W002</td>
+                <td>佐藤 美咲</td>
+                <td>10件</td>
+                <td>¥40,000</td>
+                <td><span class="status-badge pending">未振込</span></td>
+                <td>
+                  <a href="#" class="btn-link">明細</a>
+                  <button class="btn-link" onclick="downloadStatement('W002')">明細書出力</button>
+                  <button class="btn-link" onclick="approveRemuneration('W002')">承認</button>
+                </td>
+              </tr>
+              <tr>
+                <td>#W003</td>
+                <td>鈴木 一郎</td>
+                <td>15件</td>
+                <td>¥60,000</td>
+                <td><span class="status-badge approved">承認済み</span></td>
+                <td>
+                  <a href="#" class="btn-link">明細</a>
+                  <button class="btn-link" onclick="downloadStatement('W003')">明細書出力</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- キャンセル料タブ -->
+    <div class="tab-content" id="cancellation-fees-tab">
+      <section class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">キャンセル料管理</h2>
+          <div class="filter-row">
+            <select class="form-select">
+              <option>すべて</option>
+              <option>回収済み</option>
+              <option>未回収</option>
+            </select>
+          </div>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>予約ID</th>
+                <th>利用者</th>
+                <th>キャンセル日時</th>
+                <th>キャンセル料</th>
+                <th>理由</th>
+                <th>状態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>#12340</td>
+                <td>山田 太郎</td>
+                <td>2024年3月10日 09:00</td>
+                <td>¥0</td>
+                <td>利用者都合（48時間前）</td>
+                <td><span class="status-badge active">回収済み</span></td>
+                <td><a href="#" class="btn-link">詳細</a></td>
+              </tr>
+              <tr>
+                <td>#12341</td>
+                <td>佐藤 花子</td>
+                <td>2024年3月8日 15:30</td>
+                <td>¥2,500</td>
+                <td>利用者都合（48-24時間前）</td>
+                <td><span class="status-badge pending">未回収</span></td>
+                <td>
+                  <a href="#" class="btn-link">詳細</a>
+                  <button class="btn-link" onclick="collectFee('12341')">回収処理</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</main>
+
+<script>
+function showError(message) {
+  alert('エラー: ' + message);
+}
+
+function showSuccess(message) {
+  alert('成功: ' + message);
+}
+
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('adminLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+
+// タブ切り替え
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const tab = this.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById(tab + '-tab').classList.add('active');
+  });
+});
+
+function viewError(id) {
+  alert('決済エラー詳細:\nエラーコード: ERR_CARD_DECLINED\n理由: カードが拒否されました');
+}
+
+function downloadStatement(id) {
+  alert('報酬明細書をダウンロードします（CSV/Excel）');
+}
+
+function approveRemuneration(id) {
+  if (confirm('この報酬を承認しますか？')) {
+    alert('報酬を承認しました');
+    location.reload();
+  }
+}
+
+function collectFee(id) {
+  if (confirm('キャンセル料を回収処理しますか？')) {
+    alert('回収処理を実行しました');
+    location.reload();
+  }
+}
+
+async function exportPayments(buttonElement) {
+  try {
+    // 日付範囲を取得（フィルターから）
+    const dateInput = document.querySelector('#payments-tab input[type="date"]');
+    const startDate = dateInput?.value || '';
+    const endDate = dateInput?.value || '';
+
+    const params = {};
+    if (startDate) {
+      params.startDate = startDate;
+    }
+    if (endDate) {
+      params.endDate = endDate;
+    }
+
+    // ローディング表示
+    const button = buttonElement || document.querySelector('button[onclick*="exportPayments"]');
+    const originalText = button?.textContent || 'CSVエクスポート';
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'エクスポート中...';
+    }
+
+    // 決済レポートはrevenueレポートを使用
+    const result = await api.downloadCSV('revenue', params);
+    
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+    
+    showSuccess('CSVファイルをダウンロードしました: ' + (result.filename || 'revenue-report.csv'));
+  } catch (error) {
+    console.error('CSVエクスポートエラー:', error);
+    showError('CSVエクスポートに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    
+    // ボタンを復元
+    const button = buttonElement || document.querySelector('button[onclick*="exportPayments"]');
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'CSVエクスポート';
+    }
+  }
+}
+
+async function exportRevenue(buttonElement) {
+  try {
+    // 月選択から日付範囲を計算
+    const monthSelect = document.querySelector('#sales-tab select');
+    const selectedMonth = monthSelect?.value || '';
+    
+    const params = {};
+    if (selectedMonth) {
+      // "2024年3月"形式から日付範囲を計算
+      const match = selectedMonth.match(/(\d{4})年(\d{1,2})月/);
+      if (match) {
+        const year = parseInt(match[1]);
+        const month = parseInt(match[2]);
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0, 23, 59, 59);
+        params.startDate = startDate.toISOString().split('T')[0];
+        params.endDate = endDate.toISOString().split('T')[0];
+      }
+    }
+
+    // ローディング表示
+    const button = buttonElement || document.querySelector('button[onclick*="exportRevenue"]');
+    const originalText = button?.textContent || 'CSVエクスポート';
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'エクスポート中...';
+    }
+
+    const result = await api.downloadCSV('revenue', params);
+    
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+    
+    showSuccess('CSVファイルをダウンロードしました: ' + (result.filename || 'revenue-report.csv'));
+  } catch (error) {
+    console.error('CSVエクスポートエラー:', error);
+    showError('CSVエクスポートに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    
+    // ボタンを復元
+    const button = buttonElement || document.querySelector('button[onclick*="exportRevenue"]');
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'CSVエクスポート';
+    }
+  }
+}
+</script>
+
+</body>
+</html>

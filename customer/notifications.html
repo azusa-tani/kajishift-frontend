@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>通知一覧｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
+</head>
+<body class="customer-page">
+
+<header class="customer-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">マイページ</a>
+      <a href="bookings.html">予約一覧</a>
+      <a href="payment.html">決済履歴</a>
+      <a href="customer-profile.html">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge" style="display: none;">0</span>
+        🔔
+      </a>
+      <a href="customer-profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="customer-main">
+  <div class="container">
+    
+    <section class="page-header">
+      <h1>通知一覧</h1>
+      <div class="header-actions">
+        <button class="btn btn-outline btn-small" onclick="markAllAsRead()">すべて既読にする</button>
+      </div>
+    </section>
+
+    <!-- フィルター -->
+    <section class="filter-section">
+      <div class="filter-row">
+        <select class="form-select" id="filterStatus" onchange="loadNotifications()">
+          <option value="">すべて</option>
+          <option value="false">未読のみ</option>
+          <option value="true">既読のみ</option>
+        </select>
+        <select class="form-select" id="filterType" onchange="loadNotifications()">
+          <option value="">すべての種類</option>
+          <option value="MESSAGE">メッセージ</option>
+          <option value="BOOKING_UPDATE">予約更新</option>
+          <option value="BOOKING_CREATED">予約作成</option>
+          <option value="BOOKING_CANCELLED">予約キャンセル</option>
+          <option value="REVIEW">レビュー</option>
+          <option value="PAYMENT">決済</option>
+          <option value="PAYMENT_FAILED">決済失敗</option>
+          <option value="SYSTEM">システム</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- 通知一覧 -->
+    <section class="notifications-section">
+      <div id="notifications-list" class="notifications-list">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+
+      <!-- ページネーション -->
+      <div class="pagination" id="pagination" style="display: none;">
+        <button class="btn btn-outline" id="prevBtn" onclick="changePage(-1)">前へ</button>
+        <span class="page-info" id="pageInfo">1 / 1</span>
+        <button class="btn btn-outline" id="nextBtn" onclick="changePage(1)">次へ</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+// グローバル変数
+let currentPage = 1;
+let totalPages = 1;
+let currentFilters = {};
+
+// ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('customer')) {
+    return;
+  }
+
+  // Socket.io接続を初期化
+  const token = localStorage.getItem('token');
+  if (token) {
+    socketManager.connect(token);
+    
+    // 未読通知数更新イベント
+    socketManager.onUnreadCount((count) => {
+      updateNotificationBadge(count);
+    });
+
+    // 通知受信イベント
+    socketManager.onNotification((notification) => {
+      // 新しい通知を一覧の先頭に追加
+      addNotificationToList(notification);
+      // 未読通知数を更新
+      updateUnreadCount();
+    });
+  }
+
+  // 未読通知数を取得
+  await updateUnreadCount();
+
+  // 通知一覧を読み込む
+  await loadNotifications();
+});
+
+// 未読通知数を更新
+async function updateUnreadCount() {
+  try {
+    const response = await api.getUnreadNotificationCount();
+    const notificationBadge = document.querySelector('.notification-badge');
+    if (notificationBadge) {
+      if (response.count > 0) {
+        notificationBadge.textContent = response.count;
+        notificationBadge.style.display = 'block';
+      } else {
+        notificationBadge.style.display = 'none';
+      }
+    }
+  } catch (error) {
+    console.error('未読通知数取得エラー:', error);
+  }
+}
+
+// 通知一覧を読み込む
+async function loadNotifications(page = 1) {
+  try {
+    currentPage = page;
+    
+    // フィルターを取得
+    const isRead = document.getElementById('filterStatus').value;
+    const type = document.getElementById('filterType').value;
+    
+    currentFilters = {};
+    if (isRead !== '') {
+      currentFilters.isRead = isRead === 'true';
+    }
+    if (type !== '') {
+      currentFilters.type = type;
+    }
+    currentFilters.page = page;
+    currentFilters.limit = 20;
+
+    const response = await api.getNotifications(currentFilters);
+    const { notifications, pagination } = response.data;
+
+    // 通知一覧を表示
+    displayNotifications(notifications);
+
+    // ページネーションを更新
+    updatePagination(pagination);
+
+    // 未読通知数を更新
+    await updateUnreadCount();
+  } catch (error) {
+    console.error('通知一覧取得エラー:', error);
+    showError('通知一覧の取得に失敗しました: ' + (error.message || 'エラーが発生しました'));
+    document.getElementById('notifications-list').innerHTML = '<div class="error-message">通知一覧の取得に失敗しました</div>';
+  }
+}
+
+// 通知一覧を表示
+function displayNotifications(notifications) {
+  const listElement = document.getElementById('notifications-list');
+  
+  if (notifications.length === 0) {
+    listElement.innerHTML = '<div class="empty-message">通知がありません</div>';
+    return;
+  }
+
+  listElement.innerHTML = notifications.map(notification => {
+    const date = new Date(notification.createdAt);
+    const dateStr = date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const typeLabels = {
+      'MESSAGE': 'メッセージ',
+      'BOOKING_UPDATE': '予約更新',
+      'BOOKING_CREATED': '予約作成',
+      'BOOKING_CANCELLED': '予約キャンセル',
+      'REVIEW': 'レビュー',
+      'PAYMENT': '決済',
+      'PAYMENT_FAILED': '決済失敗',
+      'SYSTEM': 'システム',
+      'WORKER_APPROVED': 'ワーカー承認',
+      'WORKER_REJECTED': 'ワーカー却下'
+    };
+
+    const typeLabel = typeLabels[notification.type] || notification.type;
+    const isReadClass = notification.isRead ? 'read' : 'unread';
+    const readIcon = notification.isRead ? '' : '<span class="unread-indicator">●</span>';
+
+    let actionButton = '';
+    if (notification.relatedType === 'BOOKING' && notification.relatedId) {
+      actionButton = `<a href="booking-detail.html?id=${notification.relatedId}" class="btn btn-outline btn-small">詳細を見る</a>`;
+    }
+
+    return `
+      <div class="notification-item ${isReadClass}" data-id="${notification.id}">
+        <div class="notification-header">
+          <div class="notification-type">${typeLabel}</div>
+          <div class="notification-date">${dateStr}</div>
+        </div>
+        <div class="notification-content">
+          <h3 class="notification-title">${readIcon} ${escapeHtml(notification.title)}</h3>
+          <p class="notification-text">${escapeHtml(notification.content)}</p>
+        </div>
+        <div class="notification-actions">
+          ${actionButton}
+          ${!notification.isRead ? `<button class="btn-link" onclick="markAsRead('${notification.id}')">既読にする</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ページネーションを更新
+function updatePagination(pagination) {
+  currentPage = pagination.page;
+  totalPages = pagination.totalPages;
+
+  const paginationElement = document.getElementById('pagination');
+  const pageInfo = document.getElementById('pageInfo');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  if (totalPages <= 1) {
+    paginationElement.style.display = 'none';
+    return;
+  }
+
+  paginationElement.style.display = 'flex';
+  pageInfo.textContent = `${currentPage} / ${totalPages}`;
+  prevBtn.disabled = currentPage <= 1;
+  nextBtn.disabled = currentPage >= totalPages;
+}
+
+// ページを変更
+function changePage(delta) {
+  const newPage = currentPage + delta;
+  if (newPage >= 1 && newPage <= totalPages) {
+    loadNotifications(newPage);
+  }
+}
+
+// 通知を既読にする
+async function markAsRead(notificationId) {
+  try {
+    await api.markNotificationAsRead(notificationId);
+    
+    // UIを更新
+    const notificationItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+    if (notificationItem) {
+      notificationItem.classList.remove('unread');
+      notificationItem.classList.add('read');
+      const actionsElement = notificationItem.querySelector('.notification-actions');
+      if (actionsElement) {
+        const readButton = actionsElement.querySelector('button');
+        if (readButton) {
+          readButton.remove();
+        }
+      }
+      const unreadIndicator = notificationItem.querySelector('.unread-indicator');
+      if (unreadIndicator) {
+        unreadIndicator.remove();
+      }
+    }
+
+    // 未読通知数を更新
+    await updateUnreadCount();
+  } catch (error) {
+    console.error('既読処理エラー:', error);
+    showError('既読処理に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// すべて既読にする
+async function markAllAsRead() {
+  if (!confirm('すべての通知を既読にしますか？')) {
+    return;
+  }
+
+  try {
+    await api.markAllNotificationsAsRead();
+    showSuccess('すべての通知を既読にしました');
+    
+    // 通知一覧を再読み込み
+    await loadNotifications(currentPage);
+    
+    // 未読通知数を更新
+    await updateUnreadCount();
+  } catch (error) {
+    console.error('すべて既読処理エラー:', error);
+    showError('すべて既読処理に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// 新しい通知を一覧に追加
+function addNotificationToList(notification) {
+  const listElement = document.getElementById('notifications-list');
+  
+  // 空のメッセージを削除
+  const emptyMessage = listElement.querySelector('.empty-message');
+  if (emptyMessage) {
+    emptyMessage.remove();
+  }
+
+  const date = new Date(notification.createdAt || new Date());
+  const dateStr = date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const typeLabels = {
+    'MESSAGE': 'メッセージ',
+    'BOOKING_UPDATE': '予約更新',
+    'BOOKING_CREATED': '予約作成',
+    'BOOKING_CANCELLED': '予約キャンセル',
+    'REVIEW': 'レビュー',
+    'PAYMENT': '決済',
+    'PAYMENT_FAILED': '決済失敗',
+    'SYSTEM': 'システム',
+    'WORKER_APPROVED': 'ワーカー承認',
+    'WORKER_REJECTED': 'ワーカー却下'
+  };
+
+  const typeLabel = typeLabels[notification.type] || notification.type;
+  const isReadClass = notification.isRead ? 'read' : 'unread';
+  const readIcon = notification.isRead ? '' : '<span class="unread-indicator">●</span>';
+
+  let actionButton = '';
+  if (notification.relatedType === 'BOOKING' && notification.relatedId) {
+    actionButton = `<a href="booking-detail.html?id=${notification.relatedId}" class="btn btn-outline btn-small">詳細を見る</a>`;
+  }
+
+  const notificationHTML = `
+    <div class="notification-item ${isReadClass}" data-id="${notification.id}">
+      <div class="notification-header">
+        <div class="notification-type">${typeLabel}</div>
+        <div class="notification-date">${dateStr}</div>
+      </div>
+      <div class="notification-content">
+        <h3 class="notification-title">${readIcon} ${escapeHtml(notification.title)}</h3>
+        <p class="notification-text">${escapeHtml(notification.content)}</p>
+      </div>
+      <div class="notification-actions">
+        ${actionButton}
+        ${!notification.isRead ? `<button class="btn-link" onclick="markAsRead('${notification.id}')">既読にする</button>` : ''}
+      </div>
+    </div>
+  `;
+
+  // 一覧の先頭に追加
+  listElement.insertAdjacentHTML('afterbegin', notificationHTML);
+}
+
+// 通知バッジを更新
+function updateNotificationBadge(count) {
+  const notificationBadge = document.querySelector('.notification-badge');
+  if (notificationBadge) {
+    if (count > 0) {
+      notificationBadge.textContent = count;
+      notificationBadge.style.display = 'block';
+    } else {
+      notificationBadge.style.display = 'none';
+    }
+  }
+}
+
+// HTMLエスケープ
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>利用者管理｜KAJISHIFT管理画面</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+// 認証チェック
+if (typeof checkAuth === 'function') {
+  if (!checkAuth('admin')) {
+    // リダイレクトされる
+  }
+} else {
+  // api.jsが読み込まれる前のフォールバック
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html" class="active">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <span class="admin-name">管理者 太郎</span>
+      <button class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    
+    <section class="admin-page-header">
+      <h1>利用者管理</h1>
+    </section>
+
+    <!-- 検索・フィルター -->
+    <section class="admin-filter-section">
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label>検索</label>
+            <input type="text" class="form-input" placeholder="氏名、メールアドレスで検索" />
+          </div>
+          <div class="filter-item">
+            <label>エリア</label>
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="sapporo">札幌市</option>
+              <option value="ebetsu">江別市</option>
+              <option value="kitahiroshima">北広島市</option>
+              <option value="ishikari">石狩市</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>状態</label>
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="active">アクティブ</option>
+              <option value="inactive">非アクティブ</option>
+              <option value="suspended">停止中</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <button class="btn btn-primary">検索</button>
+            <button class="btn btn-outline">リセット</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 利用者一覧 -->
+    <section class="admin-section">
+      <div class="section-header">
+        <h2 class="section-title">利用者一覧（全<span id="total-users">-</span>名）</h2>
+        <button class="btn btn-outline btn-small" onclick="exportUsers(this)">CSVエクスポート</button>
+      </div>
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>氏名</th>
+              <th>メールアドレス</th>
+              <th>登録日</th>
+              <th>利用回数</th>
+              <th>状態</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <tr>
+              <td colspan="7" class="loading-message">読み込み中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="users-pagination"></div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+let currentPage = 1;
+let totalPages = 1;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // 認証チェック
+  if (!checkAuth('admin')) {
+    return;
+  }
+
+  // 検索ボタン
+  document.querySelector('.filter-section .btn-primary').addEventListener('click', () => {
+    currentPage = 1;
+    loadUsers();
+  });
+
+  // リセットボタン
+  document.querySelector('.filter-section .btn-outline').addEventListener('click', () => {
+    document.querySelectorAll('.filter-section input, .filter-section select').forEach(el => {
+      if (el.type === 'text') {
+        el.value = '';
+      } else if (el.tagName === 'SELECT') {
+        el.selectedIndex = 0;
+      }
+    });
+    currentPage = 1;
+    loadUsers();
+  });
+
+  // 初期データ読み込み
+  await loadUsers();
+});
+
+async function loadUsers() {
+  try {
+    const filters = {
+      role: 'CUSTOMER',
+      page: currentPage,
+      limit: 20
+    };
+
+    // 検索フィルターを追加
+    const search = document.querySelector('.filter-section input[placeholder*="検索"]')?.value;
+    const status = document.querySelector('.filter-section select[aria-label*="状態"]')?.value || 
+                   document.querySelector('.filter-section select:last-of-type')?.value;
+
+    if (search) {
+      // バックエンドAPIが検索に対応していない場合は、フロントエンドでフィルタリング
+      // 現時点ではAPIに検索パラメータを送信しない
+    }
+    if (status) {
+      filters.status = status.toUpperCase();
+    }
+
+    const response = await api.getAdminUsers(filters);
+    
+    if (response.data && response.data.users) {
+      const users = response.data.users;
+      const pagination = response.data.pagination;
+      
+      currentPage = pagination.page;
+      totalPages = pagination.totalPages;
+
+      document.getElementById('total-users').textContent = pagination.total || 0;
+      displayUsers(users);
+      updatePagination(pagination);
+    } else {
+      throw new Error('予期しないレスポンス形式');
+    }
+  } catch (error) {
+    console.error('利用者一覧の読み込みエラー:', error);
+    showError('利用者一覧の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function displayUsers(users) {
+  const tbody = document.getElementById('users-table-body');
+  tbody.innerHTML = '';
+
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-message">利用者がありません</td></tr>';
+    return;
+  }
+
+  users.forEach(user => {
+    const createdAt = new Date(user.createdAt);
+    const dateStr = createdAt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+    const statusText = getStatusText(user.status);
+    const statusClass = getStatusClass(user.status);
+    const bookingCount = user.bookingCount || 0; // バックエンドから取得する必要がある
+
+    const row = `
+      <tr class="${user.status === 'SUSPENDED' ? 'suspended-row' : ''}">
+        <td>#${user.id.substring(0, 8)}</td>
+        <td>${user.name || '-'}</td>
+        <td>${user.email || '-'}</td>
+        <td>${dateStr}</td>
+        <td>${bookingCount}回</td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+        <td>
+          <a href="user-detail.html?id=${user.id}" class="btn-link">詳細</a>
+          ${user.status === 'SUSPENDED' 
+            ? `<button class="btn-link" onclick="activateUser('${user.id}')">有効化</button>`
+            : `<button class="btn-link danger" onclick="suspendUser('${user.id}')">停止</button>`
+          }
+        </td>
+      </tr>
+    `;
+    tbody.insertAdjacentHTML('beforeend', row);
+  });
+}
+
+function updatePagination(pagination) {
+  const paginationEl = document.getElementById('users-pagination');
+  if (!paginationEl) return;
+
+  paginationEl.innerHTML = `
+    <button class="btn btn-outline" ${pagination.page <= 1 ? 'disabled' : ''} onclick="currentPage = ${pagination.page - 1}; loadUsers();">前へ</button>
+    <span class="page-info">${pagination.page} / ${pagination.totalPages}</span>
+    <button class="btn btn-outline" ${pagination.page >= pagination.totalPages ? 'disabled' : ''} onclick="currentPage = ${pagination.page + 1}; loadUsers();">次へ</button>
+  `;
+}
+
+function getStatusText(status) {
+  switch (status) {
+    case 'ACTIVE': return 'アクティブ';
+    case 'INACTIVE': return '非アクティブ';
+    case 'SUSPENDED': return '停止中';
+    default: return status;
+  }
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case 'ACTIVE': return 'active';
+    case 'INACTIVE': return 'inactive';
+    case 'SUSPENDED': return 'error';
+    default: return '';
+  }
+}
+
+async function suspendUser(userId) {
+  if (!confirm('この利用者アカウントを停止しますか？\n停止されたアカウントはログインできなくなります。')) {
+    return;
+  }
+
+  try {
+    await api.updateUser(userId, { status: 'SUSPENDED' });
+    showSuccess('ユーザーを停止しました');
+    await loadUsers();
+  } catch (error) {
+    console.error('ユーザー停止エラー:', error);
+    showError('ユーザーの停止に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function activateUser(userId) {
+  if (!confirm('この利用者アカウントを有効化しますか？')) {
+    return;
+  }
+
+  try {
+    await api.updateUser(userId, { status: 'ACTIVE' });
+    showSuccess('ユーザーを有効化しました');
+    await loadUsers();
+  } catch (error) {
+    console.error('ユーザー有効化エラー:', error);
+    showError('ユーザーの有効化に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function exportUsers(buttonElement) {
+  try {
+    // 日付範囲を取得（フィルターから、オプション）
+    const dateInput = document.querySelector('.admin-filter-section input[type="date"]');
+    const startDate = dateInput?.value || '';
+    const endDate = dateInput?.value || '';
+
+    const params = {};
+    if (startDate) {
+      params.startDate = startDate;
+    }
+    if (endDate) {
+      params.endDate = endDate;
+    }
+    // 検索条件があれば追加（オプション）
+    const searchInput = document.querySelector('.admin-filter-section input[type="text"]');
+    if (searchInput?.value) {
+      params.search = searchInput.value;
+    }
+
+    // ローディング表示
+    const button = buttonElement || document.querySelector('button[onclick*="exportUsers"]');
+    const originalText = button?.textContent || 'CSVエクスポート';
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'エクスポート中...';
+    }
+
+    const result = await api.downloadCSV('users', params);
+    
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+    
+    showSuccess('CSVファイルをダウンロードしました: ' + (result.filename || 'users-report.csv'));
+  } catch (error) {
+    console.error('CSVエクスポートエラー:', error);
+    showError('CSVエクスポートに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    
+    // ボタンを復元
+    const button = buttonElement || document.querySelector('button[onclick*="exportUsers"]');
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'CSVエクスポート';
+    }
+  }
+}
+
+function showError(message) {
+  // 簡易的なエラー表示（将来的にはトースト通知などに置き換え可能）
+  alert('エラー: ' + message);
+}
+
+function showSuccess(message) {
+  // 簡易的な成功表示（将来的にはトースト通知などに置き換え可能）
+  alert('成功: ' + message);
+}
+
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('adminLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+</body>
+</html>

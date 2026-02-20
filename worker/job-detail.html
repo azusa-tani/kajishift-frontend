@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>仕事詳細｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="worker-page">
+
+<header class="worker-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge">3</span>
+        🔔
+      </button>
+      <a href="profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main">
+  <div class="container">
+    
+    <div class="back-link">
+      <a href="jobs.html">← 仕事一覧に戻る</a>
+    </div>
+
+    <!-- 仕事詳細カード -->
+    <section class="job-detail-card" id="jobDetailCard">
+      <div class="loading-message">仕事詳細を読み込み中...</div>
+    </section>
+
+    <!-- 依頼者情報 -->
+    <section class="client-info-card" id="clientInfoCard" style="display: none;">
+      <h2>依頼者情報</h2>
+      <div class="client-details" id="clientDetails">
+        <!-- 動的に生成 -->
+      </div>
+      <div class="client-actions">
+        <button class="btn btn-outline" id="chatButton">チャットで連絡</button>
+      </div>
+    </section>
+
+    <!-- 地図（プレースホルダー） -->
+    <section class="map-section" id="mapSection" style="display: none;">
+      <h2>アクセス</h2>
+      <div class="map-placeholder">
+        <p>📍 地図表示エリア</p>
+        <p class="map-address" id="mapAddress"></p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<!-- 辞退モーダル -->
+<div class="modal" id="rejectJobModal">
+  <div class="modal-content">
+    <h2>仕事を辞退</h2>
+    <p>この仕事を辞退しますか？理由を入力してください（任意）。</p>
+    <form id="rejectJobForm">
+      <div class="form-group">
+        <label>辞退理由（任意）</label>
+        <textarea class="form-input" id="rejectReason" rows="3" placeholder="辞退理由を入力してください"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal('rejectJobModal')">キャンセル</button>
+        <button type="submit" class="btn btn-primary danger">辞退する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// グローバル変数
+let currentBooking = null;
+
+// ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('worker')) {
+    return;
+  }
+
+  // URLパラメータから予約IDを取得
+  const urlParams = new URLSearchParams(window.location.search);
+  const bookingId = urlParams.get('id');
+
+  if (!bookingId) {
+    alert('予約IDが指定されていません');
+    window.location.href = 'jobs.html';
+    return;
+  }
+
+  // 予約詳細を取得
+  await loadJobDetail(bookingId);
+});
+
+// 予約詳細を読み込む
+async function loadJobDetail(bookingId) {
+  try {
+    const response = await api.getBookingById(bookingId);
+    currentBooking = response.data;
+
+    if (!currentBooking) {
+      throw new Error('予約が見つかりません');
+    }
+
+    // 予約詳細を表示
+    displayJobDetail(currentBooking);
+    
+    // 依頼者情報を表示
+    if (currentBooking.customer) {
+      displayClientInfo(currentBooking.customer);
+    }
+    
+    // 地図情報を表示
+    if (currentBooking.address) {
+      document.getElementById('mapAddress').textContent = currentBooking.address;
+      document.getElementById('mapSection').style.display = 'block';
+    }
+  } catch (error) {
+    console.error('予約詳細の読み込みエラー:', error);
+    const container = document.getElementById('jobDetailCard');
+    container.innerHTML = `<div class="error-message">予約詳細の読み込みに失敗しました: ${error.message || 'エラーが発生しました'}</div>`;
+  }
+}
+
+// 予約詳細を表示
+function displayJobDetail(booking) {
+  const scheduledDate = new Date(booking.scheduledDate);
+  const startTime = booking.startTime || '00:00';
+  const duration = booking.duration || 0;
+  
+  // 終了時間を計算
+  const [hours, minutes] = startTime.split(':').map(Number);
+  const endTime = new Date(scheduledDate);
+  endTime.setHours(hours + duration, minutes, 0, 0);
+  
+  const dateStr = scheduledDate.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short'
+  });
+  const timeStr = `${startTime}-${endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+  
+  // 新着判定（24時間以内に作成されたもの）
+  const isNew = new Date() - new Date(booking.createdAt) < 24 * 60 * 60 * 1000;
+  const statusClass = isNew ? 'new' : '';
+  const statusText = isNew ? '新着' : '通常';
+  
+  // 料金表示
+  const price = booking.totalAmount ? `¥${booking.totalAmount.toLocaleString()}` : '未確定';
+  
+  // 依頼者名
+  const customerName = booking.customer ? booking.customer.name : '不明';
+  
+  // 顧客の評価（将来的に実装）
+  const customerRating = booking.customer && booking.customer.rating ? booking.customer.rating.toFixed(1) : '-';
+
+  const container = document.getElementById('jobDetailCard');
+  container.innerHTML = `
+    <div class="job-detail-header">
+      <div>
+        <span class="job-status ${statusClass}">${statusText}</span>
+        <h1>${booking.serviceType || '-'}</h1>
+      </div>
+      <div class="job-payment-large">💰 ${price}</div>
+    </div>
+
+    <div class="job-detail-info">
+      <div class="info-row">
+        <span class="info-label">📅 日時</span>
+        <span class="info-value">${dateStr} ${timeStr}（${duration}時間）</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">📍 場所</span>
+        <span class="info-value">${booking.address || '-'}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">👤 依頼者</span>
+        <span class="info-value">${customerName}さん</span>
+      </div>
+      ${customerRating !== '-' ? `
+      <div class="info-row">
+        <span class="info-label">⭐ 評価</span>
+        <span class="info-value">${customerRating} / 5.0</span>
+      </div>
+      ` : ''}
+    </div>
+
+    <div class="job-detail-content">
+      <h2>作業内容</h2>
+      <p>${booking.notes || '特記事項なし'}</p>
+      
+      <h3>必要なスキル</h3>
+      <div class="job-tags">
+        <span class="tag">${booking.serviceType || '-'}</span>
+      </div>
+    </div>
+
+    <div class="job-detail-actions">
+      ${booking.workerId ? `
+        <button class="btn btn-outline btn-large" disabled>既に承諾済み</button>
+        <button class="btn btn-primary btn-large" disabled>この仕事を承諾する</button>
+      ` : `
+        <button class="btn btn-outline btn-large" onclick="rejectJob('${booking.id}')">辞退する</button>
+        <button class="btn btn-primary btn-large" onclick="acceptJob('${booking.id}')">この仕事を承諾する</button>
+      `}
+    </div>
+  `;
+}
+
+// 依頼者情報を表示
+function displayClientInfo(customer) {
+  const container = document.getElementById('clientDetails');
+  const rating = customer.rating ? customer.rating.toFixed(1) : '-';
+  const stars = customer.rating ? '⭐'.repeat(Math.floor(customer.rating)) : '';
+  
+  container.innerHTML = `
+    <div class="client-avatar">👤</div>
+    <div class="client-text">
+      <h3>${customer.name || '不明'}さん</h3>
+      ${rating !== '-' ? `<p>評価: ${stars} ${rating} / 5.0</p>` : ''}
+    </div>
+  `;
+  
+  document.getElementById('clientInfoCard').style.display = 'block';
+  
+  // チャットボタンのイベントリスナー
+  document.getElementById('chatButton').addEventListener('click', function() {
+    if (currentBooking) {
+      window.location.href = `../customer/chat.html?bookingId=${currentBooking.id}`;
+    }
+  });
+}
+
+// 仕事を承諾
+async function acceptJob(bookingId) {
+  if (!confirm('この仕事を承諾しますか？')) {
+    return;
+  }
+
+  try {
+    const user = api.getUser();
+    if (!user || !user.id) {
+      throw new Error('ユーザー情報が取得できません');
+    }
+    
+    // 予約を更新してワーカーIDを設定（承諾）
+    await api.updateBooking(bookingId, {
+      workerId: user.id
+    });
+
+    alert('仕事を承諾しました！');
+    // 詳細ページを再読み込み
+    await loadJobDetail(bookingId);
+  } catch (error) {
+    console.error('仕事承諾エラー:', error);
+    alert('仕事の承諾に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// 仕事を辞退
+function rejectJob(bookingId) {
+  // モーダルを表示
+  document.getElementById('rejectJobModal').style.display = 'flex';
+  
+  // フォーム送信イベントを設定
+  const form = document.getElementById('rejectJobForm');
+  form.onsubmit = async function(e) {
+    e.preventDefault();
+    await confirmRejectJob(bookingId);
+  };
+}
+
+// 辞退を確定
+async function confirmRejectJob(bookingId) {
+  const reason = document.getElementById('rejectReason').value.trim();
+  
+  try {
+    // 辞退理由がある場合は、サポートチケットを作成するか、または予約にメモを追加
+    // ここでは、予約のステータスを変更するか、または単に仕事一覧に戻る形にします
+    // バックエンドに辞退用のエンドポイントがある場合は、それを使用してください
+    
+    // 現時点では、予約をキャンセルする形で実装
+    // または、辞退リストに追加するAPIがある場合はそれを使用
+    // ここでは、シンプルに仕事一覧に戻る形にします
+    
+    if (reason) {
+      // 辞退理由がある場合は、サポートチケットを作成するか、または予約にメモを追加
+      // 現時点では、アラートで確認してから仕事一覧に戻る
+      alert('仕事を辞退しました。\n理由: ' + (reason || 'なし'));
+    } else {
+      if (!confirm('この仕事を辞退しますか？')) {
+        return;
+      }
+      alert('仕事を辞退しました。');
+    }
+    
+    closeModal('rejectJobModal');
+    window.location.href = 'jobs.html';
+  } catch (error) {
+    console.error('仕事辞退エラー:', error);
+    alert('仕事の辞退に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+}
+</script>
+
+</body>
+</html>

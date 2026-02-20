@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>マスタ・設定管理｜KAJISHIFT管理画面</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+// 認証チェック
+if (typeof checkAuth === 'function') {
+  if (!checkAuth('admin')) {
+    // リダイレクトされる
+  }
+} else {
+  // api.jsが読み込まれる前のフォールバック
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html" class="active">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <span class="admin-name">管理者 太郎</span>
+      <button class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    
+    <section class="admin-page-header">
+      <h1>マスタ・設定管理</h1>
+    </section>
+
+    <!-- タブナビゲーション -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="service-master">サービスメニュー</button>
+      <button class="tab-btn" data-tab="area-master">対応エリア</button>
+      <button class="tab-btn" data-tab="system-settings">システム設定</button>
+      <button class="tab-btn" data-tab="logs">操作ログ</button>
+    </div>
+
+    <!-- サービスメニュー・料金マスタタブ -->
+    <div class="tab-content active" id="service-master-tab">
+      <section class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">サービスメニュー・料金マスタ</h2>
+          <button class="btn btn-primary btn-small" onclick="addService()">新規追加</button>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>サービスID</th>
+                <th>サービス名</th>
+                <th>基本料金（1時間）</th>
+                <th>最低時間</th>
+                <th>オプション料金</th>
+                <th>状態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="services-table-body">
+              <tr>
+                <td colspan="7" class="loading-message">読み込み中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- 対応エリアマスタタブ -->
+    <div class="tab-content" id="area-master-tab">
+      <section class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">対応エリアマスタ</h2>
+          <button class="btn btn-primary btn-small" onclick="addArea()">新規追加</button>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>エリアID</th>
+                <th>都道府県</th>
+                <th>市区町村</th>
+                <th>状態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="areas-table-body">
+              <tr>
+                <td colspan="5" class="loading-message">読み込み中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- システム設定タブ -->
+    <div class="tab-content" id="system-settings-tab">
+      <section class="admin-section">
+        <h2 class="section-title">システム設定</h2>
+        
+        <!-- 通知メールテンプレート -->
+        <div class="settings-card">
+          <h3>通知メールテンプレート</h3>
+          <div class="form-group">
+            <label>予約確定通知</label>
+            <div class="template-editor">
+              <input type="text" class="form-input" placeholder="件名" value="【KAJISHIFT】予約が確定しました" />
+              <textarea class="form-textarea" rows="8" placeholder="本文">こんにちは、{{user_name}}さん。
+
+ご予約ありがとうございます。
+以下の予約が確定いたしました。
+
+【予約内容】
+日時: {{booking_date}} {{booking_time}}
+サービス: {{service_name}}
+ワーカー: {{worker_name}}
+
+よろしくお願いいたします。
+KAJISHIFT</textarea>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>作業前日リマインダー</label>
+            <div class="template-editor">
+              <input type="text" class="form-input" placeholder="件名" value="【KAJISHIFT】明日の予約について" />
+              <textarea class="form-textarea" rows="6" placeholder="本文">こんにちは、{{user_name}}さん。
+
+明日の予約についてお知らせします。
+...</textarea>
+            </div>
+          </div>
+          <button class="btn btn-primary">保存</button>
+        </div>
+
+        <!-- プッシュ通知設定 -->
+        <div class="settings-card">
+          <h3>プッシュ通知設定</h3>
+          <div class="form-group">
+            <label>通知文テンプレート</label>
+            <textarea class="form-textarea" rows="4" placeholder="通知文を入力">新しい予約依頼が届きました</textarea>
+          </div>
+          <button class="btn btn-primary">保存</button>
+        </div>
+
+        <!-- 問い合わせ連絡先 -->
+        <div class="settings-card">
+          <h3>問い合わせ連絡先</h3>
+          <div class="form-group">
+            <label>電話番号</label>
+            <input type="tel" class="form-input" value="011-123-4567" />
+          </div>
+          <div class="form-group">
+            <label>メールアドレス</label>
+            <input type="email" class="form-input" value="support@kajishift.jp" />
+          </div>
+          <button class="btn btn-primary">保存</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 操作ログタブ -->
+    <div class="tab-content" id="logs-tab">
+      <section class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">操作ログ</h2>
+          <div class="filter-row">
+            <input type="date" class="form-input" />
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="status-change">ステータス変更</option>
+              <option value="cancel">キャンセル</option>
+              <option value="approval">承認変更</option>
+            </select>
+            <select class="form-select">
+              <option value="">すべての担当者</option>
+              <option value="1">管理者 太郎</option>
+              <option value="2">オペレーター 花子</option>
+            </select>
+            <button class="btn btn-outline btn-small">CSVエクスポート</button>
+          </div>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>日時</th>
+                <th>担当者</th>
+                <th>操作種別</th>
+                <th>対象</th>
+                <th>内容</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2024年3月15日 10:30</td>
+                <td>管理者 太郎</td>
+                <td>ステータス変更</td>
+                <td>予約 #12345</td>
+                <td>状態を「確定」に変更</td>
+              </tr>
+              <tr>
+                <td>2024年3月15日 09:15</td>
+                <td>オペレーター 花子</td>
+                <td>承認変更</td>
+                <td>ワーカー #W001</td>
+                <td>ワーカーを「承認済み」に変更</td>
+              </tr>
+              <tr>
+                <td>2024年3月14日 16:45</td>
+                <td>管理者 太郎</td>
+                <td>キャンセル</td>
+                <td>予約 #12340</td>
+                <td>予約をキャンセル（運営都合）</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <button class="btn btn-outline" disabled>前へ</button>
+          <span class="page-info">1 / 50</span>
+          <button class="btn btn-outline">次へ</button>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</main>
+
+<!-- サービスメニューモーダル -->
+<div class="modal" id="serviceModal">
+  <div class="modal-content">
+    <h2 id="serviceModalTitle">サービスメニュー追加</h2>
+    <form id="serviceForm">
+      <input type="hidden" id="serviceId" />
+      <div class="form-group">
+        <label>サービス名 <span class="required">*</span></label>
+        <input type="text" class="form-input" id="serviceName" required />
+      </div>
+      <div class="form-group">
+        <label>説明</label>
+        <textarea class="form-textarea" id="serviceDescription" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>基本料金（円/時間）</label>
+        <input type="number" class="form-input" id="serviceBasePrice" min="0" />
+      </div>
+      <div class="form-group">
+        <label>表示順序</label>
+        <input type="number" class="form-input" id="serviceDisplayOrder" value="0" min="0" />
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="serviceIsActive" checked /> 有効
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeServiceModal()">キャンセル</button>
+        <button type="submit" class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- エリアモーダル -->
+<div class="modal" id="areaModal">
+  <div class="modal-content">
+    <h2 id="areaModalTitle">対応エリア追加</h2>
+    <form id="areaForm">
+      <input type="hidden" id="areaId" />
+      <div class="form-group">
+        <label>エリア名 <span class="required">*</span></label>
+        <input type="text" class="form-input" id="areaName" required />
+      </div>
+      <div class="form-group">
+        <label>都道府県</label>
+        <input type="text" class="form-input" id="areaPrefecture" />
+      </div>
+      <div class="form-group">
+        <label>郵便番号</label>
+        <input type="text" class="form-input" id="areaPostalCode" />
+      </div>
+      <div class="form-group">
+        <label>表示順序</label>
+        <input type="number" class="form-input" id="areaDisplayOrder" value="0" min="0" />
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="areaIsActive" checked /> 有効
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeAreaModal()">キャンセル</button>
+        <button type="submit" class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // 認証チェック
+  if (!checkAuth('admin')) {
+    return;
+  }
+
+  // タブ切り替え
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tab = this.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById(tab + '-tab').classList.add('active');
+      
+      // タブが切り替わったときにデータを読み込む
+      if (tab === 'service-master') {
+        loadServices();
+      } else if (tab === 'area-master') {
+        loadAreas();
+      }
+    });
+  });
+
+  // サービスフォーム送信
+  document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveService();
+  });
+
+  // エリアフォーム送信
+  document.getElementById('areaForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveArea();
+  });
+
+  // 初期データ読み込み
+  await loadServices();
+});
+
+async function loadServices() {
+  try {
+    const response = await api.getServiceMenus();
+    const services = response.data || [];
+    
+    const tbody = document.getElementById('services-table-body');
+    tbody.innerHTML = '';
+
+    if (services.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-message">サービスメニューがありません</td></tr>';
+      return;
+    }
+
+    services.forEach(service => {
+      const row = `
+        <tr>
+          <td>#${service.id.substring(0, 8)}</td>
+          <td>${service.name}</td>
+          <td>${service.basePrice ? `¥${service.basePrice.toLocaleString()}` : '-'}</td>
+          <td>-</td>
+          <td>-</td>
+          <td><span class="status-badge ${service.isActive ? 'active' : 'inactive'}">${service.isActive ? '有効' : '無効'}</span></td>
+          <td>
+            <button class="btn-link" onclick="editService('${service.id}')">編集</button>
+            <button class="btn-link danger" onclick="deleteService('${service.id}')">削除</button>
+          </td>
+        </tr>
+      `;
+      tbody.insertAdjacentHTML('beforeend', row);
+    });
+  } catch (error) {
+    console.error('サービスメニュー読み込みエラー:', error);
+    showError('サービスメニューの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function loadAreas() {
+  try {
+    const response = await api.getAreas();
+    const areas = response.data || [];
+    
+    const tbody = document.getElementById('areas-table-body');
+    tbody.innerHTML = '';
+
+    if (areas.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-message">対応エリアがありません</td></tr>';
+      return;
+    }
+
+    areas.forEach(area => {
+      const row = `
+        <tr>
+          <td>#${area.id.substring(0, 8)}</td>
+          <td>${area.prefecture || '-'}</td>
+          <td>${area.name}</td>
+          <td><span class="status-badge ${area.isActive ? 'active' : 'inactive'}">${area.isActive ? '有効' : '無効'}</span></td>
+          <td>
+            <button class="btn-link" onclick="editArea('${area.id}')">編集</button>
+            <button class="btn-link danger" onclick="deleteArea('${area.id}')">削除</button>
+          </td>
+        </tr>
+      `;
+      tbody.insertAdjacentHTML('beforeend', row);
+    });
+  } catch (error) {
+    console.error('エリア読み込みエラー:', error);
+    showError('エリアの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function addService() {
+  document.getElementById('serviceModalTitle').textContent = 'サービスメニュー追加';
+  document.getElementById('serviceForm').reset();
+  document.getElementById('serviceId').value = '';
+  document.getElementById('serviceIsActive').checked = true;
+  document.getElementById('serviceModal').style.display = 'flex';
+}
+
+async function editService(id) {
+  try {
+    const response = await api.getServiceMenus();
+    const services = response.data || [];
+    const service = services.find(s => s.id === id);
+    
+    if (!service) {
+      showError('サービスメニューが見つかりません');
+      return;
+    }
+
+    document.getElementById('serviceModalTitle').textContent = 'サービスメニュー編集';
+    document.getElementById('serviceId').value = service.id;
+    document.getElementById('serviceName').value = service.name;
+    document.getElementById('serviceDescription').value = service.description || '';
+    document.getElementById('serviceBasePrice').value = service.basePrice || '';
+    document.getElementById('serviceDisplayOrder').value = service.displayOrder || 0;
+    document.getElementById('serviceIsActive').checked = service.isActive;
+    document.getElementById('serviceModal').style.display = 'flex';
+  } catch (error) {
+    console.error('サービスメニュー取得エラー:', error);
+    showError('サービスメニューの取得に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function saveService() {
+  try {
+    const id = document.getElementById('serviceId').value;
+    const data = {
+      name: document.getElementById('serviceName').value.trim(),
+      description: document.getElementById('serviceDescription').value.trim() || null,
+      basePrice: document.getElementById('serviceBasePrice').value ? parseInt(document.getElementById('serviceBasePrice').value) : null,
+      displayOrder: parseInt(document.getElementById('serviceDisplayOrder').value) || 0,
+      isActive: document.getElementById('serviceIsActive').checked
+    };
+
+    if (id) {
+      await api.updateServiceMenu(id, data);
+      showSuccess('サービスメニューを更新しました');
+    } else {
+      await api.createServiceMenu(data);
+      showSuccess('サービスメニューを作成しました');
+    }
+
+    closeServiceModal();
+    await loadServices();
+  } catch (error) {
+    console.error('サービスメニュー保存エラー:', error);
+    showError('サービスメニューの保存に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function closeServiceModal() {
+  document.getElementById('serviceModal').style.display = 'none';
+}
+
+async function deleteService(id) {
+  if (!confirm('このサービスメニューを削除しますか？\nこのサービスを使用している予約がある場合は削除できません。')) {
+    return;
+  }
+
+  try {
+    await api.deleteServiceMenu(id);
+    showSuccess('サービスメニューを削除しました');
+    await loadServices();
+  } catch (error) {
+    console.error('サービスメニュー削除エラー:', error);
+    showError('サービスメニューの削除に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function addArea() {
+  document.getElementById('areaModalTitle').textContent = '対応エリア追加';
+  document.getElementById('areaForm').reset();
+  document.getElementById('areaId').value = '';
+  document.getElementById('areaIsActive').checked = true;
+  document.getElementById('areaModal').style.display = 'flex';
+}
+
+async function editArea(id) {
+  try {
+    const response = await api.getAreas();
+    const areas = response.data || [];
+    const area = areas.find(a => a.id === id);
+    
+    if (!area) {
+      showError('対応エリアが見つかりません');
+      return;
+    }
+
+    document.getElementById('areaModalTitle').textContent = '対応エリア編集';
+    document.getElementById('areaId').value = area.id;
+    document.getElementById('areaName').value = area.name;
+    document.getElementById('areaPrefecture').value = area.prefecture || '';
+    document.getElementById('areaPostalCode').value = area.postalCode || '';
+    document.getElementById('areaDisplayOrder').value = area.displayOrder || 0;
+    document.getElementById('areaIsActive').checked = area.isActive;
+    document.getElementById('areaModal').style.display = 'flex';
+  } catch (error) {
+    console.error('エリア取得エラー:', error);
+    showError('エリアの取得に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function saveArea() {
+  try {
+    const id = document.getElementById('areaId').value;
+    const data = {
+      name: document.getElementById('areaName').value.trim(),
+      prefecture: document.getElementById('areaPrefecture').value.trim() || null,
+      postalCode: document.getElementById('areaPostalCode').value.trim() || null,
+      displayOrder: parseInt(document.getElementById('areaDisplayOrder').value) || 0,
+      isActive: document.getElementById('areaIsActive').checked
+    };
+
+    if (id) {
+      await api.updateArea(id, data);
+      showSuccess('対応エリアを更新しました');
+    } else {
+      await api.createArea(data);
+      showSuccess('対応エリアを作成しました');
+    }
+
+    closeAreaModal();
+    await loadAreas();
+  } catch (error) {
+    console.error('エリア保存エラー:', error);
+    showError('エリアの保存に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function closeAreaModal() {
+  document.getElementById('areaModal').style.display = 'none';
+}
+
+async function deleteArea(id) {
+  if (!confirm('この対応エリアを削除しますか？')) {
+    return;
+  }
+
+  try {
+    await api.deleteArea(id);
+    showSuccess('対応エリアを削除しました');
+    await loadAreas();
+  } catch (error) {
+    console.error('エリア削除エラー:', error);
+    showError('エリアの削除に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('adminLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+
+function showSuccess(message) {
+  // 簡易的な成功メッセージ表示（必要に応じて改善）
+  alert('成功: ' + message);
+}
+
+function showError(message) {
+  // 簡易的なエラーメッセージ表示（必要に応じて改善）
+  alert('エラー: ' + message);
+}
+
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+}
+</script>
+
+</body>
+</html>

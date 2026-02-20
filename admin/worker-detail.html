@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ワーカー詳細｜KAJISHIFT管理画面</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+// 認証チェック
+if (typeof checkAuth === 'function') {
+  if (!checkAuth('admin')) {
+    // リダイレクトされる
+  }
+} else {
+  // api.jsが読み込まれる前のフォールバック
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <span class="admin-name">管理者 太郎</span>
+      <button class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    
+    <section class="admin-page-header">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1>ワーカー詳細</h1>
+          <a href="workers.html" class="btn-link" style="margin-top: 0.5rem; display: inline-block;">← ワーカー一覧に戻る</a>
+        </div>
+        <div id="actionButtons" style="display: flex; gap: 0.5rem;">
+          <!-- 動的にボタンを追加 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ローディング表示 -->
+    <div id="loadingMessage" class="loading-message" style="text-align: center; padding: 2rem;">
+      ワーカー情報を読み込み中...
+    </div>
+
+    <!-- ワーカー詳細情報 -->
+    <div id="workerContent" style="display: none;">
+      
+      <!-- 基本情報 -->
+      <section class="admin-section">
+        <h2 class="section-title">基本情報</h2>
+        <div class="admin-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>ID</label>
+              <div id="workerId">-</div>
+            </div>
+            <div class="info-item">
+              <label>氏名</label>
+              <div id="workerName">-</div>
+            </div>
+            <div class="info-item">
+              <label>メールアドレス</label>
+              <div id="workerEmail">-</div>
+            </div>
+            <div class="info-item">
+              <label>電話番号</label>
+              <div id="workerPhone">-</div>
+            </div>
+            <div class="info-item">
+              <label>住所</label>
+              <div id="workerAddress">-</div>
+            </div>
+            <div class="info-item">
+              <label>登録日</label>
+              <div id="workerCreatedAt">-</div>
+            </div>
+            <div class="info-item">
+              <label>審査ステータス</label>
+              <div id="workerApprovalStatus">-</div>
+            </div>
+            <div class="info-item">
+              <label>アカウント状態</label>
+              <div id="workerStatus">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ワーカー情報 -->
+      <section class="admin-section">
+        <h2 class="section-title">ワーカー情報</h2>
+        <div class="admin-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>自己紹介</label>
+              <div id="workerBio" style="white-space: pre-wrap;">-</div>
+            </div>
+            <div class="info-item">
+              <label>希望時給</label>
+              <div id="workerHourlyRate">-</div>
+            </div>
+            <div class="info-item">
+              <label>評価</label>
+              <div id="workerRating">-</div>
+            </div>
+            <div class="info-item">
+              <label>レビュー数</label>
+              <div id="workerReviewCount">-</div>
+            </div>
+            <div class="info-item">
+              <label>完了した予約数</label>
+              <div id="workerCompletedBookings">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 口座情報 -->
+      <section class="admin-section">
+        <h2 class="section-title">口座情報</h2>
+        <div class="admin-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>銀行名</label>
+              <div id="workerBankName">-</div>
+            </div>
+            <div class="info-item">
+              <label>支店名</label>
+              <div id="workerBranchName">-</div>
+            </div>
+            <div class="info-item">
+              <label>口座種別</label>
+              <div id="workerAccountType">-</div>
+            </div>
+            <div class="info-item">
+              <label>口座番号</label>
+              <div id="workerAccountNumber">-</div>
+            </div>
+            <div class="info-item">
+              <label>口座名義</label>
+              <div id="workerAccountName">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 本人確認書類 -->
+      <section class="admin-section">
+        <h2 class="section-title">本人確認書類</h2>
+        <div class="admin-card">
+          <div id="idDocumentSection">
+            <div class="info-item">
+              <label>本人確認書類</label>
+              <div id="idDocumentStatus">-</div>
+            </div>
+            <div id="idDocumentPreview" style="margin-top: 1rem;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- レビュー一覧 -->
+      <section class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">レビュー一覧</h2>
+        </div>
+        <div id="reviewsSection" class="admin-card">
+          <div class="loading-message">レビューを読み込み中...</div>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+</main>
+
+<script>
+let workerId = null;
+let workerData = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // 認証チェック
+  if (!checkAuth('admin')) {
+    return;
+  }
+
+  // URLパラメータからワーカーIDを取得
+  const urlParams = new URLSearchParams(window.location.search);
+  workerId = urlParams.get('id');
+
+  if (!workerId) {
+    showError('ワーカーIDが指定されていません');
+    document.getElementById('loadingMessage').textContent = 'エラー: ワーカーIDが指定されていません';
+    return;
+  }
+
+  // ワーカー情報を読み込む
+  await loadWorkerDetail();
+});
+
+async function loadWorkerDetail() {
+  try {
+    const response = await api.getWorkerById(workerId);
+    
+    if (response.data) {
+      workerData = response.data;
+      displayWorkerDetail(workerData);
+      
+      // レビューを読み込む
+      await loadReviews();
+    } else {
+      throw new Error('ワーカー情報が取得できませんでした');
+    }
+  } catch (error) {
+    console.error('ワーカー詳細の読み込みエラー:', error);
+    showError('ワーカー詳細の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    document.getElementById('loadingMessage').textContent = 'エラー: ' + (error.message || 'ワーカー情報の読み込みに失敗しました');
+  }
+}
+
+function displayWorkerDetail(worker) {
+  // ローディングを非表示
+  document.getElementById('loadingMessage').style.display = 'none';
+  document.getElementById('workerContent').style.display = 'block';
+
+  // 基本情報
+  document.getElementById('workerId').textContent = `#${worker.id.substring(0, 8)}`;
+  document.getElementById('workerName').textContent = worker.name || '-';
+  document.getElementById('workerEmail').textContent = worker.email || '-';
+  document.getElementById('workerPhone').textContent = worker.phone || '-';
+  document.getElementById('workerAddress').textContent = worker.address || '-';
+  
+  if (worker.createdAt) {
+    const createdAt = new Date(worker.createdAt);
+    document.getElementById('workerCreatedAt').textContent = createdAt.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  // 審査ステータス
+  const approvalStatusText = getApprovalStatusText(worker.approvalStatus);
+  const approvalStatusClass = getApprovalStatusClass(worker.approvalStatus);
+  document.getElementById('workerApprovalStatus').innerHTML = 
+    `<span class="status-badge ${approvalStatusClass}">${approvalStatusText}</span>`;
+
+  // アカウント状態
+  const statusText = getStatusText(worker.status);
+  const statusClass = getStatusClass(worker.status);
+  document.getElementById('workerStatus').innerHTML = 
+    `<span class="status-badge ${statusClass}">${statusText}</span>`;
+
+  // ワーカー情報
+  document.getElementById('workerBio').textContent = worker.bio || '-';
+  document.getElementById('workerHourlyRate').textContent = worker.hourlyRate ? `¥${worker.hourlyRate.toLocaleString()}/時間` : '-';
+  document.getElementById('workerRating').textContent = worker.rating ? `⭐ ${worker.rating.toFixed(1)}` : '-';
+  document.getElementById('workerReviewCount').textContent = worker.reviewCount || 0;
+  document.getElementById('workerCompletedBookings').textContent = worker.completedBookings || 0;
+
+  // 口座情報
+  document.getElementById('workerBankName').textContent = worker.bankName || '-';
+  document.getElementById('workerBranchName').textContent = worker.branchName || '-';
+  document.getElementById('workerAccountType').textContent = worker.accountType || '-';
+  document.getElementById('workerAccountNumber').textContent = worker.accountNumber || '-';
+  document.getElementById('workerAccountName').textContent = worker.accountName || '-';
+
+  // 本人確認書類
+  if (worker.idDocumentUrl) {
+    document.getElementById('idDocumentStatus').innerHTML = 
+      '<span class="status-badge active">確認済み</span>';
+    document.getElementById('idDocumentPreview').innerHTML = `
+      <a href="${worker.idDocumentUrl}" target="_blank" class="btn btn-outline">
+        本人確認書類を確認する
+      </a>
+    `;
+  } else {
+    document.getElementById('idDocumentStatus').innerHTML = 
+      '<span class="status-badge pending">未確認</span>';
+    document.getElementById('idDocumentPreview').innerHTML = '<p>本人確認書類がアップロードされていません</p>';
+  }
+
+  // アクションボタン
+  displayActionButtons(worker);
+}
+
+function displayActionButtons(worker) {
+  const actionButtons = document.getElementById('actionButtons');
+  actionButtons.innerHTML = '';
+
+  if (worker.approvalStatus === 'PENDING') {
+    // 審査中の場合は承認/却下ボタン
+    actionButtons.innerHTML = `
+      <button class="btn btn-primary" onclick="approveWorker('APPROVED')">承認</button>
+      <button class="btn btn-outline danger" onclick="approveWorker('REJECTED')">却下</button>
+    `;
+  } else if (worker.approvalStatus === 'APPROVED' && worker.status !== 'SUSPENDED') {
+    // 承認済みで停止されていない場合は停止ボタン
+    actionButtons.innerHTML = `
+      <button class="btn btn-outline danger" onclick="suspendWorker()">停止</button>
+    `;
+  } else if (worker.status === 'SUSPENDED') {
+    // 停止されている場合は有効化ボタン
+    actionButtons.innerHTML = `
+      <button class="btn btn-primary" onclick="activateWorker()">有効化</button>
+    `;
+  }
+}
+
+async function approveWorker(approvalStatus) {
+  const statusText = approvalStatus === 'APPROVED' ? '承認' : '却下';
+  if (!confirm(`このワーカーを${statusText}しますか？`)) {
+    return;
+  }
+
+  try {
+    await api.approveWorker(workerId, approvalStatus);
+    showSuccess(`ワーカーを${statusText}しました`);
+    await loadWorkerDetail();
+  } catch (error) {
+    console.error('ワーカー承認エラー:', error);
+    showError(`ワーカーの${statusText}に失敗しました: ` + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function suspendWorker() {
+  if (!confirm('このワーカーアカウントを停止しますか？\n停止されたアカウントはログインできなくなります。')) {
+    return;
+  }
+
+  try {
+    await api.updateWorker(workerId, { status: 'SUSPENDED' });
+    showSuccess('ワーカーを停止しました');
+    await loadWorkerDetail();
+  } catch (error) {
+    console.error('ワーカー停止エラー:', error);
+    showError('ワーカーの停止に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function activateWorker() {
+  if (!confirm('このワーカーアカウントを有効化しますか？')) {
+    return;
+  }
+
+  try {
+    await api.updateWorker(workerId, { status: 'ACTIVE' });
+    showSuccess('ワーカーを有効化しました');
+    await loadWorkerDetail();
+  } catch (error) {
+    console.error('ワーカー有効化エラー:', error);
+    showError('ワーカーの有効化に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function loadReviews() {
+  try {
+    const response = await api.getReviewsByWorkerId(workerId, { limit: 10 });
+    
+    if (response.data && response.data.reviews) {
+      displayReviews(response.data.reviews);
+    } else {
+      document.getElementById('reviewsSection').innerHTML = '<div class="empty-message">レビューがありません</div>';
+    }
+  } catch (error) {
+    console.error('レビューの読み込みエラー:', error);
+    document.getElementById('reviewsSection').innerHTML = '<div class="empty-message">レビューの読み込みに失敗しました</div>';
+  }
+}
+
+function displayReviews(reviews) {
+  const reviewsSection = document.getElementById('reviewsSection');
+  
+  if (reviews.length === 0) {
+    reviewsSection.innerHTML = '<div class="empty-message">レビューがありません</div>';
+    return;
+  }
+
+  let html = '<div class="review-list">';
+  reviews.forEach(review => {
+    const createdAt = new Date(review.createdAt);
+    const dateStr = createdAt.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    html += `
+      <div class="review-item">
+        <div class="review-header">
+          <div class="review-rating">
+            ${'⭐'.repeat(review.rating)} ${review.rating}.0
+          </div>
+          <div class="review-date">${dateStr}</div>
+        </div>
+        <div class="review-content">
+          <p><strong>${review.customer?.name || '匿名'}</strong></p>
+          <p>${review.comment || 'コメントなし'}</p>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  
+  reviewsSection.innerHTML = html;
+}
+
+function getApprovalStatusText(status) {
+  switch (status) {
+    case 'PENDING': return '審査中';
+    case 'APPROVED': return '承認済み';
+    case 'REJECTED': return '却下';
+    default: return status;
+  }
+}
+
+function getApprovalStatusClass(status) {
+  switch (status) {
+    case 'PENDING': return 'pending';
+    case 'APPROVED': return 'active';
+    case 'REJECTED': return 'error';
+    default: return '';
+  }
+}
+
+function getStatusText(status) {
+  switch (status) {
+    case 'ACTIVE': return 'アクティブ';
+    case 'INACTIVE': return '非アクティブ';
+    case 'SUSPENDED': return '停止中';
+    default: return status;
+  }
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case 'ACTIVE': return 'active';
+    case 'INACTIVE': return 'inactive';
+    case 'SUSPENDED': return 'error';
+    default: return '';
+  }
+}
+
+function showError(message) {
+  alert('エラー: ' + message);
+}
+
+function showSuccess(message) {
+  alert('成功: ' + message);
+}
+
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('adminLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+</body>
+</html>

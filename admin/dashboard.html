@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ダッシュボード｜KAJISHIFT管理画面</title>
+  <meta name="description" content="KAJISHIFT管理画面のダッシュボード" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://kajishift.jp/admin/dashboard.html" />
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="page">
+<script>
+// 認証チェック
+if (typeof checkAuth === 'function') {
+  if (!checkAuth('admin')) {
+    // リダイレクトされる
+  }
+} else {
+  // api.jsが読み込まれる前のフォールバック
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+<header class="header" role="banner">
+  <div class="header-inner">
+    <div class="logo">KAJISHIFT 管理画面</div>
+    <nav class="nav" role="navigation" aria-label="管理画面ナビゲーション">
+      <a href="dashboard.html" class="active" aria-current="page">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="user-info">
+      <span class="role" aria-label="ロール">システム管理者</span>
+      <span class="name" aria-label="ユーザー名">管理者 太郎</span>
+      <button class="btn-icon" onclick="logout()" aria-label="ログアウト">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="main" id="main-content" role="main">
+  <div class="container">
+    
+    <section class="page-header">
+      <h1>ダッシュボード</h1>
+      <p id="todayDate">今日: 読み込み中...</p>
+    </section>
+
+    <!-- KPIサマリー -->
+    <section class="kpi-summary">
+      <div class="kpi-card">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-content">
+          <div class="kpi-label">アクティブ利用者</div>
+          <div class="kpi-value" id="activeCustomers">-</div>
+          <div class="kpi-change" id="customerChange">-</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">👷</div>
+        <div class="kpi-content">
+          <div class="kpi-label">アクティブワーカー</div>
+          <div class="kpi-value" id="activeWorkers">-</div>
+          <div class="kpi-change" id="workerChange">-</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📅</div>
+        <div class="kpi-content">
+          <div class="kpi-label">今日の予約</div>
+          <div class="kpi-value" id="todayBookings">-</div>
+          <div class="kpi-change">予定</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-content">
+          <div class="kpi-label">今月の売上</div>
+          <div class="kpi-value" id="monthlyRevenue">-</div>
+          <div class="kpi-change" id="revenueChange">-</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 今日の予約 -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">今日の予約</h2>
+        <a href="bookings.html" class="link-more">すべて見る →</a>
+      </div>
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>時間</th>
+              <th>利用者</th>
+              <th>ワーカー</th>
+              <th>サービス</th>
+              <th>場所</th>
+              <th>状態</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="todayBookingsTable">
+            <tr>
+              <td colspan="7" class="loading-message">読み込み中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 未対応の問い合わせ -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">未対応の問い合わせ</h2>
+        <a href="support.html" class="link-more">すべて見る →</a>
+      </div>
+      <div class="inquiry-list" id="pendingInquiries">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- 売上グラフ -->
+    <section class="section">
+      <h2 class="section-title">売上推移（今月）</h2>
+      <div class="chart-container">
+        <div class="chart-placeholder">
+          <p>📊 売上グラフ表示エリア</p>
+          <p class="chart-note">日別売上推移グラフ（実装時はChart.js等を使用）</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ワーカー審査待ち -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">ワーカー審査待ち</h2>
+        <a href="workers.html?status=pending" class="link-more">すべて見る →</a>
+      </div>
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>申請日</th>
+              <th>氏名</th>
+              <th>メールアドレス</th>
+              <th>本人確認</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="pendingWorkersTable">
+            <tr>
+              <td colspan="5" class="loading-message">読み込み中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // 認証チェック
+  if (!checkAuth('admin')) {
+    return;
+  }
+
+  // 今日の日付を表示
+  const today = new Date();
+  const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+  document.getElementById('todayDate').textContent = `今日: ${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日（${weekdays[today.getDay()]}）`;
+
+  // ダッシュボードデータを読み込む
+  await loadDashboardData();
+});
+
+async function loadDashboardData() {
+  try {
+    // 並列でデータを取得
+    const [userReport, workerReport, bookingReport, revenueReport, todayBookings, pendingWorkers, pendingInquiries] = await Promise.all([
+      api.getAdminUserReport({ startDate: getMonthStart(), endDate: getMonthEnd() }),
+      api.getAdminWorkerReport({ startDate: getMonthStart(), endDate: getMonthEnd() }),
+      api.getAdminBookingReport({ startDate: getMonthStart(), endDate: getMonthEnd() }),
+      api.getAdminRevenueReport({ startDate: getMonthStart(), endDate: getMonthEnd() }),
+      api.getBookings({ 
+        startDate: getTodayStart(), 
+        endDate: getTodayEnd(),
+        limit: 10 
+      }),
+      api.getAdminWorkers({ approvalStatus: 'PENDING', limit: 5 }),
+      api.getSupportTickets({ status: 'OPEN', limit: 5 })
+    ]);
+
+    // KPIサマリーを更新
+    updateKPISummary(userReport, workerReport, bookingReport, revenueReport);
+    
+    // 今日の予約を表示
+    displayTodayBookings(todayBookings);
+    
+    // ワーカー審査待ちを表示
+    displayPendingWorkers(pendingWorkers);
+    
+    // 未対応の問い合わせを表示
+    displayPendingInquiries(pendingInquiries);
+  } catch (error) {
+    console.error('ダッシュボードデータの読み込みエラー:', error);
+    showError('ダッシュボードデータの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function updateKPISummary(userReport, workerReport, bookingReport, revenueReport) {
+  // アクティブ利用者
+  const activeCustomers = userReport.data?.summary?.active || 0;
+  const customerChange = userReport.data?.summary?.customers || 0;
+  document.getElementById('activeCustomers').textContent = activeCustomers.toLocaleString();
+  document.getElementById('customerChange').textContent = `+${customerChange} (今月)`;
+  document.getElementById('customerChange').className = 'kpi-change positive';
+
+  // アクティブワーカー
+  const activeWorkers = workerReport.data?.summary?.active || 0;
+  const workerChange = workerReport.data?.summary?.approved || 0;
+  document.getElementById('activeWorkers').textContent = activeWorkers.toLocaleString();
+  document.getElementById('workerChange').textContent = `+${workerChange} (今月)`;
+  document.getElementById('workerChange').className = 'kpi-change positive';
+
+  // 今日の予約
+  const todayBookingsCount = bookingReport.data?.summary?.today || 0;
+  document.getElementById('todayBookings').textContent = todayBookingsCount.toLocaleString();
+
+  // 今月の売上
+  const monthlyRevenue = revenueReport.data?.summary?.totalRevenue || 0;
+  const revenueChange = revenueReport.data?.comparison?.percentage || 0;
+  document.getElementById('monthlyRevenue').textContent = `¥${monthlyRevenue.toLocaleString()}`;
+  if (revenueChange > 0) {
+    document.getElementById('revenueChange').textContent = `+${revenueChange.toFixed(1)}% (前月比)`;
+    document.getElementById('revenueChange').className = 'kpi-change positive';
+  } else if (revenueChange < 0) {
+    document.getElementById('revenueChange').textContent = `${revenueChange.toFixed(1)}% (前月比)`;
+    document.getElementById('revenueChange').className = 'kpi-change negative';
+  } else {
+    document.getElementById('revenueChange').textContent = '変化なし';
+  }
+}
+
+function displayTodayBookings(response) {
+  const tbody = document.getElementById('todayBookingsTable');
+  tbody.innerHTML = '';
+
+  if (!response.data || !response.data.bookings || response.data.bookings.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-message">今日の予約はありません</td></tr>';
+    return;
+  }
+
+  response.data.bookings.forEach(booking => {
+    const scheduledDate = new Date(booking.scheduledDate);
+    const startTime = booking.startTime || '00:00';
+    const duration = booking.duration || 0;
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endTime = new Date(scheduledDate);
+    endTime.setHours(hours + duration, minutes, 0, 0);
+    const timeRange = `${startTime}-${endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+
+    const customerName = booking.customer?.name || '未定';
+    const workerName = booking.worker?.name || '未定';
+    const serviceType = booking.serviceType || '-';
+    const address = booking.address || '-';
+    const statusText = getBookingStatusText(booking.status);
+    const statusClass = getBookingStatusClass(booking.status);
+
+    const row = `
+      <tr>
+        <td>${timeRange}</td>
+        <td>${customerName}</td>
+        <td>${workerName}</td>
+        <td>${serviceType}</td>
+        <td>${address}</td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+        <td><a href="booking-detail.html?id=${booking.id}" class="btn-link">詳細</a></td>
+      </tr>
+    `;
+    tbody.insertAdjacentHTML('beforeend', row);
+  });
+}
+
+function displayPendingWorkers(response) {
+  const tbody = document.getElementById('pendingWorkersTable');
+  tbody.innerHTML = '';
+
+  if (!response.data || !response.data.workers || response.data.workers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-message">審査待ちのワーカーはありません</td></tr>';
+    return;
+  }
+
+  response.data.workers.forEach(worker => {
+    const createdAt = new Date(worker.createdAt);
+    const dateStr = createdAt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+    const idDocumentStatus = worker.idDocumentUrl ? '確認済み' : '未確認';
+
+    const row = `
+      <tr>
+        <td>${dateStr}</td>
+        <td>${worker.name || '-'}</td>
+        <td>${worker.email || '-'}</td>
+        <td><span class="status-badge ${worker.idDocumentUrl ? 'active' : 'pending'}">${idDocumentStatus}</span></td>
+        <td><a href="worker-detail.html?id=${worker.id}" class="btn-link">審査</a></td>
+      </tr>
+    `;
+    tbody.insertAdjacentHTML('beforeend', row);
+  });
+}
+
+function displayPendingInquiries(response) {
+  const container = document.getElementById('pendingInquiries');
+  container.innerHTML = '';
+
+  if (!response.data || !response.data.tickets || response.data.tickets.length === 0) {
+    container.innerHTML = '<div class="empty-message">未対応の問い合わせはありません</div>';
+    return;
+  }
+
+  response.data.tickets.forEach(ticket => {
+    const createdAt = new Date(ticket.createdAt);
+    const dateStr = createdAt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = createdAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    const priorityClass = ticket.priority === 'URGENT' ? 'urgent' : '';
+    const priorityText = ticket.priority === 'URGENT' ? '緊急' : '';
+
+    const item = `
+      <div class="inquiry-item ${priorityClass}">
+        <div class="inquiry-header">
+          <span class="inquiry-type">${ticket.type || '問い合わせ'}</span>
+          ${priorityText ? `<span class="inquiry-priority">${priorityText}</span>` : ''}
+          <span class="inquiry-date">${dateStr} ${timeStr}</span>
+        </div>
+        <div class="inquiry-content">
+          <h4>${ticket.subject || '件名なし'}</h4>
+          <p>利用者: ${ticket.user?.name || '不明'} / ID: ${ticket.id}</p>
+        </div>
+        <div class="inquiry-actions">
+          <a href="support.html?id=${ticket.id}" class="btn btn-primary btn-small">対応する</a>
+        </div>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', item);
+  });
+}
+
+function getBookingStatusText(status) {
+  switch (status) {
+    case 'PENDING': return '待機中';
+    case 'CONFIRMED': return '確定';
+    case 'IN_PROGRESS': return '作業中';
+    case 'COMPLETED': return '完了';
+    case 'CANCELLED': return 'キャンセル';
+    default: return status;
+  }
+}
+
+function getBookingStatusClass(status) {
+  switch (status) {
+    case 'PENDING': return 'pending';
+    case 'CONFIRMED': return 'active';
+    case 'IN_PROGRESS': return 'in-progress';
+    case 'COMPLETED': return 'completed';
+    case 'CANCELLED': return 'cancelled';
+    default: return '';
+  }
+}
+
+function getMonthStart() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+}
+
+function getMonthEnd() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+}
+
+function getTodayStart() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today.toISOString();
+}
+
+function getTodayEnd() {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  return today.toISOString();
+}
+
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('adminLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+</body>
+</html>

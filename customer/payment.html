@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>決済・履歴｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="customer-page">
+
+<header class="customer-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">マイページ</a>
+      <a href="booking.html">予約する</a>
+      <a href="bookings.html">予約一覧</a>
+      <a href="payment.html" class="active">決済・履歴</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge">2</span>
+        🔔
+      </button>
+      <a href="customer-profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="customer-main">
+  <div class="container">
+    
+    <section class="payment-header">
+      <h1>決済・履歴</h1>
+      <p>支払い方法の管理と利用履歴を確認できます</p>
+    </section>
+
+    <!-- 支払い方法 -->
+    <section class="payment-method-section">
+      <div class="section-header">
+        <h2 class="section-title">支払い方法</h2>
+        <button class="btn btn-primary btn-small" onclick="openCardModal()">カードを追加</button>
+      </div>
+      <div class="payment-method-card" id="paymentMethodCard">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- 利用履歴 -->
+    <section class="payment-history-section">
+      <div class="section-header">
+        <h2 class="section-title">利用履歴</h2>
+        <select class="filter-select" id="monthFilter" onchange="loadPayments()">
+          <option value="">すべて</option>
+          <!-- 動的に生成 -->
+        </select>
+      </div>
+      
+      <div class="history-table">
+        <div id="paymentHistoryTable">
+          <div class="loading-message">読み込み中...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 月間サマリー -->
+    <section class="monthly-summary">
+      <h2 class="section-title">月間サマリー</h2>
+      <div class="summary-cards" id="monthlySummary">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- 領収書一括ダウンロード -->
+    <section class="bulk-download">
+      <div class="bulk-download-card">
+        <h3>領収書・利用履歴の一括ダウンロード</h3>
+        <p>期間を選択して、領収書や利用履歴をPDFで一括ダウンロードできます</p>
+        <div class="download-options">
+          <select class="filter-select">
+            <option>2024年3月</option>
+            <option>2024年2月</option>
+            <option>2024年1月</option>
+            <option>2023年12月</option>
+          </select>
+          <button class="btn btn-primary">PDFでダウンロード</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- カード追加モーダル -->
+<div class="modal" id="cardModal">
+  <div class="modal-content">
+    <h2 id="cardModalTitle">クレジットカードを追加</h2>
+    <form class="card-form" id="cardForm" onsubmit="handleCardSubmit(event)">
+      <div class="form-group">
+        <label>カード番号 <span class="required">必須</span></label>
+        <input type="text" id="cardNumber" class="form-input" placeholder="1234 5678 9012 3456" maxlength="19" required />
+        <p class="form-hint">数字のみ入力してください</p>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>有効期限 <span class="required">必須</span></label>
+          <div class="form-row">
+            <select id="expiryMonth" class="form-select" required>
+              <option value="">月</option>
+              <option value="01">01</option>
+              <option value="02">02</option>
+              <option value="03">03</option>
+              <option value="04">04</option>
+              <option value="05">05</option>
+              <option value="06">06</option>
+              <option value="07">07</option>
+              <option value="08">08</option>
+              <option value="09">09</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <select id="expiryYear" class="form-select" required>
+              <option value="">年</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>セキュリティコード <span class="required">必須</span></label>
+          <input type="text" id="securityCode" class="form-input" placeholder="123" maxlength="4" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>カード名義人 <span class="required">必須</span></label>
+        <input type="text" id="cardholderName" class="form-input" placeholder="YAMADA TARO" required />
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="isDefault" />
+          <span>デフォルトカードに設定する</span>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeCardModal()">キャンセル</button>
+        <button type="submit" class="btn btn-primary" id="cardSubmitBtn">追加する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- カード編集モーダル -->
+<div class="modal" id="editCardModal">
+  <div class="modal-content">
+    <h2>クレジットカードを編集</h2>
+    <form class="card-form" id="editCardForm" onsubmit="handleCardUpdate(event)">
+      <input type="hidden" id="editCardId" />
+      <div class="form-group">
+        <label>カード番号</label>
+        <input type="text" class="form-input" value="**** **** **** " id="editCardLast4" disabled />
+        <p class="form-hint">セキュリティのため、カード番号の一部のみ表示されます</p>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>有効期限 <span class="required">必須</span></label>
+          <div class="form-row">
+            <select id="editExpiryMonth" class="form-select" required>
+              <option value="">月</option>
+              <option value="01">01</option>
+              <option value="02">02</option>
+              <option value="03">03</option>
+              <option value="04">04</option>
+              <option value="05">05</option>
+              <option value="06">06</option>
+              <option value="07">07</option>
+              <option value="08">08</option>
+              <option value="09">09</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <select id="editExpiryYear" class="form-select" required>
+              <option value="">年</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>カード名義人 <span class="required">必須</span></label>
+          <input type="text" id="editCardholderName" class="form-input" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="editIsDefault" />
+          <span>デフォルトカードに設定する</span>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editCardModal')">キャンセル</button>
+        <button type="submit" class="btn btn-primary" id="editCardSubmitBtn">更新する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+// グローバル変数
+let allPayments = [];
+let selectedMonth = null;
+
+  // ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('customer')) {
+    return;
+  }
+
+  // 月選択を初期化
+  initMonthFilter();
+  
+  // 有効期限の年を生成
+  initExpiryYear();
+  
+  // カード番号の自動フォーマット
+  setupCardNumberFormat();
+  
+  // データを読み込み
+  await loadPayments();
+  await loadCards();
+});
+
+// 月選択を初期化
+function initMonthFilter() {
+  const select = document.getElementById('monthFilter');
+  const now = new Date();
+  
+  // 過去12ヶ月を生成
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const option = document.createElement('option');
+    option.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    option.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月`;
+    select.appendChild(option);
+  }
+}
+
+// 決済履歴を読み込む
+async function loadPayments() {
+  try {
+    const select = document.getElementById('monthFilter');
+    selectedMonth = select.value;
+
+    // API呼び出し
+    const response = await api.getPayments({
+      limit: 100 // すべての履歴を取得
+    });
+    
+    if (response.data && response.data.payments) {
+      allPayments = response.data.payments;
+      
+      // フィルター適用
+      const filteredPayments = filterPaymentsByMonth(allPayments, selectedMonth);
+      
+      // 表示
+      displayPaymentHistory(filteredPayments);
+      displayMonthlySummary(filteredPayments);
+    } else {
+      throw new Error('予期しないレスポンス形式');
+    }
+  } catch (error) {
+    console.error('決済履歴の読み込みエラー:', error);
+    showError('決済履歴の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// 月でフィルター
+function filterPaymentsByMonth(payments, monthFilter) {
+  if (!monthFilter) {
+    return payments;
+  }
+  
+  const [year, month] = monthFilter.split('-').map(Number);
+  const firstDay = new Date(year, month - 1, 1);
+  const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
+  
+  return payments.filter(payment => {
+    const paymentDate = new Date(payment.createdAt);
+    return paymentDate >= firstDay && paymentDate <= lastDay;
+  });
+}
+
+// 決済履歴を表示
+function displayPaymentHistory(payments) {
+  const container = document.getElementById('paymentHistoryTable');
+  
+  if (payments.length === 0) {
+    container.innerHTML = '<div class="empty-message">決済履歴がありません</div>';
+    return;
+  }
+  
+  let html = `
+    <table>
+      <thead>
+        <tr>
+          <th>日付</th>
+          <th>サービス内容</th>
+          <th>ワーカー</th>
+          <th>金額</th>
+          <th>状態</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  
+  payments.forEach(payment => {
+    const paymentDate = new Date(payment.createdAt);
+    const dateStr = paymentDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    const serviceType = payment.booking ? payment.booking.serviceType : '-';
+    const workerName = payment.booking && payment.booking.worker 
+      ? `${payment.booking.worker.name || '不明'}さん` 
+      : '-';
+    
+    const amount = payment.amount ? `¥${payment.amount.toLocaleString()}` : '-';
+    
+    const statusMap = {
+      'COMPLETED': { text: '支払済み', class: 'active' },
+      'PENDING': { text: '支払い待ち', class: 'pending' },
+      'FAILED': { text: '支払い失敗', class: 'error' },
+      'REFUNDED': { text: '返金済み', class: 'refunded' }
+    };
+    const status = statusMap[payment.status] || { text: payment.status || '-', class: '' };
+    
+    html += `
+      <tr>
+        <td>${dateStr}</td>
+        <td>${serviceType}</td>
+        <td>${workerName}</td>
+        <td>${amount}</td>
+        <td><span class="status-badge ${status.class}">${status.text}</span></td>
+        <td>
+          ${payment.status === 'COMPLETED' ? `
+            <button class="btn-link" onclick="downloadReceipt('${payment.id}')" id="receipt-btn-${payment.id}">領収書</button>
+          ` : '-'}
+        </td>
+      </tr>
+    `;
+  });
+  
+  html += `
+      </tbody>
+    </table>
+  `;
+  
+  container.innerHTML = html;
+}
+
+// 月間サマリーを表示
+function displayMonthlySummary(payments) {
+  const container = document.getElementById('monthlySummary');
+  
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthlyPayments = filterPaymentsByMonth(payments, currentMonth);
+  
+  const count = monthlyPayments.length;
+  const total = monthlyPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const average = count > 0 ? Math.round(total / count) : 0;
+  
+  container.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-label">今月の利用回数</div>
+      <div class="summary-value">${count}回</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">今月の合計金額</div>
+      <div class="summary-value">¥${total.toLocaleString()}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">平均単価</div>
+      <div class="summary-value">¥${average.toLocaleString()}</div>
+    </div>
+  `;
+}
+
+// 有効期限の年を生成
+function initExpiryYear() {
+  const currentYear = new Date().getFullYear();
+  const yearSelects = document.querySelectorAll('#expiryYear, #editExpiryYear');
+  
+  yearSelects.forEach(select => {
+    // 既存のオプションをクリア（「年」オプションを除く）
+    while (select.children.length > 1) {
+      select.removeChild(select.lastChild);
+    }
+    
+    // 現在年から10年後まで生成
+    for (let i = 0; i <= 10; i++) {
+      const year = currentYear + i;
+      const option = document.createElement('option');
+      option.value = year;
+      option.textContent = year;
+      select.appendChild(option);
+    }
+  });
+}
+
+// カード一覧を読み込む
+async function loadCards() {
+  try {
+    const response = await api.getCards();
+    const cards = response.data || [];
+    displayCards(cards);
+  } catch (error) {
+    console.error('カード読み込みエラー:', error);
+    const container = document.getElementById('paymentMethodCard');
+    container.innerHTML = '<div class="error-message">カードの読み込みに失敗しました</div>';
+  }
+}
+
+// カード一覧を表示
+function displayCards(cards) {
+  const container = document.getElementById('paymentMethodCard');
+  
+  if (cards.length === 0) {
+    container.innerHTML = `
+      <div class="info-note">
+        <p>登録されているカードがありません</p>
+        <p>カードを追加すると、決済時に使用できます</p>
+      </div>
+    `;
+    return;
+  }
+
+  const brandMap = {
+    'visa': 'Visa',
+    'mastercard': 'Mastercard',
+    'amex': 'American Express',
+    'jcb': 'JCB',
+    'discover': 'Discover',
+    'unknown': 'その他'
+  };
+
+  container.innerHTML = cards.map(card => {
+    const brand = brandMap[card.brand] || card.brand;
+    const expiryDate = `${String(card.expiryMonth).padStart(2, '0')}/${String(card.expiryYear).slice(-2)}`;
+    const defaultBadge = card.isDefault ? '<span class="status-badge active">デフォルト</span>' : '';
+
+    return `
+      <div class="card-item" data-card-id="${card.id}">
+        <div class="card-info">
+          <div class="card-brand">${brand}</div>
+          <div class="card-number">**** **** **** ${card.last4}</div>
+          <div class="card-details">
+            <span class="card-expiry">有効期限: ${expiryDate}</span>
+            <span class="card-name">${escapeHtml(card.cardholderName)}</span>
+            ${defaultBadge}
+          </div>
+        </div>
+        <div class="card-actions">
+          ${!card.isDefault ? `<button class="btn-link" onclick="setDefaultCard('${card.id}')">デフォルトに設定</button>` : ''}
+          <button class="btn-link" onclick="editCard('${card.id}')">編集</button>
+          <button class="btn-link danger" onclick="deleteCard('${card.id}')">削除</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// モーダル関連
+let currentEditCardId = null;
+
+function openCardModal() {
+  document.getElementById('cardForm').reset();
+  document.getElementById('cardModalTitle').textContent = 'クレジットカードを追加';
+  document.getElementById('cardSubmitBtn').textContent = '追加する';
+  document.getElementById('cardModal').style.display = 'flex';
+}
+
+function closeCardModal() {
+  document.getElementById('cardModal').style.display = 'none';
+  document.getElementById('cardForm').reset();
+  currentEditCardId = null;
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+  if (modalId === 'editCardModal') {
+    document.getElementById('editCardForm').reset();
+    currentEditCardId = null;
+  }
+}
+
+// カード追加・更新
+async function handleCardSubmit(event) {
+  event.preventDefault();
+  
+  const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+  const expiryMonth = document.getElementById('expiryMonth').value;
+  const expiryYear = document.getElementById('expiryYear').value;
+  const cardholderName = document.getElementById('cardholderName').value;
+  const securityCode = document.getElementById('securityCode').value;
+  const isDefault = document.getElementById('isDefault').checked;
+
+  // カード番号のバリデーション
+  if (!/^\d{13,19}$/.test(cardNumber)) {
+    showError('カード番号が無効です（13-19桁の数字）');
+    return;
+  }
+
+  // セキュリティコードのバリデーション
+  if (!/^\d{3,4}$/.test(securityCode)) {
+    showError('セキュリティコードが無効です（3-4桁の数字）');
+    return;
+  }
+
+  try {
+    const submitBtn = document.getElementById('cardSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '追加中...';
+
+    await api.addCard({
+      cardNumber,
+      expiryMonth: parseInt(expiryMonth),
+      expiryYear: parseInt(expiryYear),
+      cardholderName,
+      securityCode,
+      isDefault
+    });
+
+    showSuccess('カードを追加しました');
+    closeCardModal();
+    await loadCards();
+  } catch (error) {
+    console.error('カード追加エラー:', error);
+    showError('カードの追加に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  } finally {
+    const submitBtn = document.getElementById('cardSubmitBtn');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '追加する';
+  }
+}
+
+// カード編集
+async function editCard(cardId) {
+  try {
+    const response = await api.getCards();
+    const cards = response.data || [];
+    const card = cards.find(c => c.id === cardId);
+
+    if (!card) {
+      showError('カードが見つかりません');
+      return;
+    }
+
+    currentEditCardId = cardId;
+    document.getElementById('editCardId').value = cardId;
+    document.getElementById('editCardLast4').value = `**** **** **** ${card.last4}`;
+    document.getElementById('editExpiryMonth').value = String(card.expiryMonth).padStart(2, '0');
+    document.getElementById('editExpiryYear').value = card.expiryYear;
+    document.getElementById('editCardholderName').value = card.cardholderName;
+    document.getElementById('editIsDefault').checked = card.isDefault;
+
+    document.getElementById('editCardModal').style.display = 'flex';
+  } catch (error) {
+    console.error('カード編集エラー:', error);
+    showError('カード情報の取得に失敗しました');
+  }
+}
+
+// カード更新
+async function handleCardUpdate(event) {
+  event.preventDefault();
+
+  const cardId = document.getElementById('editCardId').value;
+  const expiryMonth = document.getElementById('editExpiryMonth').value;
+  const expiryYear = document.getElementById('editExpiryYear').value;
+  const cardholderName = document.getElementById('editCardholderName').value;
+  const isDefault = document.getElementById('editIsDefault').checked;
+
+  try {
+    const submitBtn = document.getElementById('editCardSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '更新中...';
+
+    await api.updateCard(cardId, {
+      expiryMonth: parseInt(expiryMonth),
+      expiryYear: parseInt(expiryYear),
+      cardholderName,
+      isDefault
+    });
+
+    showSuccess('カードを更新しました');
+    closeModal('editCardModal');
+    await loadCards();
+  } catch (error) {
+    console.error('カード更新エラー:', error);
+    showError('カードの更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  } finally {
+    const submitBtn = document.getElementById('editCardSubmitBtn');
+    submitBtn.disabled = false;
+    submitBtn.textContent = '更新する';
+  }
+}
+
+// カード削除
+async function deleteCard(cardId) {
+  if (!confirm('このカードを削除しますか？')) {
+    return;
+  }
+
+  try {
+    await api.deleteCard(cardId);
+    showSuccess('カードを削除しました');
+    await loadCards();
+  } catch (error) {
+    console.error('カード削除エラー:', error);
+    showError('カードの削除に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// デフォルトカードに設定
+async function setDefaultCard(cardId) {
+  try {
+    await api.updateCard(cardId, { isDefault: true });
+    showSuccess('デフォルトカードに設定しました');
+    await loadCards();
+  } catch (error) {
+    console.error('デフォルトカード設定エラー:', error);
+    showError('デフォルトカードの設定に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// カード番号の自動フォーマット
+function setupCardNumberFormat() {
+  const cardNumberInput = document.getElementById('cardNumber');
+  if (cardNumberInput) {
+    cardNumberInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\s/g, '');
+      // 数字のみを許可
+      value = value.replace(/\D/g, '');
+      // 4桁ごとにスペースを挿入
+      value = value.replace(/(.{4})/g, '$1 ').trim();
+      e.target.value = value;
+    });
+  }
+}
+
+// HTMLエスケープ
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// 領収書をダウンロード
+async function downloadReceipt(paymentId) {
+  try {
+    // ボタンを取得
+    const button = document.getElementById(`receipt-btn-${paymentId}`);
+    if (button) {
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'ダウンロード中...';
+      
+      await api.downloadReceipt(paymentId);
+      
+      button.disabled = false;
+      button.textContent = originalText;
+      showSuccess('領収書をダウンロードしました');
+    } else {
+      await api.downloadReceipt(paymentId);
+      showSuccess('領収書をダウンロードしました');
+    }
+  } catch (error) {
+    console.error('領収書ダウンロードエラー:', error);
+    showError('領収書のダウンロードに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    
+    // エラー時もボタンを有効化
+    const button = document.getElementById(`receipt-btn-${paymentId}`);
+    if (button) {
+      button.disabled = false;
+      button.textContent = '領収書';
+    }
+  }
+}
+
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+}
+</script>
+
+</body>
+</html>

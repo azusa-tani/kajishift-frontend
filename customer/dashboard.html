@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>マイページ｜KAJISHIFT</title>
+  <meta name="description" content="KAJISHIFTの依頼者マイページ。予約状況やメッセージを確認できます。" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://kajishift.jp/customer/dashboard.html" />
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
+</head>
+<body class="customer-page">
+<script>
+// 認証チェック
+document.addEventListener('DOMContentLoaded', async function() {
+  if (!checkAuth('customer')) {
+    return; // リダイレクトされる
+  }
+
+  // Socket.io接続を初期化
+  const token = localStorage.getItem('token');
+  if (token) {
+    socketManager.connect(token);
+    
+    // 未読通知数更新イベント
+    socketManager.onUnreadCount((count) => {
+      updateNotificationBadge(count);
+    });
+
+    // 通知受信イベント
+    socketManager.onNotification((notification) => {
+      // 通知が来たことをユーザーに知らせる（オプション）
+      console.log('新しい通知:', notification);
+      // 未読通知数を再取得
+      updateUnreadCount();
+    });
+  }
+  
+  // ユーザー情報を取得して表示
+  try {
+    const userResponse = await api.getMe();
+    if (userResponse.data) {
+      const user = userResponse.data;
+      // ウェルカムメッセージを更新
+      const welcomeTitle = document.querySelector('.welcome-section h1');
+      if (welcomeTitle && user.name) {
+        welcomeTitle.textContent = `おかえりなさい、${user.name}さん`;
+      }
+    }
+    
+    // 予約一覧を取得
+    const bookingsResponse = await api.getBookings({ 
+      status: 'CONFIRMED,IN_PROGRESS',
+      limit: 3 
+    });
+    
+    if (bookingsResponse.data && bookingsResponse.data.length > 0) {
+      updateUpcomingBookings(bookingsResponse.data);
+    }
+    
+    // 未読通知数を取得
+    await updateUnreadCount();
+  } catch (error) {
+    console.error('データ取得エラー:', error);
+  }
+});
+
+// 未読通知数を更新
+async function updateUnreadCount() {
+  try {
+    const notificationResponse = await api.getUnreadNotificationCount();
+    updateNotificationBadge(notificationResponse.count);
+  } catch (error) {
+    console.error('未読通知数取得エラー:', error);
+  }
+}
+
+// 通知バッジを更新
+function updateNotificationBadge(count) {
+  const notificationBadge = document.querySelector('.notification-badge');
+  if (notificationBadge) {
+    if (count > 0) {
+      notificationBadge.textContent = count;
+      notificationBadge.style.display = 'block';
+    } else {
+      notificationBadge.style.display = 'none';
+    }
+  }
+}
+
+// 予約一覧を更新
+function updateUpcomingBookings(bookings) {
+  const bookingList = document.querySelector('.booking-list');
+  if (!bookingList) return;
+  
+  bookingList.innerHTML = '';
+  
+  bookings.forEach(booking => {
+    const bookingCard = document.createElement('div');
+    bookingCard.className = 'booking-card';
+    
+    const statusClass = booking.status.toLowerCase().replace('_', '-');
+    const statusText = {
+      'PENDING': '予約確定',
+      'CONFIRMED': '予約確定',
+      'IN_PROGRESS': '進行中',
+      'COMPLETED': '完了',
+      'CANCELLED': 'キャンセル'
+    }[booking.status] || booking.status;
+    
+    const date = new Date(booking.startTime);
+    const endDate = new Date(booking.endTime);
+    const dateStr = date.toLocaleDateString('ja-JP', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      weekday: 'short'
+    });
+    const timeStr = `${date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+    
+    bookingCard.innerHTML = `
+      <div class="booking-header">
+        <div class="booking-date-time">
+          <span class="booking-date">${dateStr}</span>
+          <span class="booking-time">${timeStr}</span>
+        </div>
+        <span class="booking-status ${statusClass}">${statusText}</span>
+      </div>
+      <div class="booking-content">
+        <h3>${booking.serviceType || 'サービス'}</h3>
+        <div class="booking-info">
+          ${booking.worker ? `<span class="booking-worker">👤 ${booking.worker.name}さん</span>` : ''}
+          ${booking.worker && booking.worker.rating ? `<span class="booking-rating">⭐ ${booking.worker.rating.toFixed(1)}</span>` : ''}
+        </div>
+        ${booking.address ? `<p class="booking-address">📍 ${booking.address}</p>` : ''}
+      </div>
+      <div class="booking-actions">
+        <a href="booking-detail.html?id=${booking.id}" class="btn btn--outline">詳細を見る</a>
+      </div>
+    `;
+    
+    bookingList.appendChild(bookingCard);
+  });
+  
+  if (bookings.length === 0) {
+    bookingList.innerHTML = '<p class="no-data">今後の予約はありません</p>';
+  }
+}
+
+// ログアウト関数（グローバルスコープ）
+window.logout = function() {
+  if (confirm('ログアウトしますか？')) {
+    logout(); // auth.jsのlogout関数を呼び出す
+  }
+};
+</script>
+
+<header class="customer-header" role="banner">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav" role="navigation" aria-label="メインナビゲーション">
+      <a href="dashboard.html" class="active" aria-current="page">マイページ</a>
+      <a href="booking.html">予約する</a>
+      <a href="bookings.html">予約一覧</a>
+      <a href="payment.html">決済・履歴</a>
+    </nav>
+    <div class="header-actions">
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge" aria-hidden="true" style="display: none;">0</span>
+        <span aria-hidden="true">🔔</span>
+      </a>
+      <a href="customer-profile.html" class="avatar">👤</a>
+      <button class="btn-icon" onclick="logout()" aria-label="ログアウト" title="ログアウト">🚪</button>
+    </div>
+  </div>
+</header>
+
+<main class="customer-main" id="main-content" role="main">
+  <div class="container">
+    
+    <!-- ウェルカムセクション -->
+    <section class="welcome-section">
+      <h1>おかえりなさい、山田さん</h1>
+      <p>次回の予約まであと2日です。準備はできていますか？</p>
+    </section>
+
+    <!-- クイックアクション -->
+    <section class="quick-actions">
+      <h2 class="section-title">クイックアクション</h2>
+      <div class="action-grid">
+        <a href="booking.html" class="action-card highlight">
+          <div class="action-icon">📅</div>
+          <h3>新しい予約</h3>
+          <p>家事代行を予約</p>
+        </a>
+        <a href="favorites.html" class="action-card">
+          <div class="action-icon">♡</div>
+          <h3>お気に入り</h3>
+          <p>お気に入りワーカーを確認</p>
+        </a>
+        <a href="bookings.html" class="action-card">
+          <div class="action-icon">📋</div>
+          <h3>予約一覧</h3>
+          <p>予約を確認・変更</p>
+        </a>
+        <a href="payment.html" class="action-card">
+          <div class="action-icon">💳</div>
+          <h3>決済・履歴</h3>
+          <p>支払い情報を確認</p>
+        </a>
+        <a href="customer-profile.html" class="action-card">
+          <div class="action-icon">⚙️</div>
+          <h3>設定</h3>
+          <p>アカウント設定</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- 今後の予約 -->
+    <section class="upcoming-bookings">
+      <div class="section-header">
+        <h2 class="section-title">今後の予約</h2>
+        <a href="bookings.html" class="link-more">すべて見る →</a>
+      </div>
+      <div class="booking-list">
+        <div class="booking-card">
+          <div class="booking-header">
+            <div class="booking-date-time">
+              <span class="booking-date">2024年3月17日（日）</span>
+              <span class="booking-time">10:00 - 12:00</span>
+            </div>
+            <span class="booking-status pending">予約確定</span>
+          </div>
+          <div class="booking-content">
+            <h3>掃除・片付け</h3>
+            <div class="booking-info">
+              <span class="booking-worker">👤 田中 花子さん</span>
+              <span class="booking-rating">⭐ 4.8</span>
+            </div>
+            <p class="booking-address">📍 札幌市中央区南1条西1丁目</p>
+          </div>
+          <div class="booking-actions">
+            <a href="booking-detail.html?id=1" class="btn btn-outline">詳細を見る</a>
+            <button class="btn btn-primary">チャット</button>
+          </div>
+        </div>
+
+        <div class="booking-card">
+          <div class="booking-header">
+            <div class="booking-date-time">
+              <span class="booking-date">2024年3月24日（日）</span>
+              <span class="booking-time">14:00 - 16:00</span>
+            </div>
+            <span class="booking-status pending">予約確定</span>
+          </div>
+          <div class="booking-content">
+            <h3>洗濯・アイロン</h3>
+            <div class="booking-info">
+              <span class="booking-worker">👤 佐藤 美咲さん</span>
+              <span class="booking-rating">⭐ 4.9</span>
+            </div>
+            <p class="booking-address">📍 札幌市中央区南1条西1丁目</p>
+          </div>
+          <div class="booking-actions">
+            <a href="booking-detail.html?id=2" class="btn btn-outline">詳細を見る</a>
+            <button class="btn btn-primary">チャット</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 過去の利用履歴 -->
+    <section class="past-bookings">
+      <div class="section-header">
+        <h2 class="section-title">最近の利用履歴</h2>
+        <a href="payment.html" class="link-more">すべて見る →</a>
+      </div>
+      <div class="history-list">
+        <div class="history-item">
+          <div class="history-date">2024年3月10日</div>
+          <div class="history-content">
+            <h4>掃除・片付け</h4>
+            <p>田中 花子さん</p>
+          </div>
+          <div class="history-amount">¥5,000</div>
+          <div class="history-action">
+            <button class="btn btn-small btn-outline">レビュー</button>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="history-date">2024年3月3日</div>
+          <div class="history-content">
+            <h4>料理・買い物</h4>
+            <p>鈴木 一郎さん</p>
+          </div>
+          <div class="history-amount">¥6,000</div>
+          <div class="history-action">
+            <button class="btn btn-small btn-outline">レビュー</button>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="history-date">2024年2月25日</div>
+          <div class="history-content">
+            <h4>洗濯・アイロン</h4>
+            <p>佐藤 美咲さん</p>
+          </div>
+          <div class="history-amount">¥4,000</div>
+          <div class="history-action">
+            <span class="reviewed-badge">レビュー済み</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- お知らせ -->
+    <section class="notifications-section">
+      <h2 class="section-title">お知らせ</h2>
+      <div class="notification-list">
+        <div class="notification-item">
+          <div class="notification-icon">📢</div>
+          <div class="notification-content">
+            <h4>次回予約のリマインダー</h4>
+            <p>2024年3月17日の予約まであと2日です</p>
+            <span class="notification-time">2時間前</span>
+          </div>
+        </div>
+        <div class="notification-item">
+          <div class="notification-icon">💬</div>
+          <div class="notification-content">
+            <h4>新しいメッセージ</h4>
+            <p>田中 花子さんからメッセージが届きました</p>
+            <span class="notification-time">1日前</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    sessionStorage.removeItem('customerLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+</script>
+</body>
+</html>

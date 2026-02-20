@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>プロフィール｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="worker-page">
+
+<header class="worker-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html" class="active">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge">3</span>
+        🔔
+      </button>
+      <a href="profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main">
+  <div class="container">
+    
+    <section class="profile-header" id="profileHeader">
+      <div class="loading-message">プロフィールを読み込み中...</div>
+    </section>
+
+    <!-- 基本情報 -->
+    <section class="profile-section">
+      <div class="section-header">
+        <h2 class="section-title">基本情報</h2>
+        <button class="btn btn-outline btn-small" onclick="editBasicInfo()">編集</button>
+      </div>
+      <div class="profile-card" id="basicInfoCard">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- 専門スキル -->
+    <section class="profile-section">
+      <div class="section-header">
+        <h2 class="section-title">自己紹介・時給</h2>
+        <button class="btn btn-outline btn-small" onclick="editProfile()">編集</button>
+      </div>
+      <div class="profile-card" id="profileInfoCard">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- 対応エリア -->
+    <section class="profile-section">
+      <div class="section-header">
+        <h2 class="section-title">対応エリア</h2>
+        <button class="btn btn-outline btn-small">編集</button>
+      </div>
+      <div class="profile-card">
+        <div class="area-list">
+          <div class="area-item">
+            <span class="area-name">札幌市</span>
+            <span class="area-detail">中央区、南区、西区</span>
+          </div>
+          <div class="area-item">
+            <span class="area-name">江別市</span>
+            <span class="area-detail">全域</span>
+          </div>
+          <div class="area-item">
+            <span class="area-name">北広島市</span>
+            <span class="area-detail">全域</span>
+          </div>
+          <div class="area-item">
+            <span class="area-name">石狩市</span>
+            <span class="area-detail">一部エリア</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 利用可能時間 -->
+    <section class="profile-section">
+      <div class="section-header">
+        <h2 class="section-title">利用可能時間</h2>
+        <button class="btn btn-outline btn-small">編集</button>
+      </div>
+      <div class="profile-card">
+        <div class="availability-table">
+          <table>
+            <thead>
+              <tr>
+                <th>曜日</th>
+                <th>利用可能時間</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>月曜日</td>
+                <td>13:00 - 17:00</td>
+              </tr>
+              <tr>
+                <td>火曜日</td>
+                <td>10:00 - 17:00</td>
+              </tr>
+              <tr>
+                <td>水曜日</td>
+                <td>10:00 - 17:00</td>
+              </tr>
+              <tr>
+                <td>木曜日</td>
+                <td>10:00 - 17:00</td>
+              </tr>
+              <tr>
+                <td>金曜日</td>
+                <td>10:00 - 17:00</td>
+              </tr>
+              <tr>
+                <td>土曜日</td>
+                <td>9:00 - 18:00</td>
+              </tr>
+              <tr>
+                <td>日曜日</td>
+                <td>9:00 - 18:00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 評価・レビュー -->
+    <section class="profile-section">
+      <h2 class="section-title">評価・レビュー</h2>
+      <div class="reviews-summary">
+        <div class="review-stat">
+          <div class="stat-number">4.8</div>
+          <div class="stat-label">総合評価</div>
+        </div>
+        <div class="review-breakdown">
+          <div class="breakdown-item">
+            <span>5★</span>
+            <div class="breakdown-bar">
+              <div class="breakdown-fill" style="width: 80%"></div>
+            </div>
+            <span>20件</span>
+          </div>
+          <div class="breakdown-item">
+            <span>4★</span>
+            <div class="breakdown-bar">
+              <div class="breakdown-fill" style="width: 15%"></div>
+            </div>
+            <span>4件</span>
+          </div>
+          <div class="breakdown-item">
+            <span>3★</span>
+            <div class="breakdown-bar">
+              <div class="breakdown-fill" style="width: 4%"></div>
+            </div>
+            <span>1件</span>
+          </div>
+          <div class="breakdown-item">
+            <span>2★</span>
+            <div class="breakdown-bar">
+              <div class="breakdown-fill" style="width: 0%"></div>
+            </div>
+            <span>0件</span>
+          </div>
+          <div class="breakdown-item">
+            <span>1★</span>
+            <div class="breakdown-bar">
+              <div class="breakdown-fill" style="width: 0%"></div>
+            </div>
+            <span>0件</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="reviews-list" id="reviews-list">
+        <div class="loading-message">レビューを読み込み中...</div>
+      </div>
+      
+      <!-- ページネーション -->
+      <div class="pagination" id="reviews-pagination" style="display: none;">
+        <button class="btn btn-outline" id="reviews-prev-btn" onclick="changeReviewsPage(-1)">前へ</button>
+        <span class="page-info" id="reviews-page-info">1 / 1</span>
+        <button class="btn btn-outline" id="reviews-next-btn" onclick="changeReviewsPage(1)">次へ</button>
+      </div>
+    </section>
+
+    <!-- 口座情報 -->
+    <section class="profile-section">
+      <div class="section-header">
+        <h2 class="section-title">口座情報</h2>
+        <button class="btn btn-outline btn-small">編集</button>
+      </div>
+      <div class="profile-card">
+        <div class="info-row">
+          <span class="info-label">銀行名</span>
+          <span class="info-value">北海道銀行</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">支店名</span>
+          <span class="info-value">中央支店</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">口座種別</span>
+          <span class="info-value">普通</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">口座番号</span>
+          <span class="info-value">****1234</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">口座名義</span>
+          <span class="info-value">タナカ ハナコ</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 設定 -->
+    <section class="profile-section">
+      <h2 class="section-title">設定</h2>
+      <div class="settings-list">
+        <a href="#" class="settings-item">
+          <span>通知設定</span>
+          <span>→</span>
+        </a>
+        <a href="#" class="settings-item">
+          <span>パスワード変更</span>
+          <span>→</span>
+        </a>
+        <a href="#" class="settings-item">
+          <span>利用規約</span>
+          <span>→</span>
+        </a>
+        <a href="#" class="settings-item">
+          <span>プライバシーポリシー</span>
+          <span>→</span>
+        </a>
+        <a href="#" class="settings-item danger" onclick="logout(); return false;">
+          <span>ログアウト</span>
+          <span>→</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<!-- 基本情報編集モーダル -->
+<div class="modal" id="editBasicInfoModal">
+  <div class="modal-content">
+    <h2>基本情報を編集</h2>
+    <form id="editBasicInfoForm">
+      <div class="form-group">
+        <label>氏名 <span class="required">*</span></label>
+        <input type="text" class="form-input" id="editName" required />
+      </div>
+      <div class="form-group">
+        <label>メールアドレス <span class="required">*</span></label>
+        <input type="email" class="form-input" id="editEmail" required />
+      </div>
+      <div class="form-group">
+        <label>電話番号</label>
+        <input type="tel" class="form-input" id="editPhone" />
+      </div>
+      <div class="form-group">
+        <label>住所</label>
+        <input type="text" class="form-input" id="editAddress" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editBasicInfoModal')">キャンセル</button>
+        <button type="submit" class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// グローバル変数
+let currentUser = null;
+
+// ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('worker')) {
+    return;
+  }
+
+  // ユーザー情報を取得
+  await loadProfile();
+});
+
+// プロフィールを読み込む
+async function loadProfile() {
+  try {
+    const response = await api.getUserMe();
+    currentUser = response.data;
+
+    if (!currentUser) {
+      throw new Error('ユーザー情報が取得できません');
+    }
+
+    // プロフィールを表示
+    displayProfile(currentUser);
+  } catch (error) {
+    console.error('プロフィールの読み込みエラー:', error);
+    showError('プロフィールの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// グローバル変数
+let currentReviewsPage = 1;
+let totalReviewsPages = 1;
+let currentWorkerId = null;
+
+// プロフィールを表示
+function displayProfile(user) {
+  currentWorkerId = user.id;
+  
+  // ヘッダー
+  const rating = user.rating ? user.rating.toFixed(1) : '-';
+  const reviewCount = user.reviewCount || 0;
+  const stars = user.rating ? '★'.repeat(Math.floor(user.rating)) : '';
+  
+  document.getElementById('profileHeader').innerHTML = `
+    <div class="profile-avatar-large">👤</div>
+    <div class="profile-info">
+      <h1>${user.name || '-'}</h1>
+      <div class="profile-rating">
+        <span class="stars">${stars}</span>
+        <span class="rating-score">${rating}</span>
+        <span class="rating-count">（評価数: ${reviewCount}件）</span>
+      </div>
+      <p class="profile-status">
+        <span class="status-badge ${user.status === 'ACTIVE' ? 'active' : ''}">${user.status === 'ACTIVE' ? '活動中' : user.status || '-'}</span>
+      </p>
+    </div>
+  `;
+  
+  // レビュー一覧を読み込む
+  if (reviewCount > 0) {
+    loadReviews(user.id);
+    updateReviewsSummary(user);
+  } else {
+    document.getElementById('reviews-list').innerHTML = '<div class="empty-message">レビューがありません</div>';
+  }
+}
+
+  // 基本情報
+  document.getElementById('basicInfoCard').innerHTML = `
+    <div class="info-row">
+      <span class="info-label">氏名</span>
+      <span class="info-value">${user.name || '-'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">メールアドレス</span>
+      <span class="info-value">${user.email || '-'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">電話番号</span>
+      <span class="info-value">${user.phone || '-'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">住所</span>
+      <span class="info-value">${user.address || '-'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">本人確認</span>
+      <span class="info-value">
+        <span class="status-badge ${user.approvalStatus === 'APPROVED' ? 'active' : ''}">${user.approvalStatus === 'APPROVED' ? '確認済み' : user.approvalStatus || '未確認'}</span>
+      </span>
+    </div>
+  `;
+
+  // 自己紹介・時給
+  document.getElementById('profileInfoCard').innerHTML = `
+    <div class="info-row">
+      <span class="info-label">自己紹介</span>
+      <span class="info-value">${user.bio || '未設定'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">時給</span>
+      <span class="info-value">${user.hourlyRate ? `¥${user.hourlyRate.toLocaleString()}` : '未設定'}</span>
+    </div>
+  `;
+}
+
+// 基本情報を編集
+function editBasicInfo() {
+  if (!currentUser) {
+    alert('ユーザー情報が読み込まれていません');
+    return;
+  }
+
+  // モーダルに現在の値を設定
+  document.getElementById('editName').value = currentUser.name || '';
+  document.getElementById('editEmail').value = currentUser.email || '';
+  document.getElementById('editPhone').value = currentUser.phone || '';
+  document.getElementById('editAddress').value = currentUser.address || '';
+
+  // モーダルを表示
+  document.getElementById('editBasicInfoModal').style.display = 'flex';
+}
+
+// 基本情報編集フォームの送信
+document.addEventListener('DOMContentLoaded', function() {
+  const editForm = document.getElementById('editBasicInfoForm');
+  if (editForm) {
+    editForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('editName').value.trim();
+      const email = document.getElementById('editEmail').value.trim();
+      const phone = document.getElementById('editPhone').value.trim();
+      const address = document.getElementById('editAddress').value.trim();
+
+      if (!name || !email) {
+        alert('氏名とメールアドレスは必須です');
+        return;
+      }
+
+      try {
+        await api.updateUserMe({
+          name,
+          email,
+          phone: phone || undefined,
+          address: address || undefined
+        });
+        
+        showSuccess('基本情報を更新しました');
+        closeModal('editBasicInfoModal');
+        await loadProfile();
+      } catch (error) {
+        console.error('基本情報更新エラー:', error);
+        showError('基本情報の更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+      }
+    });
+  }
+});
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+}
+
+// プロフィールを編集
+async function editProfile() {
+  const bio = prompt('自己紹介を入力してください:', currentUser.bio || '');
+  if (bio === null) return;
+
+  const hourlyRateStr = prompt('時給を入力してください（円）:', currentUser.hourlyRate || '');
+  if (hourlyRateStr === null) return;
+
+  const hourlyRate = hourlyRateStr ? parseInt(hourlyRateStr) : null;
+  if (hourlyRateStr && (isNaN(hourlyRate) || hourlyRate < 0)) {
+    alert('時給は0以上の数値である必要があります');
+    return;
+  }
+
+  try {
+    await api.updateWorkerProfile({ bio, hourlyRate });
+    showSuccess('プロフィールを更新しました');
+    await loadProfile();
+  } catch (error) {
+    console.error('プロフィール更新エラー:', error);
+    showError('プロフィールの更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// レビュー一覧を読み込む
+async function loadReviews(workerId, page = 1) {
+  try {
+    currentReviewsPage = page;
+    const response = await api.getReviewsByWorkerId(workerId, { page, limit: 10 });
+    const { reviews, pagination } = response.data;
+    
+    displayReviews(reviews);
+    updateReviewsPagination(pagination);
+  } catch (error) {
+    console.error('レビュー読み込みエラー:', error);
+    document.getElementById('reviews-list').innerHTML = '<div class="error-message">レビューの読み込みに失敗しました</div>';
+  }
+}
+
+// レビュー一覧を表示
+function displayReviews(reviews) {
+  const listElement = document.getElementById('reviews-list');
+  
+  if (reviews.length === 0) {
+    listElement.innerHTML = '<div class="empty-message">レビューがありません</div>';
+    return;
+  }
+
+  listElement.innerHTML = reviews.map(review => {
+    const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+    const date = new Date(review.createdAt);
+    const dateStr = date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    const reviewerName = review.reviewer ? review.reviewer.name : '匿名';
+
+    return `
+      <div class="review-item">
+        <div class="review-header">
+          <div class="reviewer-info">
+            <span class="reviewer-name">${escapeHtml(reviewerName)}</span>
+            <span class="review-stars">${stars}</span>
+          </div>
+          <span class="review-date">${dateStr}</span>
+        </div>
+        ${review.comment ? `<p class="review-text">${escapeHtml(review.comment)}</p>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// レビューサマリーを更新
+async function updateReviewsSummary(user) {
+  try {
+    const response = await api.getReviewsByWorkerId(user.id, { limit: 100 });
+    const reviews = response.data?.reviews || [];
+    
+    // 評価の内訳を計算
+    const breakdown = {
+      5: 0,
+      4: 0,
+      3: 0,
+      2: 0,
+      1: 0
+    };
+    
+    reviews.forEach(review => {
+      if (review.rating >= 1 && review.rating <= 5) {
+        breakdown[review.rating]++;
+      }
+    });
+    
+    const total = reviews.length;
+    const averageRating = user.rating || 0;
+    
+    // サマリーを更新
+    const summaryElement = document.querySelector('.reviews-summary');
+    if (summaryElement) {
+      const statNumber = summaryElement.querySelector('.stat-number');
+      const breakdownItems = summaryElement.querySelectorAll('.breakdown-item');
+      
+      if (statNumber) {
+        statNumber.textContent = averageRating.toFixed(1);
+      }
+      
+      breakdownItems.forEach((item, index) => {
+        const rating = 5 - index;
+        const count = breakdown[rating] || 0;
+        const percentage = total > 0 ? (count / total) * 100 : 0;
+        
+        const bar = item.querySelector('.breakdown-bar .breakdown-fill');
+        const countSpan = item.querySelector('span:last-child');
+        
+        if (bar) {
+          bar.style.width = `${percentage}%`;
+        }
+        if (countSpan) {
+          countSpan.textContent = `${count}件`;
+        }
+      });
+    }
+  } catch (error) {
+    console.error('レビューサマリー更新エラー:', error);
+  }
+}
+
+// レビューページネーションを更新
+function updateReviewsPagination(pagination) {
+  currentReviewsPage = pagination.page;
+  totalReviewsPages = pagination.totalPages;
+
+  const paginationElement = document.getElementById('reviews-pagination');
+  const pageInfo = document.getElementById('reviews-page-info');
+  const prevBtn = document.getElementById('reviews-prev-btn');
+  const nextBtn = document.getElementById('reviews-next-btn');
+
+  if (totalReviewsPages <= 1) {
+    paginationElement.style.display = 'none';
+    return;
+  }
+
+  paginationElement.style.display = 'flex';
+  pageInfo.textContent = `${currentReviewsPage} / ${totalReviewsPages}`;
+  prevBtn.disabled = currentReviewsPage <= 1;
+  nextBtn.disabled = currentReviewsPage >= totalReviewsPages;
+}
+
+// レビューページを変更
+function changeReviewsPage(delta) {
+  if (!currentWorkerId) return;
+  
+  const newPage = currentReviewsPage + delta;
+  if (newPage >= 1 && newPage <= totalReviewsPages) {
+    loadReviews(currentWorkerId, newPage);
+  }
+}
+
+// HTMLエスケープ
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ログアウト
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('workerLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+</body>
+</html>

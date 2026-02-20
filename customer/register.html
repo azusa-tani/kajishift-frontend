@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>依頼者登録｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="preload" href="../js/validation.js" as="script" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/validation.js" defer></script>
+</head>
+<body class="auth-page">
+  <div class="auth-container">
+    <div class="auth-box">
+      <div class="auth-header">
+        <a href="../index.html" class="auth-logo">KAJISHIFT</a>
+        <h1>依頼者登録</h1>
+        <p>家事代行サービスを始めましょう</p>
+      </div>
+
+      <div class="error-message"></div>
+
+      <form class="auth-form" id="registerForm">
+        <!-- 基本情報 -->
+        <div class="form-section">
+          <h2 class="form-section__title">基本情報</h2>
+          
+          <div class="form-group">
+            <label for="name" class="form-label">氏名 <span class="required">必須</span></label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              class="form-input" 
+              required 
+              placeholder="山田 太郎"
+              aria-required="true"
+              aria-label="氏名" />
+          </div>
+
+          <div class="form-group">
+            <label for="email" class="form-label">メールアドレス <span class="required">必須</span></label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              class="form-input" 
+              required 
+              placeholder="example@email.com"
+              aria-required="true"
+              aria-label="メールアドレス"
+              autocomplete="email" />
+          </div>
+
+          <div class="form-group">
+            <label for="phone" class="form-label">電話番号 <span class="required">必須</span></label>
+            <input 
+              type="tel" 
+              id="phone" 
+              name="phone" 
+              class="form-input" 
+              required 
+              placeholder="090-1234-5678"
+              aria-required="true"
+              aria-label="電話番号"
+              autocomplete="tel" />
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label">パスワード <span class="required">必須</span></label>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-input" 
+              required 
+              minlength="8"
+              aria-required="true"
+              aria-label="パスワード"
+              aria-describedby="password-hint"
+              autocomplete="new-password" />
+            <p id="password-hint" class="form-hint">8文字以上、英数字を含むパスワードを設定してください</p>
+            <div class="password-strength" aria-live="polite" aria-atomic="true">
+              <div class="password-strength-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+            </div>
+            <div class="password-strength-text" aria-live="polite"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="password-confirm" class="form-label">パスワード（確認） <span class="required">必須</span></label>
+            <input 
+              type="password" 
+              id="password-confirm" 
+              name="password-confirm" 
+              class="form-input" 
+              required
+              aria-required="true"
+              aria-label="パスワード（確認）"
+              autocomplete="new-password" />
+          </div>
+        </div>
+
+        <!-- 住所情報 -->
+        <div class="form-section">
+          <h2 class="form-section__title">住所情報</h2>
+          <p class="form-note">サービス提供エリアの確認に使用します</p>
+          
+          <div class="form-group">
+            <label for="address-pref" class="form-label">都道府県 <span class="required">必須</span></label>
+            <select id="address-pref" name="address-pref" class="form-input" required>
+              <option value="">選択してください</option>
+              <option value="hokkaido" selected>北海道</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="address-city" class="form-label">市区町村 <span class="required">必須</span></label>
+            <select id="address-city" name="address-city" class="form-input" required>
+              <option value="">選択してください</option>
+              <option value="sapporo">札幌市</option>
+              <option value="ebetsu">江別市</option>
+              <option value="kitahiroshima">北広島市</option>
+              <option value="ishikari">石狩市</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="address-detail" class="form-label">詳細住所 <span class="required">必須</span></label>
+            <input type="text" id="address-detail" name="address-detail" class="form-input" required placeholder="中央区南1条西1丁目" />
+          </div>
+        </div>
+
+        <!-- 決済方法 -->
+        <div class="form-section">
+          <h2 class="form-section__title">決済方法</h2>
+          <p class="form-note">クレジットカード情報は安全に管理されます（PCI DSS準拠）</p>
+          
+          <div class="form-group">
+            <label for="card-number" class="form-label">カード番号 <span class="required">必須</span></label>
+            <input 
+              type="text" 
+              id="card-number" 
+              name="card-number" 
+              class="form-input" 
+              required 
+              placeholder="1234 5678 9012 3456" 
+              maxlength="19"
+              aria-required="true"
+              aria-label="カード番号"
+              autocomplete="cc-number" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="card-expiry" class="form-label">有効期限 <span class="required">必須</span></label>
+              <input 
+                type="text" 
+                id="card-expiry" 
+                name="card-expiry" 
+                class="form-input" 
+                required 
+                placeholder="MM/YY" 
+                maxlength="5"
+                aria-required="true"
+                aria-label="カード有効期限"
+                autocomplete="cc-exp" />
+            </div>
+            <div class="form-group">
+              <label for="card-cvc" class="form-label">セキュリティコード <span class="required">必須</span></label>
+              <input 
+                type="text" 
+                id="card-cvc" 
+                name="card-cvc" 
+                class="form-input" 
+                required 
+                placeholder="123" 
+                maxlength="4"
+                aria-required="true"
+                aria-label="セキュリティコード"
+                autocomplete="cc-csc" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="card-name" class="form-label">カード名義人 <span class="required">必須</span></label>
+            <input 
+              type="text" 
+              id="card-name" 
+              name="card-name" 
+              class="form-input" 
+              required 
+              placeholder="YAMADA TARO"
+              aria-required="true"
+              aria-label="カード名義人"
+              autocomplete="cc-name" />
+          </div>
+        </div>
+
+        <!-- 利用規約同意 -->
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              id="agree-terms" 
+              name="agree-terms" 
+              required
+              aria-required="true"
+              aria-describedby="terms-hint" />
+            <span><a href="#" target="_blank" aria-label="利用規約を新しいタブで開く">利用規約</a>と<a href="#" target="_blank" aria-label="プライバシーポリシーを新しいタブで開く">プライバシーポリシー</a>に同意します <span class="required">必須</span></span>
+          </label>
+          <p id="terms-hint" class="sr-only">利用規約とプライバシーポリシーへの同意が必要です</p>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block">登録する</button>
+
+        <p class="auth-footer">
+          すでにアカウントをお持ちですか？ <a href="login.html">ログイン</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ページ読み込み時にバリデーションを設定
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('registerForm');
+      
+      // リアルタイムバリデーション設定
+      setupRealTimeValidation(document.getElementById('name'), Validators.required);
+      setupRealTimeValidation(document.getElementById('email'), Validators.email);
+      setupRealTimeValidation(document.getElementById('phone'), Validators.phone);
+      setupRealTimeValidation(document.getElementById('password'), Validators.password);
+      setupRealTimeValidation(document.getElementById('address-detail'), Validators.required);
+      setupRealTimeValidation(document.getElementById('card-number'), Validators.cardNumber);
+      setupRealTimeValidation(document.getElementById('card-expiry'), Validators.cardExpiry);
+      setupRealTimeValidation(document.getElementById('card-cvc'), (value) => {
+        if (!value) return 'セキュリティコードを入力してください';
+        if (value.length < 3) return 'セキュリティコードは3-4桁で入力してください';
+        return null;
+      });
+      setupRealTimeValidation(document.getElementById('card-name'), Validators.required);
+      
+      // パスワード確認のバリデーション
+      const passwordConfirm = document.getElementById('password-confirm');
+      passwordConfirm.addEventListener('blur', () => {
+        const password = document.getElementById('password').value;
+        const error = Validators.passwordConfirm(password, passwordConfirm.value);
+        if (error) {
+          showError(passwordConfirm, error);
+        } else {
+          clearError(passwordConfirm);
+        }
+      });
+      
+      // パスワード強度表示
+      setupPasswordStrength(
+        document.getElementById('password'),
+        document.querySelector('.password-strength').parentElement
+      );
+      
+      // 電話番号自動フォーマット
+      setupPhoneFormat(document.getElementById('phone'));
+      
+      // カード番号自動フォーマット
+      setupCardNumberFormat(document.getElementById('card-number'));
+      
+      // カード有効期限自動フォーマット
+      setupCardExpiryFormat(document.getElementById('card-expiry'));
+    });
+
+    // フォーム送信時のバリデーションとAPI連携
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const validations = {
+        'name': Validators.required,
+        'email': Validators.email,
+        'phone': Validators.phone,
+        'password': Validators.password,
+        'password-confirm': (value) => {
+          const password = document.getElementById('password').value;
+          return Validators.passwordConfirm(password, value);
+        },
+        'address-pref': Validators.required,
+        'address-city': Validators.required,
+        'address-detail': Validators.required,
+        'card-number': Validators.cardNumber,
+        'card-expiry': Validators.cardExpiry,
+        'card-cvc': (value) => {
+          if (!value) return 'セキュリティコードを入力してください';
+          if (value.length < 3) return 'セキュリティコードは3-4桁で入力してください';
+          return null;
+        },
+        'card-name': Validators.required
+      };
+      
+      if (!validateForm(this, validations)) {
+        // 最初のエラーフィールドにフォーカス
+        const firstError = this.querySelector('.has-error input, .has-error select');
+        if (firstError) {
+          firstError.focus();
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+      
+      // 利用規約同意チェック
+      if (!document.getElementById('agree-terms').checked) {
+        showError('利用規約とプライバシーポリシーに同意してください');
+        return;
+      }
+      
+      // フォームデータを取得
+      const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        password: document.getElementById('password').value,
+        role: 'CUSTOMER',
+        address: {
+          prefecture: document.getElementById('address-pref').value,
+          city: document.getElementById('address-city').value,
+          detail: document.getElementById('address-detail').value
+        }
+        // カード情報は本番環境では決済ゲートウェイに直接送信するため、ここでは含めない
+      };
+      
+      const submitButton = this.querySelector('button[type="submit"]');
+      const originalButtonText = submitButton.textContent;
+      
+      // ローディング状態
+      submitButton.disabled = true;
+      submitButton.textContent = '登録中...';
+      
+      try {
+        // APIで登録
+        const response = await api.register(formData);
+        
+        if (response.data && response.data.user) {
+          // 登録成功
+          showSuccess('登録が完了しました。ログインしています...');
+          
+          // ダッシュボードにリダイレクト
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1000);
+        } else {
+          throw new Error('登録に失敗しました');
+        }
+      } catch (error) {
+        // エラー処理
+        console.error('登録エラー:', error);
+        showError(error.message || '登録に失敗しました。入力内容を確認してください。');
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+      }
+    });
+  </script>
+</body>
+</html>

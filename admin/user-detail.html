@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>利用者詳細｜KAJISHIFT管理画面</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+// 認証チェック
+if (typeof checkAuth === 'function') {
+  if (!checkAuth('admin')) {
+    // リダイレクトされる
+  }
+} else {
+  // api.jsが読み込まれる前のフォールバック
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <span class="admin-name">管理者 太郎</span>
+      <button class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    
+    <section class="admin-page-header">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1>利用者詳細</h1>
+          <a href="users.html" class="btn-link" style="margin-top: 0.5rem; display: inline-block;">← 利用者一覧に戻る</a>
+        </div>
+        <div id="actionButtons" style="display: flex; gap: 0.5rem;">
+          <!-- 動的にボタンを追加 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ローディング表示 -->
+    <div id="loadingMessage" class="loading-message" style="text-align: center; padding: 2rem;">
+      利用者情報を読み込み中...
+    </div>
+
+    <!-- 利用者詳細情報 -->
+    <div id="userContent" style="display: none;">
+      
+      <!-- 基本情報 -->
+      <section class="admin-section">
+        <h2 class="section-title">基本情報</h2>
+        <div class="admin-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>ID</label>
+              <div id="userId">-</div>
+            </div>
+            <div class="info-item">
+              <label>氏名</label>
+              <div id="userName">-</div>
+            </div>
+            <div class="info-item">
+              <label>メールアドレス</label>
+              <div id="userEmail">-</div>
+            </div>
+            <div class="info-item">
+              <label>電話番号</label>
+              <div id="userPhone">-</div>
+            </div>
+            <div class="info-item">
+              <label>住所</label>
+              <div id="userAddress">-</div>
+            </div>
+            <div class="info-item">
+              <label>登録日</label>
+              <div id="userCreatedAt">-</div>
+            </div>
+            <div class="info-item">
+              <label>アカウント状態</label>
+              <div id="userStatus">-</div>
+            </div>
+            <div class="info-item">
+              <label>ロール</label>
+              <div id="userRole">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 利用統計 -->
+      <section class="admin-section">
+        <h2 class="section-title">利用統計</h2>
+        <div class="admin-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>予約回数</label>
+              <div id="userBookingCount">-</div>
+            </div>
+            <div class="info-item">
+              <label>完了した予約数</label>
+              <div id="userCompletedBookings">-</div>
+            </div>
+            <div class="info-item">
+              <label>キャンセルした予約数</label>
+              <div id="userCancelledBookings">-</div>
+            </div>
+            <div class="info-item">
+              <label>総利用金額</label>
+              <div id="userTotalSpent">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 予約履歴 -->
+      <section class="admin-section">
+        <div class="section-header">
+          <h2 class="section-title">予約履歴</h2>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>予約ID</th>
+                <th>日時</th>
+                <th>サービス</th>
+                <th>ワーカー</th>
+                <th>金額</th>
+                <th>状態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTableBody">
+              <tr>
+                <td colspan="7" class="loading-message">読み込み中...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="bookingsPagination"></div>
+      </section>
+
+    </div>
+
+  </div>
+</main>
+
+<script>
+let userId = null;
+let userData = null;
+let currentPage = 1;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // 認証チェック
+  if (!checkAuth('admin')) {
+    return;
+  }
+
+  // URLパラメータからユーザーIDを取得
+  const urlParams = new URLSearchParams(window.location.search);
+  userId = urlParams.get('id');
+
+  if (!userId) {
+    showError('ユーザーIDが指定されていません');
+    document.getElementById('loadingMessage').textContent = 'エラー: ユーザーIDが指定されていません';
+    return;
+  }
+
+  // ユーザー情報を読み込む
+  await loadUserDetail();
+  
+  // 予約履歴を読み込む
+  await loadBookings();
+});
+
+async function loadUserDetail() {
+  try {
+    const response = await api.getUserById(userId);
+    
+    if (response.data) {
+      userData = response.data;
+      displayUserDetail(userData);
+    } else {
+      throw new Error('ユーザー情報が取得できませんでした');
+    }
+  } catch (error) {
+    console.error('ユーザー詳細の読み込みエラー:', error);
+    showError('ユーザー詳細の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    document.getElementById('loadingMessage').textContent = 'エラー: ' + (error.message || 'ユーザー情報の読み込みに失敗しました');
+  }
+}
+
+function displayUserDetail(user) {
+  // ローディングを非表示
+  document.getElementById('loadingMessage').style.display = 'none';
+  document.getElementById('userContent').style.display = 'block';
+
+  // 基本情報
+  document.getElementById('userId').textContent = `#${user.id.substring(0, 8)}`;
+  document.getElementById('userName').textContent = user.name || '-';
+  document.getElementById('userEmail').textContent = user.email || '-';
+  document.getElementById('userPhone').textContent = user.phone || '-';
+  document.getElementById('userAddress').textContent = user.address || '-';
+  
+  if (user.createdAt) {
+    const createdAt = new Date(user.createdAt);
+    document.getElementById('userCreatedAt').textContent = createdAt.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  // アカウント状態
+  const statusText = getStatusText(user.status);
+  const statusClass = getStatusClass(user.status);
+  document.getElementById('userStatus').innerHTML = 
+    `<span class="status-badge ${statusClass}">${statusText}</span>`;
+
+  // ロール
+  const roleText = getRoleText(user.role);
+  document.getElementById('userRole').textContent = roleText;
+
+  // 利用統計（バックエンドから取得できない場合は計算が必要）
+  document.getElementById('userBookingCount').textContent = user.bookingCount || 0;
+  document.getElementById('userCompletedBookings').textContent = user.completedBookings || 0;
+  document.getElementById('userCancelledBookings').textContent = user.cancelledBookings || 0;
+  document.getElementById('userTotalSpent').textContent = user.totalSpent ? `¥${user.totalSpent.toLocaleString()}` : '-';
+
+  // アクションボタン
+  displayActionButtons(user);
+}
+
+function displayActionButtons(user) {
+  const actionButtons = document.getElementById('actionButtons');
+  actionButtons.innerHTML = '';
+
+  if (user.status === 'SUSPENDED') {
+    // 停止されている場合は有効化ボタン
+    actionButtons.innerHTML = `
+      <button class="btn btn-primary" onclick="activateUser()">有効化</button>
+    `;
+  } else {
+    // 停止されていない場合は停止ボタン
+    actionButtons.innerHTML = `
+      <button class="btn btn-outline danger" onclick="suspendUser()">停止</button>
+    `;
+  }
+}
+
+async function suspendUser() {
+  if (!confirm('この利用者アカウントを停止しますか？\n停止されたアカウントはログインできなくなります。')) {
+    return;
+  }
+
+  try {
+    await api.updateUser(userId, { status: 'SUSPENDED' });
+    showSuccess('利用者を停止しました');
+    await loadUserDetail();
+  } catch (error) {
+    console.error('利用者停止エラー:', error);
+    showError('利用者の停止に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function activateUser() {
+  if (!confirm('この利用者アカウントを有効化しますか？')) {
+    return;
+  }
+
+  try {
+    await api.updateUser(userId, { status: 'ACTIVE' });
+    showSuccess('利用者を有効化しました');
+    await loadUserDetail();
+  } catch (error) {
+    console.error('利用者有効化エラー:', error);
+    showError('利用者の有効化に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function loadBookings() {
+  try {
+    const response = await api.getBookings({
+      customerId: userId,
+      page: currentPage,
+      limit: 20
+    });
+    
+    if (response.data && response.data.bookings) {
+      displayBookings(response.data.bookings);
+      if (response.data.pagination) {
+        updatePagination(response.data.pagination);
+      }
+    } else {
+      document.getElementById('bookingsTableBody').innerHTML = 
+        '<tr><td colspan="7" class="empty-message">予約履歴がありません</td></tr>';
+    }
+  } catch (error) {
+    console.error('予約履歴の読み込みエラー:', error);
+    document.getElementById('bookingsTableBody').innerHTML = 
+      '<tr><td colspan="7" class="empty-message">予約履歴の読み込みに失敗しました</td></tr>';
+  }
+}
+
+function displayBookings(bookings) {
+  const tbody = document.getElementById('bookingsTableBody');
+  tbody.innerHTML = '';
+
+  if (bookings.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-message">予約履歴がありません</td></tr>';
+    return;
+  }
+
+  bookings.forEach(booking => {
+    const startDate = new Date(booking.startTime);
+    const dateStr = startDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const timeStr = startDate.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    const statusText = getBookingStatusText(booking.status);
+    const statusClass = getBookingStatusClass(booking.status);
+    const serviceName = booking.serviceType || 'サービス';
+    const workerName = booking.worker?.name || '-';
+    const amount = booking.totalAmount ? `¥${booking.totalAmount.toLocaleString()}` : '-';
+
+    const row = `
+      <tr>
+        <td>#${booking.id.substring(0, 8)}</td>
+        <td>${dateStr} ${timeStr}</td>
+        <td>${serviceName}</td>
+        <td>${workerName}</td>
+        <td>${amount}</td>
+        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+        <td>
+          <a href="booking-detail.html?id=${booking.id}" class="btn-link">詳細</a>
+        </td>
+      </tr>
+    `;
+    tbody.insertAdjacentHTML('beforeend', row);
+  });
+}
+
+function updatePagination(pagination) {
+  const paginationEl = document.getElementById('bookingsPagination');
+  if (!paginationEl) return;
+
+  paginationEl.innerHTML = `
+    <button class="btn btn-outline" ${pagination.page <= 1 ? 'disabled' : ''} 
+            onclick="currentPage = ${pagination.page - 1}; loadBookings();">前へ</button>
+    <span class="page-info">${pagination.page} / ${pagination.totalPages}</span>
+    <button class="btn btn-outline" ${pagination.page >= pagination.totalPages ? 'disabled' : ''} 
+            onclick="currentPage = ${pagination.page + 1}; loadBookings();">次へ</button>
+  `;
+}
+
+function getStatusText(status) {
+  switch (status) {
+    case 'ACTIVE': return 'アクティブ';
+    case 'INACTIVE': return '非アクティブ';
+    case 'SUSPENDED': return '停止中';
+    default: return status;
+  }
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case 'ACTIVE': return 'active';
+    case 'INACTIVE': return 'inactive';
+    case 'SUSPENDED': return 'error';
+    default: return '';
+  }
+}
+
+function getRoleText(role) {
+  switch (role) {
+    case 'CUSTOMER': return '依頼者';
+    case 'WORKER': return 'ワーカー';
+    case 'ADMIN': return '管理者';
+    default: return role;
+  }
+}
+
+function getBookingStatusText(status) {
+  switch (status) {
+    case 'PENDING': return '予約確定待ち';
+    case 'CONFIRMED': return '予約確定';
+    case 'IN_PROGRESS': return '作業中';
+    case 'COMPLETED': return '完了';
+    case 'CANCELLED': return 'キャンセル';
+    default: return status;
+  }
+}
+
+function getBookingStatusClass(status) {
+  switch (status) {
+    case 'PENDING': return 'pending';
+    case 'CONFIRMED': return 'active';
+    case 'IN_PROGRESS': return 'in-progress';
+    case 'COMPLETED': return 'active';
+    case 'CANCELLED': return 'error';
+    default: return '';
+  }
+}
+
+function showError(message) {
+  alert('エラー: ' + message);
+}
+
+function showSuccess(message) {
+  alert('成功: ' + message);
+}
+
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('adminLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+</body>
+</html>

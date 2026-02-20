@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>プロフィール｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="customer-page">
+
+<header class="customer-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">マイページ</a>
+      <a href="bookings.html">予約一覧</a>
+      <a href="payment.html">決済履歴</a>
+      <a href="customer-profile.html" class="active">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge" style="display: none;">0</span>
+        🔔
+      </button>
+      <a href="customer-profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="customer-main">
+  <div class="container">
+    
+    <section class="profile-header" id="profileHeader">
+      <div class="loading-message">プロフィールを読み込み中...</div>
+    </section>
+
+    <!-- 基本情報 -->
+    <section class="profile-section">
+      <div class="section-header">
+        <h2 class="section-title">基本情報</h2>
+        <button class="btn btn-outline btn-small" onclick="editBasicInfo()">編集</button>
+      </div>
+      <div class="profile-card" id="basicInfoCard">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- 設定 -->
+    <section class="profile-section">
+      <h2 class="section-title">設定</h2>
+      <div class="settings-list">
+        <a href="#" class="settings-item" onclick="changePassword(); return false;">
+          <span>パスワード変更</span>
+          <span>→</span>
+        </a>
+        <a href="#" class="settings-item">
+          <span>利用規約</span>
+          <span>→</span>
+        </a>
+        <a href="#" class="settings-item">
+          <span>プライバシーポリシー</span>
+          <span>→</span>
+        </a>
+        <a href="#" class="settings-item danger" onclick="logout(); return false;">
+          <span>ログアウト</span>
+          <span>→</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<!-- 基本情報編集モーダル -->
+<div class="modal" id="editBasicInfoModal">
+  <div class="modal-content">
+    <h2>基本情報を編集</h2>
+    <form id="editBasicInfoForm">
+      <div class="form-group">
+        <label>氏名 <span class="required">*</span></label>
+        <input type="text" class="form-input" id="editName" required />
+      </div>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" class="form-input" id="editEmail" disabled />
+        <small class="form-hint">メールアドレスの変更はサポートまでお問い合わせください</small>
+      </div>
+      <div class="form-group">
+        <label>電話番号</label>
+        <input type="tel" class="form-input" id="editPhone" />
+      </div>
+      <div class="form-group">
+        <label>住所</label>
+        <input type="text" class="form-input" id="editAddress" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeEditBasicInfoModal()">キャンセル</button>
+        <button type="submit" class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- パスワード変更モーダル -->
+<div class="modal" id="changePasswordModal">
+  <div class="modal-content">
+    <h2>パスワード変更</h2>
+    <form id="changePasswordForm">
+      <div class="form-group">
+        <label>現在のパスワード <span class="required">*</span></label>
+        <input type="password" class="form-input" id="currentPassword" required />
+      </div>
+      <div class="form-group">
+        <label>新しいパスワード <span class="required">*</span></label>
+        <input type="password" class="form-input" id="newPassword" required minlength="8" />
+        <small class="form-hint">8文字以上で入力してください</small>
+      </div>
+      <div class="form-group">
+        <label>新しいパスワード（確認） <span class="required">*</span></label>
+        <input type="password" class="form-input" id="confirmPassword" required minlength="8" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeChangePasswordModal()">キャンセル</button>
+        <button type="submit" class="btn btn-primary">変更</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// グローバル変数
+let currentUser = null;
+
+// ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('customer')) {
+    return;
+  }
+
+  // ユーザー情報を取得
+  await loadProfile();
+
+  // 未読通知数を取得
+  try {
+    const notificationResponse = await api.getUnreadNotificationCount();
+    if (notificationResponse.count > 0) {
+      const notificationBadge = document.querySelector('.notification-badge');
+      if (notificationBadge) {
+        notificationBadge.textContent = notificationResponse.count;
+        notificationBadge.style.display = 'block';
+      }
+    }
+  } catch (error) {
+    console.error('通知数取得エラー:', error);
+  }
+});
+
+// プロフィールを読み込む
+async function loadProfile() {
+  try {
+    const response = await api.getUserMe();
+    currentUser = response.data;
+
+    if (!currentUser) {
+      throw new Error('ユーザー情報が取得できません');
+    }
+
+    // プロフィールを表示
+    displayProfile(currentUser);
+  } catch (error) {
+    console.error('プロフィールの読み込みエラー:', error);
+    showError('プロフィールの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// プロフィールを表示
+function displayProfile(user) {
+  // ヘッダー
+  document.getElementById('profileHeader').innerHTML = `
+    <div class="profile-avatar-large">👤</div>
+    <div class="profile-info">
+      <h1>${user.name || '-'}</h1>
+      <p class="profile-status">
+        <span class="status-badge ${user.status === 'ACTIVE' ? 'active' : ''}">${user.status === 'ACTIVE' ? 'アクティブ' : user.status || '-'}</span>
+      </p>
+    </div>
+  `;
+
+  // 基本情報
+  document.getElementById('basicInfoCard').innerHTML = `
+    <div class="info-row">
+      <span class="info-label">氏名</span>
+      <span class="info-value">${user.name || '-'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">メールアドレス</span>
+      <span class="info-value">${user.email || '-'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">電話番号</span>
+      <span class="info-value">${user.phone || '未設定'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">住所</span>
+      <span class="info-value">${user.address || '未設定'}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">登録日</span>
+      <span class="info-value">${user.createdAt ? new Date(user.createdAt).toLocaleDateString('ja-JP') : '-'}</span>
+    </div>
+  `;
+}
+
+// 基本情報を編集
+function editBasicInfo() {
+  if (!currentUser) {
+    showError('ユーザー情報が読み込まれていません');
+    return;
+  }
+
+  // モーダルに現在の値を設定
+  document.getElementById('editName').value = currentUser.name || '';
+  document.getElementById('editEmail').value = currentUser.email || '';
+  document.getElementById('editPhone').value = currentUser.phone || '';
+  document.getElementById('editAddress').value = currentUser.address || '';
+
+  // モーダルを表示
+  document.getElementById('editBasicInfoModal').style.display = 'flex';
+}
+
+// 基本情報編集フォーム送信
+document.getElementById('editBasicInfoForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const name = document.getElementById('editName').value.trim();
+  const phone = document.getElementById('editPhone').value.trim() || null;
+  const address = document.getElementById('editAddress').value.trim() || null;
+
+  if (!name) {
+    showError('氏名は必須です');
+    return;
+  }
+
+  try {
+    await api.updateUserMe({
+      name,
+      phone,
+      address
+    });
+
+    showSuccess('基本情報を更新しました');
+    closeEditBasicInfoModal();
+    await loadProfile();
+  } catch (error) {
+    console.error('基本情報更新エラー:', error);
+    showError('基本情報の更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+});
+
+function closeEditBasicInfoModal() {
+  document.getElementById('editBasicInfoModal').style.display = 'none';
+}
+
+// パスワード変更
+function changePassword() {
+  document.getElementById('changePasswordForm').reset();
+  document.getElementById('changePasswordModal').style.display = 'flex';
+}
+
+// パスワード変更フォーム送信
+document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+
+  if (newPassword.length < 8) {
+    showError('新しいパスワードは8文字以上で入力してください');
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    showError('新しいパスワードが一致しません');
+    return;
+  }
+
+  try {
+    // 現在のパスワードを確認するために、まずログインを試みる
+    // 注意: 実際の実装では、専用のパスワード確認APIがあると良い
+    // ここでは簡易的に、パスワード変更APIを呼び出す
+    await api.updateUserMe({
+      password: newPassword
+    });
+
+    showSuccess('パスワードを変更しました');
+    closeChangePasswordModal();
+  } catch (error) {
+    console.error('パスワード変更エラー:', error);
+    showError('パスワードの変更に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+});
+
+function closeChangePasswordModal() {
+  document.getElementById('changePasswordModal').style.display = 'none';
+  document.getElementById('changePasswordForm').reset();
+}
+
+// ログアウト
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('customerLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+
+function showSuccess(message) {
+  // 簡易的な成功メッセージ表示（必要に応じて改善）
+  alert(message);
+}
+
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+}
+</script>
+
+</body>
+</html>

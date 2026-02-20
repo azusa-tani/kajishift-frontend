@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#66BB6A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="KAJISHIFT" />
+  <title>ワーカーログイン｜KAJISHIFT</title>
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="description" content="KAJISHIFTのワーカーログインページ。家事代行サービスで働くためのログイン画面です。" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://kajishift.jp/worker/login.html" />
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="preload" href="../js/validation.js" as="script" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/validation.js" defer></script>
+</head>
+<body class="worker-login-page">
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <h1>KAJISHIFT</h1>
+        <h2>ワーカーログイン</h2>
+      </div>
+      <div class="error-message"></div>
+      <form class="login-form" id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="email">メールアドレス</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-input" 
+            required 
+            placeholder="example@email.com" 
+            autocomplete="username"
+            aria-required="true"
+            aria-describedby="email-hint" />
+          <p id="email-hint" class="sr-only">メールアドレスを入力してください</p>
+        </div>
+
+        <div class="form-group">
+          <label for="password">パスワード</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-input" 
+            required 
+            autocomplete="current-password"
+            aria-required="true"
+            aria-describedby="password-hint" />
+          <p id="password-hint" class="sr-only">パスワードを入力してください</p>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-item">
+            <input 
+              type="checkbox" 
+              id="remember" 
+              name="remember"
+              aria-label="ログイン状態を保持する" />
+            <span>ログイン状態を保持する</span>
+          </label>
+        </div>
+        <button type="button" id="loginButton" class="btn btn-primary btn-large btn-block" aria-label="ログインボタン">ログイン</button>
+        <div class="login-links">
+          <a href="register.html">新規登録はこちら</a>
+          <a href="#">パスワードを忘れた方</a>
+        </div>
+        <div class="login-divider">
+          <span>または</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-large btn-block" onclick="lineLogin()">
+          LINEでログイン
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ページ読み込み時にバリデーションとフォーム送信イベントを設定
+    // window.loadイベントを使用して、すべてのスクリプトが読み込まれた後に実行
+    window.addEventListener('load', function() {
+      console.log('window.load: すべてのリソースの読み込みが完了しました');
+      console.log('api:', typeof api !== 'undefined' ? '読み込まれています' : '読み込まれていません');
+      console.log('Validators:', typeof Validators !== 'undefined' ? '読み込まれています' : '読み込まれていません');
+      console.log('showError:', typeof showError !== 'undefined' ? '読み込まれています' : '読み込まれていません');
+      
+      // バリデーション設定
+      if (typeof setupRealTimeValidation !== 'undefined' && typeof Validators !== 'undefined') {
+        try {
+          setupRealTimeValidation(document.getElementById('email'), Validators.email);
+          setupRealTimeValidation(document.getElementById('password'), Validators.required);
+          console.log('バリデーション設定完了');
+        } catch (error) {
+          console.error('バリデーション設定エラー:', error);
+        }
+      } else {
+        console.warn('バリデーション関数が利用できません');
+      }
+      
+      // フォーム要素の取得
+      const loginForm = document.getElementById('loginForm');
+      if (!loginForm) {
+        console.error('ログインフォームが見つかりません');
+        return;
+      }
+      
+      console.log('ログインフォームが見つかりました');
+      
+      // ログイン処理を実行する共通関数
+      async function handleLogin(e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        
+        console.log('=== ログイン処理を開始します ===');
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        console.log('入力値:', { email, password: password ? '***' : '(空)' });
+        
+        // 基本的なバリデーション
+        if (!email || !email.includes('@')) {
+          const errorMsg = '有効なメールアドレスを入力してください';
+          if (typeof showError === 'function') {
+            showError(errorMsg);
+          } else {
+            alert(errorMsg);
+          }
+          return;
+        }
+        
+        if (!password || password.length === 0) {
+          const errorMsg = 'パスワードを入力してください';
+          if (typeof showError === 'function') {
+            showError(errorMsg);
+          } else {
+            alert(errorMsg);
+          }
+          return;
+        }
+        
+        const submitButton = loginForm.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton ? submitButton.textContent : 'ログイン';
+        
+        // ローディング状態
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = 'ログイン中...';
+        }
+        
+        console.log('APIログインを開始します...');
+        console.log('apiオブジェクト:', typeof api !== 'undefined' ? '存在します' : '存在しません');
+        console.log('api.login:', typeof api !== 'undefined' && typeof api.login === 'function' ? '関数です' : '関数ではありません');
+        
+        try {
+          // APIでログイン
+          if (typeof api === 'undefined') {
+            throw new Error('APIクライアントが読み込まれていません。ページを再読み込みしてください。');
+          }
+          
+          if (typeof api.login !== 'function') {
+            throw new Error('APIログインメソッドが利用できません。');
+          }
+          
+          const response = await api.login(email, password);
+          
+          console.log('ログインAPIレスポンス:', response);
+          
+          if (response && response.data) {
+            const user = response.data.user;
+            const token = response.data.token;
+            
+            if (!user) {
+              throw new Error('ユーザー情報が取得できませんでした');
+            }
+            
+            // ロールチェック（ワーカーであることを確認）
+            if (user.role !== 'WORKER') {
+              console.error('ロール不一致:', user.role);
+              throw new Error('ワーカーアカウントでログインしてください。現在のロール: ' + user.role);
+            }
+            
+            if (!token) {
+              throw new Error('トークンが取得できませんでした');
+            }
+            
+            // ログイン成功
+            if (typeof showSuccess === 'function') {
+              showSuccess('ログインに成功しました');
+            }
+            
+            // sessionStorageにも設定（既存のダッシュボードページとの互換性のため）
+            sessionStorage.setItem('workerLoggedIn', 'true');
+            
+            // ダッシュボードにリダイレクト
+            setTimeout(() => {
+              window.location.href = 'dashboard.html';
+            }, 500);
+          } else {
+            console.error('予期しないレスポンス形式:', response);
+            throw new Error('ログインに失敗しました。サーバーの応答が不正です。');
+          }
+        } catch (error) {
+          // エラー処理
+          console.error('ログインエラー詳細:', error);
+          console.error('エラースタック:', error.stack);
+          
+          // エラーメッセージを取得
+          let errorMessage = 'ログインに失敗しました。メールアドレスとパスワードを確認してください。';
+          
+          if (error.message) {
+            errorMessage = error.message;
+          } else if (error.data && error.data.message) {
+            errorMessage = error.data.message;
+          } else if (typeof error === 'string') {
+            errorMessage = error;
+          }
+          
+          // エラーメッセージを表示
+          if (typeof showError === 'function') {
+            showError(errorMessage);
+          } else {
+            alert('エラー: ' + errorMessage);
+            console.error('ログインエラー:', error);
+          }
+          
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+        }
+      }
+      
+      // ログインボタンの取得（IDで取得）
+      const loginButton = document.getElementById('loginButton');
+      if (loginButton) {
+        console.log('ログインボタンが見つかりました（IDで取得）');
+        console.log('ボタン要素:', loginButton);
+        console.log('ボタンのID:', loginButton.id);
+        console.log('ボタンのクラス:', loginButton.className);
+        console.log('ボタンのtype:', loginButton.type);
+        
+        // ボタンクリックイベント（確実に動作するように）
+        loginButton.addEventListener('click', function(e) {
+          console.log('=== ログインボタンがクリックされました（clickイベント） ===');
+          console.log('イベントオブジェクト:', e);
+          console.log('イベントタイプ:', e.type);
+          console.log('ターゲット:', e.target);
+          handleLogin(e);
+        }, true); // capture phase
+        
+        loginButton.addEventListener('mousedown', function(e) {
+          console.log('ログインボタンがmousedownされました');
+        });
+        
+        // onclick属性も追加（確実に動作するように）
+        loginButton.onclick = function(e) {
+          console.log('=== ログインボタンがクリックされました（onclick属性） ===');
+          handleLogin(e);
+        };
+        
+        console.log('ボタンイベントリスナーを設定しました');
+      } else {
+        console.error('ログインボタンが見つかりません（IDで取得失敗）');
+        // フォールバック: type="submit"で検索
+        const submitButton = loginForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+          console.log('ログインボタンが見つかりました（type="submit"で取得）');
+          submitButton.addEventListener('click', function(e) {
+            console.log('=== ログインボタンがクリックされました（フォールバック） ===');
+            handleLogin(e);
+          });
+        }
+      }
+      
+      // フォーム送信イベント（念のため）
+      loginForm.addEventListener('submit', function(e) {
+        console.log('=== フォーム送信イベントが発生しました ===');
+        console.log('イベントオブジェクト:', e);
+        handleLogin(e);
+      }, true); // capture phase
+      
+      console.log('すべてのイベントリスナーを設定しました');
+      
+      console.log('フォーム送信イベントリスナーを設定しました');
+    });
+
+    function lineLogin() {
+      // LINEログイン処理（実際の実装ではLINE APIを使用）
+      alert('LINEログイン機能（実装予定）');
+    }
+  </script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../service-worker.js')
+          .then((registration) => {
+            console.log('Service Worker registered successfully:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>

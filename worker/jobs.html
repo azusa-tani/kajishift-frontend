@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>仕事を探す｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="worker-page">
+
+<header class="worker-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="jobs.html" class="active">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge">3</span>
+        🔔
+      </button>
+      <a href="profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main">
+  <div class="container">
+    
+    <section class="jobs-header">
+      <h1>仕事を探す</h1>
+      <p>あなたの条件に合った仕事を表示しています</p>
+    </section>
+
+    <!-- フィルター -->
+    <section class="filter-section">
+      <div class="filter-card">
+        <h3>条件で絞り込む</h3>
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label>エリア</label>
+            <select class="filter-select" id="filterArea">
+              <option value="">すべて</option>
+              <option value="札幌市">札幌市</option>
+              <option value="江別市">江別市</option>
+              <option value="北広島市">北広島市</option>
+              <option value="石狩市">石狩市</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>日付</label>
+            <input type="date" class="filter-input" id="filterDate" />
+          </div>
+          <div class="filter-item">
+            <label>時間帯</label>
+            <select class="filter-select" id="filterTime">
+              <option value="">すべて</option>
+              <option value="morning">午前（9:00-12:00）</option>
+              <option value="afternoon">午後（12:00-17:00）</option>
+              <option value="evening">夕方（17:00-20:00）</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>仕事の種類</label>
+            <select class="filter-select" id="filterServiceType">
+              <option value="">すべて</option>
+              <option value="掃除・清掃">掃除・片付け</option>
+              <option value="洗濯・アイロン">洗濯・アイロン</option>
+              <option value="料理">料理・買い物</option>
+              <option value="買い物代行">買い物代行</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="filterButton">絞り込む</button>
+      </div>
+    </section>
+
+    <!-- 仕事一覧 -->
+    <section class="jobs-list-section">
+      <div class="jobs-stats">
+        <span>条件に合う仕事: <strong id="jobCount">0件</strong></span>
+      </div>
+
+      <div class="job-list" id="jobList">
+        <div class="loading-message">仕事を読み込み中...</div>
+      </div>
+
+      <div class="pagination" id="pagination" style="display: none;">
+        <button class="btn btn-outline" id="prevButton" disabled>前へ</button>
+        <span class="page-info" id="pageInfo">1 / 1</span>
+        <button class="btn btn-outline" id="nextButton" disabled>次へ</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+// グローバル変数
+let currentPage = 1;
+let totalPages = 1;
+let currentFilters = {};
+
+// ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('worker')) {
+    return;
+  }
+
+  // フィルターボタンのイベントリスナー
+  document.getElementById('filterButton').addEventListener('click', applyFilters);
+  
+  // ページネーションボタンのイベントリスナー
+  document.getElementById('prevButton').addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      loadJobs();
+    }
+  });
+  
+  document.getElementById('nextButton').addEventListener('click', () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      loadJobs();
+    }
+  });
+
+  // 初期データ読み込み
+  await loadJobs();
+});
+
+// フィルターを適用
+function applyFilters() {
+  currentPage = 1;
+  currentFilters = {
+    area: document.getElementById('filterArea').value,
+    date: document.getElementById('filterDate').value,
+    time: document.getElementById('filterTime').value,
+    serviceType: document.getElementById('filterServiceType').value
+  };
+  loadJobs();
+}
+
+// 仕事一覧を読み込む
+async function loadJobs() {
+  try {
+    const container = document.getElementById('jobList');
+    container.innerHTML = '<div class="loading-message">仕事を読み込み中...</div>';
+
+    // APIパラメータを構築
+    const params = {
+      available: 'true', // ワーカー未割り当ての予約を取得
+      status: 'PENDING',
+      page: currentPage,
+      limit: 20
+    };
+
+    // フィルターを適用
+    if (currentFilters.serviceType) {
+      params.serviceType = currentFilters.serviceType;
+    }
+    if (currentFilters.date) {
+      params.startDate = currentFilters.date;
+      params.endDate = currentFilters.date;
+    }
+
+    // API呼び出し
+    const response = await api.getBookings(params);
+    
+    if (response.data && response.data.bookings) {
+      const bookings = response.data.bookings;
+      const pagination = response.data.pagination;
+
+      // 件数を更新
+      document.getElementById('jobCount').textContent = `${pagination.total}件`;
+
+      // ページネーション情報を更新
+      currentPage = pagination.page;
+      totalPages = pagination.totalPages;
+      updatePagination();
+
+      // 仕事カードを表示
+      if (bookings.length === 0) {
+        container.innerHTML = '<div class="empty-message">条件に合う仕事が見つかりませんでした</div>';
+      } else {
+        displayJobs(bookings);
+      }
+    } else {
+      throw new Error('予期しないレスポンス形式');
+    }
+  } catch (error) {
+    console.error('仕事一覧の読み込みエラー:', error);
+    const container = document.getElementById('jobList');
+    container.innerHTML = `<div class="error-message">仕事の読み込みに失敗しました: ${error.message || 'エラーが発生しました'}</div>`;
+  }
+}
+
+// 仕事カードを表示
+function displayJobs(bookings) {
+  const container = document.getElementById('jobList');
+  
+  container.innerHTML = bookings.map(booking => {
+    const scheduledDate = new Date(booking.scheduledDate);
+    const startTime = booking.startTime || '00:00';
+    const duration = booking.duration || 0;
+    
+    // 終了時間を計算
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endTime = new Date(scheduledDate);
+    endTime.setHours(hours + duration, minutes, 0, 0);
+    
+    const dateStr = scheduledDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short'
+    });
+    const timeStr = `${startTime}-${endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+    
+    // 新着判定（24時間以内に作成されたもの）
+    const isNew = new Date() - new Date(booking.createdAt) < 24 * 60 * 60 * 1000;
+    const statusClass = isNew ? 'new' : '';
+    const statusText = isNew ? '新着' : '通常';
+    
+    // 料金表示
+    const price = booking.totalAmount ? `¥${booking.totalAmount.toLocaleString()}` : '未確定';
+    
+    // 住所から市区町村を抽出
+    const addressParts = booking.address ? booking.address.split(/[市区町村]/) : [];
+    const location = addressParts.length > 0 ? addressParts[0] + (addressParts[1] ? '市' : '') : booking.address || '-';
+
+    return `
+      <div class="job-card">
+        <div class="job-header">
+          <span class="job-date">${dateStr} ${timeStr}</span>
+          <span class="job-status ${statusClass}">${statusText}</span>
+        </div>
+        <h3 class="job-title">${booking.serviceType || '-'}</h3>
+        <div class="job-info">
+          <span class="job-location">📍 ${location}</span>
+          <span class="job-payment">💰 ${price}</span>
+        </div>
+        <p class="job-description">${booking.notes || '特記事項なし'}</p>
+        <div class="job-tags">
+          <span class="tag">${booking.serviceType || '-'}</span>
+        </div>
+        <div class="job-actions">
+          <a href="job-detail.html?id=${booking.id}" class="btn btn-outline">詳細を見る</a>
+          <button class="btn btn-primary" onclick="acceptJob('${booking.id}')">承諾する</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ページネーションを更新
+function updatePagination() {
+  const prevButton = document.getElementById('prevButton');
+  const nextButton = document.getElementById('nextButton');
+  const pageInfo = document.getElementById('pageInfo');
+  const pagination = document.getElementById('pagination');
+
+  prevButton.disabled = currentPage <= 1;
+  nextButton.disabled = currentPage >= totalPages;
+  pageInfo.textContent = `${currentPage} / ${totalPages}`;
+  
+  if (totalPages > 1) {
+    pagination.style.display = 'flex';
+  } else {
+    pagination.style.display = 'none';
+  }
+}
+
+// 仕事を承諾
+async function acceptJob(bookingId) {
+  if (!confirm('この仕事を承諾しますか？')) {
+    return;
+  }
+
+  try {
+    // 予約を更新してワーカーIDを設定（承諾）
+    await api.updateBooking(bookingId, {
+      workerId: api.getUser().id
+    });
+
+    alert('仕事を承諾しました！');
+    // 一覧を再読み込み
+    await loadJobs();
+  } catch (error) {
+    console.error('仕事承諾エラー:', error);
+    alert('仕事の承諾に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+</script>
+
+</body>
+</html>

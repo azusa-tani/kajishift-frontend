@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>カレンダー｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="worker-page">
+
+<header class="worker-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html" class="active">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge">3</span>
+        🔔
+      </button>
+      <a href="profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main">
+  <div class="container">
+    
+    <section class="calendar-header">
+      <div class="calendar-controls">
+        <button class="btn-icon" id="prevMonth">←</button>
+        <h1 id="calendarTitle">2024年3月</h1>
+        <button class="btn-icon" id="nextMonth">→</button>
+      </div>
+      <div class="view-toggle">
+        <button class="btn btn-outline active" id="viewMonth">月</button>
+        <button class="btn btn-outline" id="viewWeek">週</button>
+        <button class="btn btn-outline" id="viewDay">日</button>
+      </div>
+    </section>
+
+    <!-- 月表示カレンダー -->
+    <section class="calendar-month-view">
+      <div class="calendar-grid" id="calendarGrid">
+        <div class="loading-message">カレンダーを読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- 今週の予定 -->
+    <section class="weekly-schedule">
+      <h2 class="section-title">今週の予定</h2>
+      <div class="schedule-list" id="scheduleList">
+        <div class="loading-message">予定を読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- ブロック設定 -->
+    <section class="block-settings">
+      <div class="section-header">
+        <h2 class="section-title">利用不可時間の設定</h2>
+        <button class="btn btn-primary btn-small">新規追加</button>
+      </div>
+      <div class="block-list">
+        <div class="block-item">
+          <div class="block-info">
+            <h4>毎週月曜日 9:00-12:00</h4>
+            <p>定期ブロック</p>
+          </div>
+          <button class="btn-icon">✕</button>
+        </div>
+        <div class="block-item">
+          <div class="block-info">
+            <h4>2024年3月25日 全日</h4>
+            <p>単発ブロック</p>
+          </div>
+          <button class="btn-icon">✕</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+// グローバル変数
+let currentDate = new Date();
+let bookings = [];
+
+// ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('worker')) {
+    return;
+  }
+
+  // カレンダーコントロールのイベントリスナー
+  document.getElementById('prevMonth').addEventListener('click', () => {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    loadCalendar();
+  });
+  
+  document.getElementById('nextMonth').addEventListener('click', () => {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    loadCalendar();
+  });
+
+  // 初期データ読み込み
+  await loadCalendar();
+});
+
+// カレンダーを読み込む
+async function loadCalendar() {
+  try {
+    // 月の最初と最後の日を計算
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // カレンダータイトルを更新
+    document.getElementById('calendarTitle').textContent = `${year}年${month + 1}月`;
+
+    // APIパラメータを構築
+    const params = {
+      status: 'CONFIRMED,IN_PROGRESS', // 確定済みと進行中の予約
+      startDate: firstDay.toISOString().split('T')[0],
+      endDate: lastDay.toISOString().split('T')[0],
+      limit: 100 // 月の予約をすべて取得
+    };
+
+    // API呼び出し
+    const response = await api.getBookings(params);
+    
+    if (response.data && response.data.bookings) {
+      bookings = response.data.bookings;
+      
+      // カレンダーを表示
+      displayCalendar(year, month, bookings);
+      
+      // 今週の予定を表示
+      displayWeeklySchedule(bookings);
+    } else {
+      throw new Error('予期しないレスポンス形式');
+    }
+  } catch (error) {
+    console.error('カレンダーの読み込みエラー:', error);
+    const container = document.getElementById('calendarGrid');
+    container.innerHTML = `<div class="error-message">カレンダーの読み込みに失敗しました: ${error.message || 'エラーが発生しました'}</div>`;
+  }
+}
+
+// カレンダーを表示
+function displayCalendar(year, month, bookings) {
+  const container = document.getElementById('calendarGrid');
+  
+  // 月の最初の日の曜日を取得（0=日曜日）
+  const firstDay = new Date(year, month, 1);
+  const firstDayOfWeek = firstDay.getDay();
+  
+  // 月の日数を取得
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  // カレンダーHTMLを生成
+  let html = `
+    <div class="calendar-weekday">日</div>
+    <div class="calendar-weekday">月</div>
+    <div class="calendar-weekday">火</div>
+    <div class="calendar-weekday">水</div>
+    <div class="calendar-weekday">木</div>
+    <div class="calendar-weekday">金</div>
+    <div class="calendar-weekday">土</div>
+  `;
+  
+  // 空のセルを追加（月の最初の日までの空白）
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    html += '<div class="calendar-day empty"></div>';
+  }
+  
+  // 日付セルを生成
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    // その日の予約を取得
+    const dayBookings = bookings.filter(booking => {
+      const bookingDate = new Date(booking.scheduledDate);
+      return bookingDate.toISOString().split('T')[0] === dateStr;
+    });
+    
+    const hasJob = dayBookings.length > 0;
+    const dayClass = hasJob ? 'calendar-day has-job' : 'calendar-day';
+    
+    html += `<div class="${dayClass}" data-date="${dateStr}">`;
+    html += `<div class="day-number">${day}</div>`;
+    
+    if (hasJob) {
+      dayBookings.forEach(booking => {
+        const startTime = booking.startTime || '00:00';
+        const duration = booking.duration || 0;
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const endTime = new Date(date);
+        endTime.setHours(hours + duration, minutes, 0, 0);
+        const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        
+        html += `<div class="calendar-job" onclick="window.location.href='job-detail.html?id=${booking.id}'">${startTime}-${endTimeStr}<br>${booking.serviceType || '-'}</div>`;
+      });
+    }
+    
+    html += '</div>';
+  }
+  
+  container.innerHTML = html;
+}
+
+// 今週の予定を表示
+function displayWeeklySchedule(bookings) {
+  const container = document.getElementById('scheduleList');
+  
+  // 今週の開始日と終了日を計算
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
+  startOfWeek.setHours(0, 0, 0, 0);
+  
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+  
+  // 今週の予約をフィルター
+  const weeklyBookings = bookings.filter(booking => {
+    const bookingDate = new Date(booking.scheduledDate);
+    return bookingDate >= startOfWeek && bookingDate <= endOfWeek;
+  }).sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+  
+  if (weeklyBookings.length === 0) {
+    container.innerHTML = '<div class="empty-message">今週の予定はありません</div>';
+    return;
+  }
+  
+  container.innerHTML = weeklyBookings.map(booking => {
+    const scheduledDate = new Date(booking.scheduledDate);
+    const startTime = booking.startTime || '00:00';
+    const duration = booking.duration || 0;
+    
+    // 終了時間を計算
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endTime = new Date(scheduledDate);
+    endTime.setHours(hours + duration, minutes, 0, 0);
+    const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    
+    const day = scheduledDate.getDate();
+    const weekday = scheduledDate.toLocaleDateString('ja-JP', { weekday: 'short' });
+    
+    // ステータスバッジ
+    const statusMap = {
+      'CONFIRMED': { text: '確定', class: 'confirmed' },
+      'IN_PROGRESS': { text: '進行中', class: 'in-progress' },
+      'COMPLETED': { text: '完了', class: 'completed' }
+    };
+    const status = statusMap[booking.status] || { text: booking.status, class: 'pending' };
+    
+    // 住所から市区町村を抽出
+    const addressParts = booking.address ? booking.address.split(/[市区町村]/) : [];
+    const location = addressParts.length > 0 ? addressParts[0] + (addressParts[1] ? '市' : '') : booking.address || '-';
+
+    return `
+      <div class="schedule-item">
+        <div class="schedule-date">
+          <div class="date-day">${day}</div>
+          <div class="date-weekday">${weekday}</div>
+        </div>
+        <div class="schedule-time">${startTime} - ${endTimeStr}</div>
+        <div class="schedule-content">
+          <h4>${booking.serviceType || '-'}</h4>
+          <p>${location}</p>
+          <div class="schedule-status">
+            <span class="status-badge ${status.class}">${status.text}</span>
+          </div>
+        </div>
+        <div class="schedule-actions">
+          <a href="job-detail.html?id=${booking.id}" class="btn btn-small btn-outline">詳細</a>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>予約詳細｜KAJISHIFT管理画面</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+// 認証チェック
+if (typeof checkAuth === 'function') {
+  if (!checkAuth('admin')) {
+    // リダイレクトされる
+  }
+} else {
+  // api.jsが読み込まれる前のフォールバック
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <span class="admin-name">管理者 太郎</span>
+      <button class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    
+    <section class="admin-page-header">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1>予約詳細</h1>
+          <a href="bookings.html" class="btn-link" style="margin-top: 0.5rem; display: inline-block;">← 予約一覧に戻る</a>
+        </div>
+        <div id="actionButtons" style="display: flex; gap: 0.5rem;">
+          <!-- 動的にボタンを追加 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ローディング表示 -->
+    <div id="loadingMessage" class="loading-message" style="text-align: center; padding: 2rem;">
+      予約情報を読み込み中...
+    </div>
+
+    <!-- 予約詳細情報 -->
+    <div id="bookingContent" style="display: none;">
+      
+      <!-- 予約基本情報 -->
+      <section class="admin-section">
+        <h2 class="section-title">予約基本情報</h2>
+        <div class="admin-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>予約ID</label>
+              <div id="bookingId">-</div>
+            </div>
+            <div class="info-item">
+              <label>サービス種別</label>
+              <div id="bookingServiceType">-</div>
+            </div>
+            <div class="info-item">
+              <label>予約日時</label>
+              <div id="bookingDateTime">-</div>
+            </div>
+            <div class="info-item">
+              <label>所要時間</label>
+              <div id="bookingDuration">-</div>
+            </div>
+            <div class="info-item">
+              <label>住所</label>
+              <div id="bookingAddress">-</div>
+            </div>
+            <div class="info-item">
+              <label>ステータス</label>
+              <div id="bookingStatus">-</div>
+            </div>
+            <div class="info-item">
+              <label>総額</label>
+              <div id="bookingTotalAmount">-</div>
+            </div>
+            <div class="info-item">
+              <label>作成日</label>
+              <div id="bookingCreatedAt">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 依頼者情報 -->
+      <section class="admin-section">
+        <h2 class="section-title">依頼者情報</h2>
+        <div class="admin-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>氏名</label>
+              <div id="customerName">-</div>
+            </div>
+            <div class="info-item">
+              <label>メールアドレス</label>
+              <div id="customerEmail">-</div>
+            </div>
+            <div class="info-item">
+              <label>電話番号</label>
+              <div id="customerPhone">-</div>
+            </div>
+            <div class="info-item">
+              <label>操作</label>
+              <div>
+                <a href="#" id="customerDetailLink" class="btn-link">依頼者詳細を見る</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ワーカー情報 -->
+      <section class="admin-section" id="workerSection" style="display: none;">
+        <h2 class="section-title">ワーカー情報</h2>
+        <div class="admin-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>氏名</label>
+              <div id="workerName">-</div>
+            </div>
+            <div class="info-item">
+              <label>メールアドレス</label>
+              <div id="workerEmail">-</div>
+            </div>
+            <div class="info-item">
+              <label>評価</label>
+              <div id="workerRating">-</div>
+            </div>
+            <div class="info-item">
+              <label>操作</label>
+              <div>
+                <a href="#" id="workerDetailLink" class="btn-link">ワーカー詳細を見る</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 依頼内容 -->
+      <section class="admin-section">
+        <h2 class="section-title">依頼内容</h2>
+        <div class="admin-card">
+          <div id="bookingNotes" style="white-space: pre-wrap;">-</div>
+        </div>
+      </section>
+
+      <!-- 決済情報 -->
+      <section class="admin-section" id="paymentSection" style="display: none;">
+        <h2 class="section-title">決済情報</h2>
+        <div class="admin-card">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>決済ID</label>
+              <div id="paymentId">-</div>
+            </div>
+            <div class="info-item">
+              <label>決済方法</label>
+              <div id="paymentMethod">-</div>
+            </div>
+            <div class="info-item">
+              <label>決済ステータス</label>
+              <div id="paymentStatus">-</div>
+            </div>
+            <div class="info-item">
+              <label>決済日時</label>
+              <div id="paymentDate">-</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </div>
+</main>
+
+<!-- ステータス変更モーダル -->
+<div class="modal" id="statusModal">
+  <div class="modal-content">
+    <h2>予約ステータスを変更</h2>
+    <div class="form-group">
+      <label>新しいステータス <span class="required">*</span></label>
+      <select class="form-select" id="newStatus">
+        <option value="PENDING">予約確定待ち</option>
+        <option value="CONFIRMED">予約確定</option>
+        <option value="IN_PROGRESS">作業中</option>
+        <option value="COMPLETED">完了</option>
+        <option value="CANCELLED">キャンセル</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('statusModal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="confirmStatusChange()">変更する</button>
+    </div>
+  </div>
+</div>
+
+<!-- キャンセルモーダル -->
+<div class="modal" id="cancelModal">
+  <div class="modal-content">
+    <h2>予約をキャンセル</h2>
+    <p>この予約をキャンセルしますか？</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('cancelModal')">戻る</button>
+      <button class="btn btn-primary danger" onclick="confirmCancel()">キャンセル確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- チャット履歴モーダル -->
+<div class="modal" id="chatHistoryModal">
+  <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h2>チャット履歴</h2>
+      <button class="btn-icon" onclick="closeModal('chatHistoryModal')" style="font-size: 1.5rem;">×</button>
+    </div>
+    <div id="chatHistoryContent">
+      <div class="loading-message">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let bookingId = null;
+let bookingData = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // 認証チェック
+  if (!checkAuth('admin')) {
+    return;
+  }
+
+  // URLパラメータから予約IDを取得
+  const urlParams = new URLSearchParams(window.location.search);
+  bookingId = urlParams.get('id');
+
+  if (!bookingId) {
+    showError('予約IDが指定されていません');
+    document.getElementById('loadingMessage').textContent = 'エラー: 予約IDが指定されていません';
+    return;
+  }
+
+  // 予約詳細を読み込む
+  await loadBookingDetail();
+});
+
+async function loadBookingDetail() {
+  try {
+    const response = await api.getBookingById(bookingId);
+    
+    if (response.data) {
+      bookingData = response.data;
+      displayBookingDetail(bookingData);
+    } else {
+      throw new Error('予約情報が取得できませんでした');
+    }
+  } catch (error) {
+    console.error('予約詳細の読み込みエラー:', error);
+    showError('予約詳細の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    document.getElementById('loadingMessage').textContent = 'エラー: ' + (error.message || '予約情報の読み込みに失敗しました');
+  }
+}
+
+function displayBookingDetail(booking) {
+  // ローディングを非表示
+  document.getElementById('loadingMessage').style.display = 'none';
+  document.getElementById('bookingContent').style.display = 'block';
+
+  // 予約基本情報
+  document.getElementById('bookingId').textContent = `#${booking.id.substring(0, 8)}`;
+  document.getElementById('bookingServiceType').textContent = booking.serviceType || '-';
+  
+  if (booking.startTime) {
+    const startDate = new Date(booking.startTime);
+    const dateStr = startDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short'
+    });
+    const timeStr = startDate.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    document.getElementById('bookingDateTime').textContent = `${dateStr} ${timeStr}`;
+  } else {
+    document.getElementById('bookingDateTime').textContent = '-';
+  }
+  
+  document.getElementById('bookingDuration').textContent = booking.duration ? `${booking.duration}時間` : '-';
+  document.getElementById('bookingAddress').textContent = booking.address || '-';
+  
+  // ステータス
+  const statusText = getBookingStatusText(booking.status);
+  const statusClass = getBookingStatusClass(booking.status);
+  document.getElementById('bookingStatus').innerHTML = 
+    `<span class="status-badge ${statusClass}">${statusText}</span>`;
+  
+  // 総額
+  document.getElementById('bookingTotalAmount').textContent = 
+    booking.totalAmount ? `¥${booking.totalAmount.toLocaleString()}` : '-';
+  
+  // 作成日
+  if (booking.createdAt) {
+    const createdAt = new Date(booking.createdAt);
+    document.getElementById('bookingCreatedAt').textContent = createdAt.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  // 依頼者情報
+  if (booking.customer) {
+    document.getElementById('customerName').textContent = booking.customer.name || '-';
+    document.getElementById('customerEmail').textContent = booking.customer.email || '-';
+    document.getElementById('customerPhone').textContent = booking.customer.phone || '-';
+    document.getElementById('customerDetailLink').href = `user-detail.html?id=${booking.customer.id}`;
+  } else {
+    document.getElementById('customerName').textContent = '-';
+    document.getElementById('customerEmail').textContent = '-';
+    document.getElementById('customerPhone').textContent = '-';
+  }
+
+  // ワーカー情報
+  if (booking.worker) {
+    document.getElementById('workerSection').style.display = 'block';
+    document.getElementById('workerName').textContent = booking.worker.name || '-';
+    document.getElementById('workerEmail').textContent = booking.worker.email || '-';
+    document.getElementById('workerRating').textContent = booking.worker.rating ? `⭐ ${booking.worker.rating.toFixed(1)}` : '-';
+    document.getElementById('workerDetailLink').href = `worker-detail.html?id=${booking.worker.id}`;
+  } else {
+    document.getElementById('workerSection').style.display = 'none';
+  }
+
+  // 依頼内容
+  document.getElementById('bookingNotes').textContent = booking.notes || '特記事項なし';
+
+  // 決済情報
+  if (booking.payment) {
+    document.getElementById('paymentSection').style.display = 'block';
+    document.getElementById('paymentId').textContent = `#${booking.payment.id.substring(0, 8)}`;
+    document.getElementById('paymentMethod').textContent = getPaymentMethodText(booking.payment.paymentMethod);
+    
+    const paymentStatusText = getPaymentStatusText(booking.payment.status);
+    const paymentStatusClass = getPaymentStatusClass(booking.payment.status);
+    document.getElementById('paymentStatus').innerHTML = 
+      `<span class="status-badge ${paymentStatusClass}">${paymentStatusText}</span>`;
+    
+    if (booking.payment.createdAt) {
+      const paymentDate = new Date(booking.payment.createdAt);
+      document.getElementById('paymentDate').textContent = paymentDate.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  } else {
+    document.getElementById('paymentSection').style.display = 'none';
+  }
+
+  // アクションボタン
+  displayActionButtons(booking);
+}
+
+function displayActionButtons(booking) {
+  const actionButtons = document.getElementById('actionButtons');
+  actionButtons.innerHTML = '';
+
+  let buttons = [];
+
+  // ステータス変更ボタン（完了・キャンセル以外の場合）
+  if (booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED') {
+    buttons.push(`<button class="btn btn-primary" onclick="openStatusModal()">ステータス変更</button>`);
+  }
+
+  // キャンセルボタン（完了・キャンセル以外の場合）
+  if (booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED') {
+    buttons.push(`<button class="btn btn-outline danger" onclick="openCancelModal()">キャンセル</button>`);
+  }
+
+  // チャット履歴へのリンク（ワーカーが割り当てられている場合）
+  if (booking.worker) {
+    buttons.push(`<button class="btn btn-outline" onclick="viewChat()">チャット履歴</button>`);
+  }
+
+  actionButtons.innerHTML = buttons.join('');
+}
+
+function openStatusModal() {
+  if (!bookingData) return;
+  
+  // 現在のステータスを選択
+  const statusSelect = document.getElementById('newStatus');
+  statusSelect.value = bookingData.status;
+  
+  document.getElementById('statusModal').style.display = 'flex';
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+async function confirmStatusChange() {
+  const newStatus = document.getElementById('newStatus').value;
+  
+  if (!newStatus) {
+    showError('ステータスを選択してください');
+    return;
+  }
+
+  if (newStatus === bookingData.status) {
+    showError('現在と同じステータスです');
+    closeModal('statusModal');
+    return;
+  }
+
+  try {
+    await api.updateBooking(bookingId, { status: newStatus });
+    showSuccess('予約ステータスを更新しました');
+    closeModal('statusModal');
+    await loadBookingDetail();
+  } catch (error) {
+    console.error('ステータス更新エラー:', error);
+    showError('ステータスの更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function openCancelModal() {
+  document.getElementById('cancelModal').style.display = 'flex';
+}
+
+async function confirmCancel() {
+  if (!confirm('本当にこの予約をキャンセルしますか？')) {
+    return;
+  }
+
+  try {
+    await api.cancelBooking(bookingId);
+    showSuccess('予約をキャンセルしました');
+    closeModal('cancelModal');
+    await loadBookingDetail();
+  } catch (error) {
+    console.error('キャンセルエラー:', error);
+    showError('予約のキャンセルに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function viewChat() {
+  if (!bookingData || !bookingId) return;
+  
+  try {
+    document.getElementById('chatHistoryContent').innerHTML = '<div class="loading-message">読み込み中...</div>';
+    document.getElementById('chatHistoryModal').style.display = 'flex';
+    
+    const response = await api.getMessages(bookingId, { limit: 100 });
+    const messages = response.data?.messages || [];
+    
+    let messagesHtml = '';
+    if (messages.length === 0) {
+      messagesHtml = '<div class="empty-message">メッセージがありません</div>';
+    } else {
+      messages.forEach(message => {
+        const messageDate = new Date(message.createdAt);
+        const dateStr = messageDate.toLocaleDateString('ja-JP', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        const timeStr = messageDate.toLocaleTimeString('ja-JP', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const isFromCustomer = message.senderRole === 'CUSTOMER';
+        const senderName = message.sender?.name || (isFromCustomer ? bookingData.customer?.name : bookingData.worker?.name) || '不明';
+        
+        messagesHtml += `
+          <div style="margin-bottom: 1rem; ${isFromCustomer ? 'text-align: right;' : ''}">
+            <div style="display: inline-block; max-width: 70%; padding: 0.75rem; background: ${isFromCustomer ? '#5B7FA6; color: white;' : '#f5f5f5;'}; border-radius: 8px;">
+              <div style="font-size: 0.875rem; margin-bottom: 0.25rem; opacity: 0.8;">
+                ${senderName} - ${dateStr} ${timeStr}
+              </div>
+              <div>${message.content || ''}</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    const content = `
+      <div style="max-height: 60vh; overflow-y: auto; padding: 1rem; background: #f9f9f9; border-radius: 8px;">
+        ${messagesHtml}
+      </div>
+    `;
+
+    document.getElementById('chatHistoryContent').innerHTML = content;
+  } catch (error) {
+    console.error('チャット履歴の読み込みエラー:', error);
+    showError('チャット履歴の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    document.getElementById('chatHistoryContent').innerHTML = '<div class="empty-message">エラー: チャット履歴の読み込みに失敗しました</div>';
+  }
+}
+
+function getBookingStatusText(status) {
+  switch (status) {
+    case 'PENDING': return '予約確定待ち';
+    case 'CONFIRMED': return '予約確定';
+    case 'IN_PROGRESS': return '作業中';
+    case 'COMPLETED': return '完了';
+    case 'CANCELLED': return 'キャンセル';
+    default: return status;
+  }
+}
+
+function getBookingStatusClass(status) {
+  switch (status) {
+    case 'PENDING': return 'pending';
+    case 'CONFIRMED': return 'active';
+    case 'IN_PROGRESS': return 'in-progress';
+    case 'COMPLETED': return 'active';
+    case 'CANCELLED': return 'error';
+    default: return '';
+  }
+}
+
+function getPaymentMethodText(method) {
+  switch (method) {
+    case 'credit_card': return 'クレジットカード';
+    case 'bank_transfer': return '銀行振込';
+    default: return method;
+  }
+}
+
+function getPaymentStatusText(status) {
+  switch (status) {
+    case 'PENDING': return '未決済';
+    case 'COMPLETED': return '決済完了';
+    case 'FAILED': return '決済失敗';
+    case 'REFUNDED': return '返金済み';
+    default: return status;
+  }
+}
+
+function getPaymentStatusClass(status) {
+  switch (status) {
+    case 'PENDING': return 'pending';
+    case 'COMPLETED': return 'active';
+    case 'FAILED': return 'error';
+    case 'REFUNDED': return 'inactive';
+    default: return '';
+  }
+}
+
+function showError(message) {
+  alert('エラー: ' + message);
+}
+
+function showSuccess(message) {
+  alert('成功: ' + message);
+}
+
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('adminLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+}
+</script>
+
+</body>
+</html>

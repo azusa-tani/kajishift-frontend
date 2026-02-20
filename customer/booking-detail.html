@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>予約詳細｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="customer-page">
+
+<header class="customer-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">マイページ</a>
+      <a href="booking.html">予約する</a>
+      <a href="bookings.html">予約一覧</a>
+      <a href="payment.html">決済・履歴</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge">2</span>
+        🔔
+      </button>
+      <a href="customer-profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="customer-main">
+  <div class="container">
+    
+    <div class="back-link">
+      <a href="bookings.html">← 予約一覧に戻る</a>
+    </div>
+
+    <!-- 予約詳細カード -->
+    <section class="booking-detail-card" id="booking-detail-card">
+      <div class="loading-message">読み込み中...</div>
+    </section>
+
+    <!-- ワーカー情報 -->
+    <section class="worker-info-card" id="worker-info-card" style="display: none;">
+      <h2>ワーカー情報</h2>
+      <div class="worker-details" id="worker-details">
+      </div>
+    </section>
+
+    <!-- キャンセルポリシー -->
+    <section class="cancellation-policy">
+      <h2>キャンセルポリシー</h2>
+      <div class="policy-card">
+        <div class="policy-item">
+          <span class="policy-time">48時間前まで</span>
+          <span class="policy-fee">無料</span>
+        </div>
+        <div class="policy-item">
+          <span class="policy-time">48-24時間前</span>
+          <span class="policy-fee">料金の50%</span>
+        </div>
+        <div class="policy-item">
+          <span class="policy-time">24時間以内</span>
+          <span class="policy-fee">料金の100%</span>
+        </div>
+      </div>
+      <p class="policy-note">※ 現在の予約は48時間以上前のため、キャンセル料はかかりません</p>
+    </section>
+
+    <!-- 地図 -->
+    <section class="map-section" id="map-section" style="display: none;">
+      <h2>アクセス</h2>
+      <div class="map-placeholder">
+        <p>📍 地図表示エリア</p>
+        <p class="map-address" id="map-address"></p>
+      </div>
+    </section>
+
+    <!-- レビューセクション -->
+    <section class="review-section" id="review-section" style="display: none;">
+      <h2>レビュー</h2>
+      <div id="review-content">
+        <!-- レビュー投稿フォームまたは既存レビューが表示される -->
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- キャンセルモーダル -->
+<div class="modal" id="cancelModal">
+  <div class="modal-content">
+    <h2>予約をキャンセル</h2>
+    <div class="cancellation-fee-info">
+      <p><strong>キャンセル料について:</strong></p>
+      <ul>
+        <li>48時間前まで: 無料</li>
+        <li>48-24時間前: 料金の50%</li>
+        <li>24時間以内: 料金の100%</li>
+      </ul>
+      <p class="fee-amount">今回のキャンセル料: <strong>¥0</strong>（48時間以上前のため）</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('cancelModal')">戻る</button>
+      <button class="btn btn-primary danger" onclick="confirmCancel()">キャンセル確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- レビュー投稿モーダル -->
+<div class="modal" id="reviewModal">
+  <div class="modal-content">
+    <h2>レビューを投稿</h2>
+    <form id="reviewForm">
+      <div class="form-group">
+        <label>評価 <span class="required">*</span></label>
+        <div class="rating-input">
+          <input type="radio" name="rating" id="rating5" value="5" required />
+          <label for="rating5" class="star-label">★</label>
+          <input type="radio" name="rating" id="rating4" value="4" required />
+          <label for="rating4" class="star-label">★</label>
+          <input type="radio" name="rating" id="rating3" value="3" required />
+          <label for="rating3" class="star-label">★</label>
+          <input type="radio" name="rating" id="rating2" value="2" required />
+          <label for="rating2" class="star-label">★</label>
+          <input type="radio" name="rating" id="rating1" value="1" required />
+          <label for="rating1" class="star-label">★</label>
+        </div>
+        <small class="form-hint">5つ星のうち何つ星ですか？</small>
+      </div>
+      <div class="form-group">
+        <label>コメント</label>
+        <textarea class="form-textarea" id="reviewComment" rows="5" placeholder="レビューコメントを入力してください（任意）"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal('reviewModal')">キャンセル</button>
+        <button type="submit" class="btn btn-primary">投稿する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+// 認証チェックとデータ読み込み
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('customer')) {
+    return; // リダイレクトされる
+  }
+  
+  // URLパラメータから予約IDを取得
+  const urlParams = new URLSearchParams(window.location.search);
+  const bookingId = urlParams.get('id');
+  
+  if (!bookingId) {
+    showError('予約IDが指定されていません');
+    setTimeout(() => {
+      window.location.href = 'bookings.html';
+    }, 2000);
+    return;
+  }
+  
+  // 予約詳細を読み込む
+  await loadBookingDetail(bookingId);
+});
+
+let currentBooking = null;
+
+// 予約詳細を読み込む
+async function loadBookingDetail(bookingId) {
+  try {
+    const response = await api.getBookingById(bookingId);
+    currentBooking = response.data;
+    
+    if (!currentBooking) {
+      throw new Error('予約が見つかりません');
+    }
+    
+    // 予約詳細を表示
+    displayBookingDetail(currentBooking);
+    
+    // ワーカー情報を表示（ワーカーが選択されている場合）
+    if (currentBooking.worker) {
+      displayWorkerInfo(currentBooking.worker);
+    }
+    
+    // 地図セクションを表示
+    if (currentBooking.address) {
+      document.getElementById('map-address').textContent = currentBooking.address;
+      document.getElementById('map-section').style.display = 'block';
+    }
+
+    // レビューセクションを表示（完了済みの予約の場合）
+    if (currentBooking.status === 'COMPLETED') {
+      await loadReviewSection(currentBooking);
+    }
+  } catch (error) {
+    console.error('予約詳細の取得エラー:', error);
+    showError(error.message || '予約詳細の取得に失敗しました');
+    document.getElementById('booking-detail-card').innerHTML = 
+      '<p class="error-message">データの読み込みに失敗しました</p>';
+  }
+}
+
+// 予約詳細を表示
+function displayBookingDetail(booking) {
+  const card = document.getElementById('booking-detail-card');
+  
+  const scheduledDate = new Date(booking.scheduledDate);
+  const dateStr = scheduledDate.toLocaleDateString('ja-JP', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    weekday: 'short'
+  });
+  
+  const startTime = booking.startTime || '';
+  const duration = booking.duration || 0;
+  let timeStr = '';
+  if (startTime) {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const endMinutes = startHour * 60 + startMin + (duration * 60);
+    const endHour = Math.floor(endMinutes / 60);
+    const endMin = endMinutes % 60;
+    const endTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+    timeStr = `${startTime}-${endTime}（${duration}時間）`;
+  } else {
+    timeStr = '時間未設定';
+  }
+  
+  const statusText = {
+    'PENDING': '予約確定',
+    'CONFIRMED': '予約確定',
+    'IN_PROGRESS': '進行中',
+    'COMPLETED': '完了',
+    'CANCELLED': 'キャンセル'
+  }[booking.status] || booking.status;
+  
+  const statusClass = booking.status.toLowerCase().replace('_', '-');
+  
+  const price = booking.totalAmount || 0;
+  const priceDisplay = price > 0 ? `¥${price.toLocaleString()}` : '未確定';
+  
+  const workerName = booking.worker ? booking.worker.name : '未割り当て';
+  const workerRating = booking.worker && booking.worker.rating ? booking.worker.rating.toFixed(1) : null;
+  
+  let actionsHtml = '';
+  if (booking.status === 'COMPLETED' || booking.status === 'CANCELLED') {
+    // 過去の予約
+    actionsHtml = `
+      <a href="bookings.html" class="btn btn-outline">予約一覧に戻る</a>
+    `;
+  } else {
+    // 今後の予約
+    actionsHtml = `
+      ${booking.worker ? `<button class="btn btn-outline" onclick="window.location.href='chat.html?booking=${booking.id}'">チャット</button>` : ''}
+      <button class="btn btn-outline" onclick="window.location.href='booking.html?id=${booking.id}'">予約変更</button>
+      <button class="btn btn-outline danger" onclick="openCancelModal()">キャンセル</button>
+    `;
+  }
+  
+  card.innerHTML = `
+    <div class="booking-detail-header">
+      <div>
+        <span class="booking-status ${statusClass}">${statusText}</span>
+        <h1>${booking.serviceType || 'サービス'}</h1>
+      </div>
+      <div class="booking-price-large">${priceDisplay}</div>
+    </div>
+
+    <div class="booking-detail-info">
+      <div class="info-row">
+        <span class="info-label">📅 日時</span>
+        <span class="info-value">${dateStr} ${timeStr}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">📍 場所</span>
+        <span class="info-value">${booking.address || '住所未設定'}</span>
+      </div>
+      ${booking.worker ? `
+      <div class="info-row">
+        <span class="info-label">👤 ワーカー</span>
+        <span class="info-value">${workerName}${workerRating ? ` ⭐ ${workerRating}` : ''}</span>
+      </div>
+      ` : ''}
+      ${booking.payment ? `
+      <div class="info-row">
+        <span class="info-label">💳 支払い方法</span>
+        <span class="info-value">${booking.payment.paymentMethod === 'credit_card' ? 'クレジットカード' : booking.payment.paymentMethod}</span>
+      </div>
+      ` : ''}
+    </div>
+
+    <div class="booking-detail-content">
+      <h2>依頼内容</h2>
+      <p>${booking.notes || '特記事項なし'}</p>
+    </div>
+
+    <div class="booking-detail-actions">
+      ${actionsHtml}
+    </div>
+  `;
+}
+
+// ワーカー情報を表示
+function displayWorkerInfo(worker) {
+  const workerCard = document.getElementById('worker-info-card');
+  const workerDetails = document.getElementById('worker-details');
+  
+  const rating = worker.rating ? worker.rating.toFixed(1) : null;
+  const reviewCount = worker.reviewCount || 0;
+  const hourlyRate = worker.hourlyRate ? `¥${worker.hourlyRate.toLocaleString()}/時` : '';
+  
+  workerDetails.innerHTML = `
+    <div class="worker-avatar-large">👤</div>
+    <div class="worker-text">
+      <h3>${worker.name}</h3>
+      ${rating ? `
+      <div class="worker-rating">
+        <span class="stars">${generateStars(rating)}</span>
+        <span class="rating-score">${rating}</span>
+        <span class="rating-count">（評価数: ${reviewCount}件）</span>
+      </div>
+      ` : ''}
+      ${hourlyRate ? `
+      <div class="worker-stats-small">
+        <span>時給: ${hourlyRate}</span>
+      </div>
+      ` : ''}
+      ${worker.bio ? `
+      <p class="worker-bio">${worker.bio}</p>
+      ` : ''}
+    </div>
+  `;
+  
+  workerCard.style.display = 'block';
+  
+  // ワーカーのアクションボタン
+  const workerActions = document.createElement('div');
+  workerActions.className = 'worker-actions';
+  workerActions.innerHTML = `
+    <button class="btn btn-outline" onclick="window.location.href='select-worker.html?id=${worker.id}'">プロフィールを見る</button>
+    ${currentBooking && currentBooking.status !== 'COMPLETED' && currentBooking.status !== 'CANCELLED' ? `
+    <button class="btn btn-primary" onclick="window.location.href='chat.html?booking=${currentBooking.id}'">チャットで連絡</button>
+    ` : ''}
+  `;
+  workerCard.appendChild(workerActions);
+}
+
+// 星評価を生成
+function generateStars(rating) {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 >= 0.5;
+  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+  
+  return '★'.repeat(fullStars) + (hasHalfStar ? '☆' : '') + '☆'.repeat(emptyStars);
+}
+
+let currentCancelBookingId = null;
+
+function openCancelModal() {
+  if (!currentBooking) return;
+  
+  currentCancelBookingId = currentBooking.id;
+  
+  // キャンセル料を計算
+  const now = new Date();
+  const scheduledDate = new Date(currentBooking.scheduledDate);
+  const hoursUntilBooking = (scheduledDate - now) / (1000 * 60 * 60);
+  
+  let cancelFee = 0;
+  let feeText = '¥0（48時間以上前のため）';
+  
+  if (hoursUntilBooking < 24) {
+    cancelFee = currentBooking.totalAmount || 0;
+    feeText = `¥${cancelFee.toLocaleString()}（24時間以内のため100%）`;
+  } else if (hoursUntilBooking < 48) {
+    cancelFee = Math.floor((currentBooking.totalAmount || 0) * 0.5);
+    feeText = `¥${cancelFee.toLocaleString()}（48-24時間前のため50%）`;
+  }
+  
+  // キャンセル料情報を更新
+  const feeAmountElement = document.querySelector('.fee-amount');
+  if (feeAmountElement) {
+    feeAmountElement.innerHTML = `今回のキャンセル料: <strong>${feeText}</strong>`;
+  }
+  
+  document.getElementById('cancelModal').style.display = 'flex';
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+  currentCancelBookingId = null;
+}
+
+async function confirmCancel() {
+  if (!currentCancelBookingId) return;
+  
+  if (confirm('本当にキャンセルしますか？')) {
+    try {
+      await api.cancelBooking(currentCancelBookingId);
+      showSuccess('予約をキャンセルしました');
+      closeModal('cancelModal');
+      // 予約一覧にリダイレクト
+      setTimeout(() => {
+        window.location.href = 'bookings.html';
+      }, 1000);
+    } catch (error) {
+      console.error('キャンセルエラー:', error);
+      showError(error.message || '予約のキャンセルに失敗しました');
+    }
+  }
+}
+
+// レビューセクションを読み込む
+async function loadReviewSection(booking) {
+  const reviewSection = document.getElementById('review-section');
+  const reviewContent = document.getElementById('review-content');
+  
+  reviewSection.style.display = 'block';
+
+  // 予約にレビューが既に存在するかチェック
+  if (booking.review) {
+    // 既存のレビューを表示
+    displayExistingReview(booking.review);
+  } else {
+    // レビュー投稿フォームを表示
+    displayReviewForm(booking);
+  }
+}
+
+// 既存のレビューを表示
+function displayExistingReview(review) {
+  const reviewContent = document.getElementById('review-content');
+  
+  const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+  const date = new Date(review.createdAt);
+  const dateStr = date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  reviewContent.innerHTML = `
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-rating">
+          <span class="stars">${stars}</span>
+          <span class="rating-score">${review.rating}.0</span>
+        </div>
+        <div class="review-date">${dateStr}</div>
+      </div>
+      ${review.comment ? `
+      <div class="review-comment">
+        <p>${escapeHtml(review.comment)}</p>
+      </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// レビュー投稿フォームを表示
+function displayReviewForm(booking) {
+  const reviewContent = document.getElementById('review-content');
+  
+  reviewContent.innerHTML = `
+    <div class="review-form-card">
+      <p>この予約についてレビューを投稿してください。</p>
+      <button class="btn btn-primary" onclick="openReviewModal('${booking.id}')">レビューを投稿する</button>
+    </div>
+  `;
+}
+
+// レビューモーダルを開く
+function openReviewModal(bookingId) {
+  currentReviewBookingId = bookingId;
+  document.getElementById('reviewForm').reset();
+  document.getElementById('reviewModal').style.display = 'flex';
+}
+
+let currentReviewBookingId = null;
+
+// レビューフォーム送信
+document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (!currentReviewBookingId) {
+    showError('予約IDが取得できません');
+    return;
+  }
+
+  const rating = document.querySelector('input[name="rating"]:checked');
+  if (!rating) {
+    showError('評価を選択してください');
+    return;
+  }
+
+  const comment = document.getElementById('reviewComment').value.trim();
+
+  try {
+    await api.createReview({
+      bookingId: currentReviewBookingId,
+      rating: parseInt(rating.value),
+      comment: comment || null
+    });
+
+    showSuccess('レビューを投稿しました');
+    closeModal('reviewModal');
+    
+    // 予約詳細を再読み込み
+    await loadBookingDetail(currentReviewBookingId);
+  } catch (error) {
+    console.error('レビュー投稿エラー:', error);
+    showError('レビューの投稿に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+});
+
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+}
+</script>
+
+</body>
+</html>

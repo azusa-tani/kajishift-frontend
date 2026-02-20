@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>報酬管理｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="worker-page">
+
+<header class="worker-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html" class="active">報酬</a>
+      <a href="profile.html">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge">3</span>
+        🔔
+      </button>
+      <a href="profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main">
+  <div class="container">
+    
+    <section class="rewards-header">
+      <h1>報酬管理</h1>
+      <p>あなたの報酬履歴と支払い情報を確認できます</p>
+    </section>
+
+    <!-- 今月のサマリー -->
+    <section class="rewards-summary-section">
+      <h2 class="section-title" id="summaryTitle">2024年3月の報酬</h2>
+      <div class="rewards-summary-card" id="summaryCard">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- 支払い履歴 -->
+    <section class="payment-history">
+      <h2 class="section-title">支払い履歴</h2>
+      <div class="payment-list" id="paymentList">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+    </section>
+
+    <!-- 今月の仕事詳細 -->
+    <section class="rewards-detail">
+      <div class="section-header">
+        <h2 class="section-title">今月の仕事詳細</h2>
+        <select class="filter-select" id="monthSelect" onchange="onMonthChange()">
+          <!-- 動的に生成 -->
+        </select>
+      </div>
+      <div class="rewards-table">
+        <div id="rewardsTable">
+          <div class="loading-message">読み込み中...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 支払い情報 -->
+    <section class="payment-info-section">
+      <h2 class="section-title">支払い情報</h2>
+      <div class="payment-info-card">
+        <div class="info-row">
+          <span class="info-label">振込先銀行</span>
+          <span class="info-value">北海道銀行 中央支店</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">口座種別</span>
+          <span class="info-value">普通</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">口座番号</span>
+          <span class="info-value">****1234</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">口座名義</span>
+          <span class="info-value">タナカ ハナコ</span>
+        </div>
+        <div class="info-note">
+          <p>※ 報酬は毎月5日に前月分を振り込みます。</p>
+          <p>※ 口座情報の変更は<a href="profile.html">プロフィールページ</a>から行えます。</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+// グローバル変数
+let selectedMonth = new Date();
+let completedBookings = [];
+
+// ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('worker')) {
+    return;
+  }
+
+  // 月選択を初期化
+  initMonthSelect();
+  
+  // データを読み込み
+  await loadRewards();
+});
+
+// 月選択を初期化
+function initMonthSelect() {
+  const select = document.getElementById('monthSelect');
+  const now = new Date();
+  
+  // 過去6ヶ月を生成
+  for (let i = 0; i < 6; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const option = document.createElement('option');
+    option.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    option.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月`;
+    if (i === 0) {
+      option.selected = true;
+      selectedMonth = date;
+    }
+    select.appendChild(option);
+  }
+}
+
+// 報酬情報を読み込む
+async function loadRewards() {
+  try {
+    const year = selectedMonth.getFullYear();
+    const month = selectedMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // サマリータイトルを更新
+    document.getElementById('summaryTitle').textContent = `${year}年${month + 1}月の報酬`;
+
+    // 完了した予約を取得
+    const bookingsResponse = await api.getBookings({
+      status: 'COMPLETED',
+      startDate: firstDay.toISOString().split('T')[0],
+      endDate: lastDay.toISOString().split('T')[0],
+      limit: 100
+    });
+
+    if (bookingsResponse.data && bookingsResponse.data.bookings) {
+      completedBookings = bookingsResponse.data.bookings;
+      
+      // サマリーを表示
+      displaySummary(completedBookings, year, month);
+      
+      // 仕事詳細を表示
+      displayRewardsTable(completedBookings);
+    }
+
+    // 決済履歴を取得
+    try {
+      const paymentsResponse = await api.getPayments({
+        limit: 10
+      });
+      
+      if (paymentsResponse.data && paymentsResponse.data.payments) {
+        displayPaymentHistory(paymentsResponse.data.payments);
+      }
+    } catch (error) {
+      console.warn('決済履歴の取得に失敗:', error);
+      document.getElementById('paymentList').innerHTML = '<div class="empty-message">決済履歴がありません</div>';
+    }
+  } catch (error) {
+    console.error('報酬情報の読み込みエラー:', error);
+    showError('報酬情報の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// サマリーを表示
+function displaySummary(bookings, year, month) {
+  const totalAmount = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
+  const totalHours = bookings.reduce((sum, booking) => sum + (booking.duration || 0), 0);
+  const avgHourlyRate = totalHours > 0 ? Math.round(totalAmount / totalHours) : 0;
+  
+  // 次回支払日（来月5日）
+  const nextPaymentDate = new Date(year, month + 1, 5);
+  const nextPaymentDateStr = nextPaymentDate.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  document.getElementById('summaryCard').innerHTML = `
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="summary-label">今月の合計</div>
+        <div class="summary-amount">¥${totalAmount.toLocaleString()}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">完了した仕事</div>
+        <div class="summary-count">${bookings.length}件</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">平均時給</div>
+        <div class="summary-amount">¥${avgHourlyRate.toLocaleString()}</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">次回支払日</div>
+        <div class="summary-date">${nextPaymentDateStr}</div>
+      </div>
+    </div>
+  `;
+}
+
+// 決済履歴を表示
+function displayPaymentHistory(payments) {
+  const container = document.getElementById('paymentList');
+  
+  if (payments.length === 0) {
+    container.innerHTML = '<div class="empty-message">決済履歴がありません</div>';
+    return;
+  }
+  
+  container.innerHTML = payments.map(payment => {
+    const paymentDate = new Date(payment.createdAt);
+    const dateStr = paymentDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    const status = payment.status === 'COMPLETED' ? '支払済み' : payment.status || '未確定';
+    const statusClass = payment.status === 'COMPLETED' ? 'active' : '';
+    
+    return `
+      <div class="payment-item">
+        <div class="payment-info">
+          <div class="payment-date">${dateStr}</div>
+          <div class="payment-amount">¥${payment.amount ? payment.amount.toLocaleString() : '-'}</div>
+        </div>
+        <div class="payment-status">
+          <span class="status-badge ${statusClass}">${status}</span>
+          ${payment.status === 'COMPLETED' ? `<div class="payment-date-detail">${dateStr} 振込完了</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 報酬テーブルを表示
+function displayRewardsTable(bookings) {
+  const container = document.getElementById('rewardsTable');
+  
+  if (bookings.length === 0) {
+    container.innerHTML = '<div class="empty-message">今月の完了した仕事がありません</div>';
+    return;
+  }
+  
+  const totalAmount = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
+  
+  let html = `
+    <table>
+      <thead>
+        <tr>
+          <th>日付</th>
+          <th>仕事内容</th>
+          <th>時間</th>
+          <th>報酬</th>
+          <th>状態</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  
+  bookings.sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
+  
+  bookings.forEach(booking => {
+    const scheduledDate = new Date(booking.scheduledDate);
+    const dateStr = scheduledDate.toLocaleDateString('ja-JP', {
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short'
+    });
+    
+    html += `
+      <tr>
+        <td>${dateStr}</td>
+        <td>${booking.serviceType || '-'}</td>
+        <td>${booking.duration || 0}時間</td>
+        <td>¥${booking.totalAmount ? booking.totalAmount.toLocaleString() : '0'}</td>
+        <td><span class="status-badge active">支払予定</span></td>
+      </tr>
+    `;
+  });
+  
+  html += `
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" class="total-label">合計</td>
+          <td class="total-amount">¥${totalAmount.toLocaleString()}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  `;
+  
+  container.innerHTML = html;
+}
+
+// 月選択が変更されたとき
+function onMonthChange() {
+  const select = document.getElementById('monthSelect');
+  const [year, month] = select.value.split('-').map(Number);
+  selectedMonth = new Date(year, month - 1, 1);
+  loadRewards();
+}
+</script>
+
+</body>
+</html>

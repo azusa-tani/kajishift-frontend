@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ワーカーダッシュボード｜KAJISHIFT</title>
+  <meta name="description" content="KAJISHIFTのワーカーダッシュボード。受注可能な仕事やスケジュールを確認できます。" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://kajishift.jp/worker/dashboard.html" />
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="worker-page">
+<script>
+// 認証チェック（トークンベース）
+// sessionStorageのチェックも残す（後方互換性のため）
+if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token')) {
+  window.location.href = 'login.html';
+}
+</script>
+
+<header class="worker-header" role="banner">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav" role="navigation" aria-label="メインナビゲーション">
+      <a href="dashboard.html" class="active" aria-current="page">ダッシュボード</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知（3件の未読があります）">
+        <span class="notification-badge" aria-hidden="true">3</span>
+        <span aria-hidden="true">🔔</span>
+      </button>
+      <a href="profile.html" class="avatar" aria-label="プロフィールページへ移動">👤</a>
+      <button class="btn-icon" onclick="logout()" aria-label="ログアウト" title="ログアウト">
+        <span aria-hidden="true">🚪</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main" id="main-content" role="main">
+  <div class="container">
+    
+    <!-- ウェルカムセクション -->
+    <section class="welcome-section">
+      <h1>おかえりなさい、田中さん</h1>
+      <p>今日もお疲れ様です。新しい仕事の依頼が3件あります。</p>
+    </section>
+
+    <!-- クイックアクション -->
+    <section class="quick-actions">
+      <h2 class="section-title">クイックアクション</h2>
+      <div class="action-grid">
+        <a href="jobs.html" class="action-card">
+          <div class="action-icon">🔍</div>
+          <h3>仕事を探す</h3>
+          <p>新しい依頼を確認</p>
+        </a>
+        <a href="calendar.html" class="action-card">
+          <div class="action-icon">📅</div>
+          <h3>スケジュール</h3>
+          <p>今週の予定を確認</p>
+        </a>
+        <a href="rewards.html" class="action-card">
+          <div class="action-icon">💰</div>
+          <h3>報酬確認</h3>
+          <p>今月の報酬を確認</p>
+        </a>
+        <a href="profile.html" class="action-card">
+          <div class="action-icon">⚙️</div>
+          <h3>プロフィール</h3>
+          <p>設定を変更</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- 新しい仕事の依頼 -->
+    <section class="new-jobs-section">
+      <div class="section-header">
+        <h2 class="section-title">新しい仕事の依頼</h2>
+        <a href="jobs.html" class="link-more">すべて見る →</a>
+      </div>
+      <div class="job-list">
+        <div class="job-card">
+          <div class="job-header">
+            <span class="job-date">2024年3月15日（金）10:00-12:00</span>
+            <span class="job-status new">新着</span>
+          </div>
+          <h3 class="job-title">掃除・片付け</h3>
+          <div class="job-info">
+            <span class="job-location">📍 札幌市中央区</span>
+            <span class="job-payment">💰 5,000円</span>
+          </div>
+          <p class="job-description">2時間の掃除と片付けをお願いします。特にリビングとキッチンを重点的に...</p>
+          <div class="job-actions">
+            <a href="job-detail.html?id=1" class="btn btn-outline">詳細を見る</a>
+            <button class="btn btn-primary">承諾する</button>
+          </div>
+        </div>
+
+        <div class="job-card">
+          <div class="job-header">
+            <span class="job-date">2024年3月16日（土）14:00-16:00</span>
+            <span class="job-status new">新着</span>
+          </div>
+          <h3 class="job-title">洗濯・アイロン</h3>
+          <div class="job-info">
+            <span class="job-location">📍 江別市</span>
+            <span class="job-payment">💰 4,000円</span>
+          </div>
+          <p class="job-description">洗濯物の取り込みとアイロンがけをお願いします...</p>
+          <div class="job-actions">
+            <a href="job-detail.html?id=2" class="btn btn-outline">詳細を見る</a>
+            <button class="btn btn-primary">承諾する</button>
+          </div>
+        </div>
+
+        <div class="job-card">
+          <div class="job-header">
+            <span class="job-date">2024年3月17日（日）9:00-11:00</span>
+            <span class="job-status new">新着</span>
+          </div>
+          <h3 class="job-title">料理・買い物</h3>
+          <div class="job-info">
+            <span class="job-location">📍 北広島市</span>
+            <span class="job-payment">💰 6,000円</span>
+          </div>
+          <p class="job-description">食材の買い出しと夕食の準備をお願いします...</p>
+          <div class="job-actions">
+            <a href="job-detail.html?id=3" class="btn btn-outline">詳細を見る</a>
+            <button class="btn btn-primary">承諾する</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 今日の予定 -->
+    <section class="today-schedule">
+      <h2 class="section-title">今日の予定</h2>
+      <div class="schedule-list">
+        <div class="schedule-item">
+          <div class="schedule-time">10:00 - 12:00</div>
+          <div class="schedule-content">
+            <h4>掃除・片付け</h4>
+            <p>札幌市中央区</p>
+            <div class="schedule-status">
+              <span class="status-badge pending">受注済み</span>
+            </div>
+          </div>
+          <div class="schedule-actions">
+            <button class="btn btn-small btn-primary">作業開始</button>
+          </div>
+        </div>
+        <div class="schedule-item">
+          <div class="schedule-time">14:00 - 16:00</div>
+          <div class="schedule-content">
+            <h4>洗濯・アイロン</h4>
+            <p>江別市</p>
+            <div class="schedule-status">
+              <span class="status-badge pending">受注済み</span>
+            </div>
+          </div>
+          <div class="schedule-actions">
+            <button class="btn btn-small btn-outline">詳細</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 今月の報酬サマリー -->
+    <section class="reward-summary">
+      <h2 class="section-title">今月の報酬サマリー</h2>
+      <div class="reward-card">
+        <div class="reward-item">
+          <span class="reward-label">今月の合計</span>
+          <span class="reward-amount">¥45,000</span>
+        </div>
+        <div class="reward-item">
+          <span class="reward-label">完了した仕事</span>
+          <span class="reward-count">12件</span>
+        </div>
+        <div class="reward-item">
+          <span class="reward-label">次回支払日</span>
+          <span class="reward-date">2024年4月5日</span>
+        </div>
+        <a href="rewards.html" class="btn btn-outline">詳細を見る</a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    // sessionStorageとlocalStorageの両方をクリア
+    sessionStorage.removeItem('workerLoggedIn');
+    if (typeof api !== 'undefined' && typeof api.clearToken === 'function') {
+      api.clearToken();
+    } else {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+    window.location.href = 'login.html';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# robots.txt for KAJISHIFT
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /customer/dashboard.html
+Disallow: /customer/bookings.html
+Disallow: /customer/booking.html
+Disallow: /customer/booking-detail.html
+Disallow: /customer/chat.html
+Disallow: /customer/payment.html
+Disallow: /customer/select-worker.html
+Disallow: /worker/dashboard.html
+Disallow: /worker/jobs.html
+Disallow: /worker/job-detail.html
+Disallow: /worker/calendar.html
+Disallow: /worker/profile.html
+Disallow: /worker/rewards.html
+Disallow: /customer/login.html
+Disallow: /customer/register.html
+Disallow: /worker/login.html
+Disallow: /worker/register.html
+Disallow: /admin/login.html
+
+# Sitemap
+Sitemap: https://kajishift.jp/sitemap.xml

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#5B7FA6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="KAJISHIFT" />
+  <title>管理者ログイン｜KAJISHIFT管理画面</title>
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="description" content="KAJISHIFT管理画面のログインページ" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://kajishift.jp/admin/login.html" />
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="preload" href="../js/validation.js" as="script" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/validation.js" defer></script>
+</head>
+<body class="admin-login-page">
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <h1>KAJISHIFT</h1>
+        <h2>管理画面</h2>
+      </div>
+      <div class="error-message"></div>
+      <form class="login-form" id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="admin-id">管理者ID</label>
+          <input 
+            type="text" 
+            id="admin-id" 
+            name="admin-id" 
+            class="form-input" 
+            required 
+            autocomplete="username"
+            aria-required="true"
+            aria-label="管理者ID"
+            aria-describedby="admin-id-hint" />
+          <p id="admin-id-hint" class="sr-only">管理者IDを入力してください</p>
+        </div>
+        <div class="form-group">
+          <label for="password">パスワード</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-input" 
+            required 
+            autocomplete="current-password"
+            aria-required="true"
+            aria-label="パスワード"
+            aria-describedby="password-hint" />
+          <p id="password-hint" class="sr-only">パスワードを入力してください</p>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-item">
+            <input 
+              type="checkbox" 
+              name="remember"
+              aria-label="ログイン状態を保持する" />
+            <span>ログイン状態を保持する</span>
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-large btn-block" aria-label="ログインボタン">ログイン</button>
+        <div class="login-security-note">
+          <p>⚠️ この管理画面へのアクセスはIP制限・多要素認証で保護されています</p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ページ読み込み時にバリデーションを設定
+    document.addEventListener('DOMContentLoaded', function() {
+      setupRealTimeValidation(document.getElementById('admin-id'), Validators.required);
+      setupRealTimeValidation(document.getElementById('password'), Validators.required);
+    });
+
+    // フォーム送信時のバリデーションとAPI連携
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const validations = {
+        'admin-id': Validators.required,
+        'password': Validators.required
+      };
+      
+      if (!validateForm(this, validations)) {
+        const firstError = this.querySelector('.has-error input');
+        if (firstError) {
+          firstError.focus();
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+      
+      // admin-idをemailとして扱う（管理者もemailでログイン）
+      const email = document.getElementById('admin-id').value;
+      const password = document.getElementById('password').value;
+      const submitButton = this.querySelector('button[type="submit"]');
+      const originalButtonText = submitButton.textContent;
+      
+      // ローディング状態
+      submitButton.disabled = true;
+      submitButton.textContent = 'ログイン中...';
+      
+      try {
+        // APIでログイン
+        const response = await api.login(email, password);
+        
+        if (response.data && response.data.user) {
+          // ロールチェック（管理者であることを確認）
+          if (response.data.user.role !== 'ADMIN') {
+            throw new Error('管理者アカウントでログインしてください');
+          }
+          
+          // ログイン成功
+          showSuccess('ログインに成功しました');
+          
+          // ダッシュボードにリダイレクト
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 500);
+        } else {
+          throw new Error('ログインに失敗しました');
+        }
+      } catch (error) {
+        // エラー処理
+        console.error('ログインエラー:', error);
+        showError(error.message || 'ログインに失敗しました。管理者IDとパスワードを確認してください。');
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+      }
+    });
+  </script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../service-worker.js')
+          .then((registration) => {
+            console.log('Service Worker registered successfully:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>チャット｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
+</head>
+<body class="customer-page">
+
+<header class="customer-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">マイページ</a>
+      <a href="booking.html">予約する</a>
+      <a href="bookings.html">予約一覧</a>
+      <a href="payment.html">決済・履歴</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge">2</span>
+        🔔
+      </button>
+      <a href="customer-profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="chat-main">
+  <div class="container">
+    
+    <!-- チャットヘッダー -->
+    <div class="chat-header-bar">
+      <div class="back-link-small">
+        <a href="bookings.html">← 戻る</a>
+      </div>
+      <div class="chat-partner-info" id="chatPartnerInfo">
+        <div class="chat-avatar">👤</div>
+        <div class="chat-partner-text">
+          <h2 id="partnerName">読み込み中...</h2>
+          <p class="chat-status" id="partnerStatus">-</p>
+        </div>
+      </div>
+      <button class="btn-icon">⋯</button>
+    </div>
+
+    <!-- チャットメッセージエリア -->
+    <div class="chat-messages" id="chatMessages">
+      <div class="loading-message">メッセージを読み込み中...</div>
+    </div>
+
+    <!-- チャット入力エリア -->
+    <div class="chat-input-area">
+      <button class="btn-icon" id="attachBtn" aria-label="画像添付">📎</button>
+      <input type="file" id="fileInput" style="display: none;" accept="image/*" />
+      <textarea 
+        class="chat-input" 
+        id="messageInput" 
+        placeholder="メッセージを入力..."
+        rows="1"
+      ></textarea>
+      <button class="btn btn-primary" id="sendBtn">送信</button>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// グローバル変数
+let bookingId = null;
+let currentBooking = null;
+let currentUserId = null;
+let loadedMessageIds = new Set(); // 既に表示したメッセージIDを記録
+
+// ページ読み込み時の処理
+document.addEventListener('DOMContentLoaded', async function() {
+  // 認証チェック
+  if (!checkAuth('customer')) {
+    return;
+  }
+
+  // URLパラメータから予約IDを取得
+  const urlParams = new URLSearchParams(window.location.search);
+  bookingId = urlParams.get('bookingId');
+
+  if (!bookingId) {
+    alert('予約IDが指定されていません');
+    window.location.href = 'bookings.html';
+    return;
+  }
+
+  // ユーザー情報を取得
+  const user = api.getUser();
+  if (user && user.id) {
+    currentUserId = user.id;
+  } else {
+    const userResponse = await api.getUserMe();
+    if (userResponse.data) {
+      currentUserId = userResponse.data.id;
+    }
+  }
+
+  // 予約情報を取得
+  await loadBookingInfo();
+  
+  // 初期メッセージを読み込み
+  await loadMessages();
+  
+  // Socket.io接続を初期化
+  const token = localStorage.getItem('token');
+  if (token) {
+    socketManager.connect(token);
+    
+    // メッセージ受信イベント
+    socketManager.onMessage((message) => {
+      // この予約に関連するメッセージのみ処理
+      if (message.bookingId === bookingId) {
+        // 既に表示済みのメッセージはスキップ
+        if (!loadedMessageIds.has(message.id)) {
+          addMessageToUI(message.content, message.senderId === currentUserId ? 'sent' : 'received', message);
+          loadedMessageIds.add(message.id);
+        }
+      }
+    });
+  }
+
+  // イベントリスナーを設定
+  setupEventListeners();
+});
+
+// イベントリスナーの設定
+function setupEventListeners() {
+  // 画像添付
+  document.getElementById('attachBtn').addEventListener('click', function() {
+    document.getElementById('fileInput').click();
+  });
+
+  document.getElementById('fileInput').addEventListener('change', async function(e) {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      
+      // ファイルサイズチェック（10MB以下）
+      if (file.size > 10 * 1024 * 1024) {
+        alert('ファイルサイズは10MB以下にしてください');
+        e.target.value = '';
+        return;
+      }
+      
+      // ファイルタイプチェック（画像のみ）
+      if (!file.type.startsWith('image/')) {
+        alert('画像ファイルを選択してください');
+        e.target.value = '';
+        return;
+      }
+      
+      // 画像をアップロードして送信
+      await sendImageMessage(file);
+      e.target.value = ''; // リセット
+    }
+  });
+
+  // メッセージ送信
+  document.getElementById('sendBtn').addEventListener('click', sendMessage);
+  document.getElementById('messageInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // テキストエリアの自動リサイズ
+  const textarea = document.getElementById('messageInput');
+  textarea.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+  });
+}
+
+// 予約情報を読み込む
+async function loadBookingInfo() {
+  try {
+    const response = await api.getBookingById(bookingId);
+    currentBooking = response.data;
+
+    if (!currentBooking) {
+      throw new Error('予約が見つかりません');
+    }
+
+    // 相手（ワーカー）の情報を表示
+    if (currentBooking.worker) {
+      document.getElementById('partnerName').textContent = `${currentBooking.worker.name || '不明'}さん`;
+      document.getElementById('partnerStatus').textContent = 'オンライン';
+    } else {
+      document.getElementById('partnerName').textContent = 'ワーカー未割り当て';
+      document.getElementById('partnerStatus').textContent = '-';
+    }
+  } catch (error) {
+    console.error('予約情報の読み込みエラー:', error);
+    showError('予約情報の読み込みに失敗しました');
+  }
+}
+
+// メッセージを読み込む（初回読み込み用）
+async function loadMessages() {
+  try {
+    const response = await api.getMessages(bookingId, { limit: 100 });
+    
+    if (response.data && response.data.messages) {
+      const messages = response.data.messages;
+      displayMessages(messages);
+      
+      // 読み込んだメッセージIDを記録
+      messages.forEach(msg => {
+        loadedMessageIds.add(msg.id);
+      });
+    }
+  } catch (error) {
+    console.error('メッセージの読み込みエラー:', error);
+    const container = document.getElementById('chatMessages');
+    container.innerHTML = `<div class="error-message">メッセージの読み込みに失敗しました: ${error.message || 'エラーが発生しました'}</div>`;
+  }
+}
+
+// メッセージを表示
+function displayMessages(messages) {
+  const container = document.getElementById('chatMessages');
+  
+  if (messages.length === 0) {
+    container.innerHTML = '<div class="empty-message">メッセージがありません</div>';
+    return;
+  }
+
+  let html = '';
+  let currentDate = null;
+
+  messages.forEach(message => {
+    const messageDate = new Date(message.createdAt);
+    const dateStr = messageDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    // 日付が変わったら日付ラベルを表示
+    if (!currentDate || currentDate !== dateStr) {
+      html += `<div class="message-date">${dateStr}</div>`;
+      currentDate = dateStr;
+    }
+
+    const isSent = message.senderId === currentUserId;
+    const timeStr = messageDate.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const imageUrl = message.imageUrl || message.image;
+    
+    if (isSent) {
+      html += `
+        <div class="message sent">
+          <div class="message-content">
+            ${imageUrl ? `
+              <div class="message-image">
+                <img src="${imageUrl}" alt="送信された画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+              </div>
+            ` : ''}
+            ${message.content && message.content !== '[画像]' ? `
+              <div class="message-text">${escapeHtml(message.content)}</div>
+            ` : ''}
+            <div class="message-time">${timeStr}</div>
+          </div>
+        </div>
+      `;
+    } else {
+      const senderName = message.sender ? message.sender.name : '不明';
+      html += `
+        <div class="message received">
+          <div class="message-avatar">👤</div>
+          <div class="message-content">
+            ${imageUrl ? `
+              <div class="message-image">
+                <img src="${imageUrl}" alt="受信した画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+              </div>
+            ` : ''}
+            ${message.content && message.content !== '[画像]' ? `
+              <div class="message-text">${escapeHtml(message.content)}</div>
+            ` : ''}
+            <div class="message-time">${timeStr}</div>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  container.innerHTML = html;
+  scrollToBottom();
+}
+
+// メッセージを送信
+async function sendMessage() {
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
+  
+  if (!text) {
+    return;
+  }
+
+  if (!bookingId) {
+    alert('予約IDが取得できません');
+    return;
+  }
+
+  try {
+    // 送信前にUIに表示（楽観的更新）
+    const tempId = 'temp-' + Date.now();
+    const tempMessage = {
+      id: tempId,
+      content: text,
+      senderId: currentUserId,
+      createdAt: new Date().toISOString()
+    };
+    addMessageToUI(text, 'sent', tempMessage);
+    input.value = '';
+    
+    // APIで送信（WebSocketで自動的に受信される）
+    await api.sendMessage({
+      bookingId: bookingId,
+      content: text
+    });
+    
+    // 一時メッセージを削除（実際のメッセージがWebSocketで来るため）
+    setTimeout(() => {
+      const tempElement = document.getElementById(tempId);
+      if (tempElement) {
+        tempElement.remove();
+      }
+    }, 1000);
+  } catch (error) {
+    console.error('メッセージ送信エラー:', error);
+    showError('メッセージの送信に失敗しました: ' + (error.message || 'エラーが発生しました'));
+    // エラー時は入力内容を復元
+    input.value = text;
+  }
+}
+
+// 画像メッセージを送信
+async function sendImageMessage(file) {
+  if (!bookingId) {
+    alert('予約IDが取得できません');
+    return;
+  }
+
+  try {
+    // プレビューを表示（楽観的更新）
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const imageUrl = event.target.result;
+      const tempId = 'temp-image-' + Date.now();
+      const tempMessage = {
+        id: tempId,
+        content: '[画像を送信中...]',
+        imageUrl: imageUrl,
+        senderId: currentUserId,
+        createdAt: new Date().toISOString()
+      };
+      addImageMessageToUI(imageUrl, 'sent', tempMessage, tempId);
+    };
+    reader.readAsDataURL(file);
+
+    // 画像をアップロード
+    const uploadResponse = await api.uploadFile(file, 'MESSAGE');
+    const imageUrl = uploadResponse.data?.url || uploadResponse.data?.fileUrl;
+    
+    if (!imageUrl) {
+      throw new Error('画像のアップロードに失敗しました');
+    }
+
+    // メッセージとして送信
+    await api.sendMessage({
+      bookingId: bookingId,
+      content: '[画像]',
+      imageUrl: imageUrl
+    });
+
+    // 一時メッセージを削除（実際のメッセージがWebSocketで来るため）
+    setTimeout(() => {
+      const tempElement = document.getElementById('temp-image-' + Date.now());
+      if (tempElement) {
+        tempElement.remove();
+      }
+    }, 1000);
+  } catch (error) {
+    console.error('画像送信エラー:', error);
+    showError('画像の送信に失敗しました: ' + (error.message || 'エラーが発生しました'));
+    // エラー時は一時メッセージを削除
+    const tempElements = document.querySelectorAll('[id^="temp-image-"]');
+    tempElements.forEach(el => el.remove());
+  }
+}
+
+// UIにメッセージを追加
+function addMessageToUI(text, type, message) {
+  const container = document.getElementById('chatMessages');
+  
+  // 空のメッセージを削除
+  const emptyMessage = container.querySelector('.empty-message');
+  if (emptyMessage) {
+    emptyMessage.remove();
+  }
+  
+  const messageDate = new Date(message.createdAt || new Date());
+  const dateStr = messageDate.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  // 日付ラベルを追加（必要に応じて）
+  const lastDateLabel = container.querySelector('.message-date:last-of-type');
+  const lastDate = lastDateLabel ? lastDateLabel.textContent : null;
+  if (lastDate !== dateStr) {
+    const dateLabel = document.createElement('div');
+    dateLabel.className = 'message-date';
+    dateLabel.textContent = dateStr;
+    container.appendChild(dateLabel);
+  }
+  
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${type}`;
+  messageDiv.id = message.id || 'temp-' + Date.now();
+  
+  const timeStr = messageDate.toLocaleTimeString('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const imageUrl = message.imageUrl || message.image;
+  
+  if (type === 'sent') {
+    messageDiv.innerHTML = `
+      <div class="message-content">
+        ${imageUrl ? `
+          <div class="message-image">
+            <img src="${imageUrl}" alt="送信された画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+          </div>
+        ` : ''}
+        ${text && text !== '[画像]' && text !== '[画像を送信中...]' ? `
+          <div class="message-text">${escapeHtml(text)}</div>
+        ` : ''}
+        <div class="message-time">${timeStr}</div>
+      </div>
+    `;
+  } else {
+    const senderName = message.sender ? message.sender.name : '不明';
+    messageDiv.innerHTML = `
+      <div class="message-avatar">👤</div>
+      <div class="message-content">
+        ${imageUrl ? `
+          <div class="message-image">
+            <img src="${imageUrl}" alt="受信した画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+          </div>
+        ` : ''}
+        ${text && text !== '[画像]' ? `
+          <div class="message-text">${escapeHtml(text)}</div>
+        ` : ''}
+        <div class="message-time">${timeStr}</div>
+      </div>
+    `;
+  }
+  
+  container.appendChild(messageDiv);
+  scrollToBottom();
+}
+
+// HTMLエスケープ
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// スクロールを最下部に
+function scrollToBottom() {
+  const messagesDiv = document.getElementById('chatMessages');
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// 画像メッセージをUIに追加
+function addImageMessageToUI(imageUrl, type, message, messageId) {
+  const container = document.getElementById('chatMessages');
+  
+  // 空のメッセージを削除
+  const emptyMessage = container.querySelector('.empty-message');
+  if (emptyMessage) {
+    emptyMessage.remove();
+  }
+  
+  const messageDate = new Date(message.createdAt || new Date());
+  const timeStr = messageDate.toLocaleTimeString('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${type}`;
+  messageDiv.id = messageId;
+  
+  if (type === 'sent') {
+    messageDiv.innerHTML = `
+      <div class="message-content">
+        <div class="message-image">
+          <img src="${imageUrl}" alt="送信された画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+        </div>
+        <div class="message-time">${timeStr}</div>
+      </div>
+    `;
+  } else {
+    messageDiv.innerHTML = `
+      <div class="message-avatar">👤</div>
+      <div class="message-content">
+        <div class="message-image">
+          <img src="${imageUrl}" alt="受信した画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+        </div>
+        <div class="message-time">${timeStr}</div>
+      </div>
+    `;
+  }
+  
+  container.appendChild(messageDiv);
+  scrollToBottom();
+}
+
+// 画像モーダルを開く
+function openImageModal(imageUrl) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'center';
+  modal.style.justifyContent = 'center';
+  modal.style.zIndex = '10000';
+  modal.innerHTML = `
+    <div style="position: relative; max-width: 90vw; max-height: 90vh;">
+      <button class="btn-icon" onclick="this.closest('.modal').remove()" style="position: absolute; top: -40px; right: 0; font-size: 1.5rem; color: white; background: rgba(0,0,0,0.5); border-radius: 50%; width: 40px; height: 40px;">×</button>
+      <img src="${imageUrl}" alt="拡大画像" style="max-width: 100%; max-height: 90vh; border-radius: 8px;" />
+    </div>
+  `;
+  modal.onclick = function(e) {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  };
+  document.body.appendChild(modal);
+}
+
+function showError(message) {
+  alert('エラー: ' + message);
+}
+
+// ページを離れる時にSocket接続を切断
+window.addEventListener('beforeunload', function() {
+  // Socket接続はグローバルなので切断しない（他のページでも使用するため）
+  // 必要に応じて、このページ専用のSocket接続を管理する場合は切断する
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+# Netlify設定ファイル
+# KAJISHIFT フロントエンド
+
+[build]
+  # ビルドコマンド（静的サイトなので不要）
+  # command = ""
+  
+  # 公開ディレクトリ（ルートディレクトリをそのまま公開）
+  publish = "."
+
+# リダイレクトルール（SPA用）
+# 実際のファイルが存在する場合はそのまま提供
+# 存在しない場合はindex.htmlにフォールバック（404エラーを防ぐ）
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# セキュリティヘッダー
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# Service Worker用のヘッダー
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+# 静的アセットのキャッシュ設定
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# HTMLファイルのキャッシュ設定（短めに）
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

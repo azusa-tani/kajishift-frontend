@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>問い合わせ管理｜KAJISHIFT管理画面</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+// 認証チェック
+if (typeof checkAuth === 'function') {
+  if (!checkAuth('admin')) {
+    // リダイレクトされる
+  }
+} else {
+  // api.jsが読み込まれる前のフォールバック
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html" class="active">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <span class="admin-name">管理者 太郎</span>
+      <button class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    
+    <section class="admin-page-header">
+      <h1>問い合わせ管理</h1>
+    </section>
+
+    <!-- 検索・フィルター -->
+    <section class="admin-filter-section">
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label>タイプ</label>
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="booking">予約に関する質問</option>
+              <option value="complaint">クレーム</option>
+              <option value="account">アカウント関連</option>
+              <option value="payment">決済関連</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>状態</label>
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="new">新規</option>
+              <option value="in-progress">対応中</option>
+              <option value="completed">完了</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>担当者</label>
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="1">管理者 太郎</option>
+              <option value="2">オペレーター 花子</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <button class="btn btn-primary">検索</button>
+            <button class="btn btn-outline">リセット</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 問い合わせ一覧 -->
+    <section class="admin-section">
+      <div class="section-header">
+        <h2 class="section-title">問い合わせ一覧</h2>
+        <button class="btn btn-outline btn-small" onclick="exportSupportTickets(this)">CSVエクスポート</button>
+      </div>
+      <div class="inquiry-list">
+        <div class="inquiry-item urgent">
+          <div class="inquiry-header">
+            <div class="inquiry-meta">
+              <span class="inquiry-id">#T001</span>
+              <span class="inquiry-type">クレーム</span>
+              <span class="inquiry-priority">緊急</span>
+            </div>
+            <div class="inquiry-date">2024年3月15日 09:30</div>
+          </div>
+          <div class="inquiry-content">
+            <h4>予約キャンセルに関する苦情</h4>
+            <p><strong>利用者:</strong> 山田 太郎 / <strong>予約ID:</strong> #12345</p>
+            <p class="inquiry-text">予約をキャンセルした際のキャンセル料について不満があります。48時間以上前にキャンセルしたのに、キャンセル料がかかったのはおかしいです。</p>
+          </div>
+          <div class="inquiry-footer">
+            <div class="inquiry-status">
+              <span class="status-badge pending">対応中</span>
+              <span class="inquiry-assignee">担当: 管理者 太郎</span>
+            </div>
+            <div class="inquiry-actions">
+              <button class="btn btn-primary btn-small" onclick="openInquiryDetail('T001')">対応する</button>
+              <button class="btn btn-outline btn-small" onclick="viewChat('12345')">チャット閲覧</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="inquiry-item">
+          <div class="inquiry-header">
+            <div class="inquiry-meta">
+              <span class="inquiry-id">#T002</span>
+              <span class="inquiry-type">問い合わせ</span>
+            </div>
+            <div class="inquiry-date">2024年3月15日 08:15</div>
+          </div>
+          <div class="inquiry-content">
+            <h4>アカウント登録について</h4>
+            <p><strong>利用者:</strong> 新規登録希望者</p>
+            <p class="inquiry-text">アカウント登録の方法がわかりません。LINEログインはできますか？</p>
+          </div>
+          <div class="inquiry-footer">
+            <div class="inquiry-status">
+              <span class="status-badge pending">新規</span>
+              <span class="inquiry-assignee">未アサイン</span>
+            </div>
+            <div class="inquiry-actions">
+              <button class="btn btn-primary btn-small" onclick="openInquiryDetail('T002')">対応する</button>
+              <button class="btn btn-outline btn-small" onclick="assignToMe('T002')">自分にアサイン</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="inquiry-item">
+          <div class="inquiry-header">
+            <div class="inquiry-meta">
+              <span class="inquiry-id">#T003</span>
+              <span class="inquiry-type">問い合わせ</span>
+            </div>
+            <div class="inquiry-date">2024年3月14日 16:45</div>
+          </div>
+          <div class="inquiry-content">
+            <h4>予約変更について</h4>
+            <p><strong>利用者:</strong> 佐藤 花子 / <strong>予約ID:</strong> #12346</p>
+            <p class="inquiry-text">予約の日時を変更したいのですが、どのようにすればよいですか？</p>
+          </div>
+          <div class="inquiry-footer">
+            <div class="inquiry-status">
+              <span class="status-badge active">完了</span>
+              <span class="inquiry-assignee">担当: オペレーター 花子</span>
+            </div>
+            <div class="inquiry-actions">
+              <button class="btn btn-outline btn-small" onclick="openInquiryDetail('T003')">詳細</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- クレーム・事故対応履歴 -->
+    <section class="admin-section">
+      <div class="section-header">
+        <h2 class="section-title">クレーム・事故対応履歴</h2>
+        <button class="btn btn-outline btn-small" onclick="exportSupportTickets(this)">CSVエクスポート</button>
+      </div>
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>日時</th>
+              <th>種類</th>
+              <th>利用者/ワーカー</th>
+              <th>内容</th>
+              <th>対応結果</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>#C001</td>
+              <td>2024年3月10日</td>
+              <td>クレーム</td>
+              <td>山田 太郎</td>
+              <td>作業品質に関する苦情</td>
+              <td>解決済み</td>
+              <td><a href="#" class="btn-link">詳細</a></td>
+            </tr>
+            <tr>
+              <td>#C002</td>
+              <td>2024年3月5日</td>
+              <td>事故</td>
+              <td>田中 花子（ワーカー）</td>
+              <td>作業中の軽微な事故</td>
+              <td>対応完了</td>
+              <td><a href="#" class="btn-link">詳細</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- 問い合わせ詳細モーダル -->
+<div class="modal" id="inquiryDetailModal">
+  <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h2>問い合わせ詳細</h2>
+      <button class="btn-icon" onclick="closeModal('inquiryDetailModal')" style="font-size: 1.5rem;">×</button>
+    </div>
+    <div id="inquiryDetailContent">
+      <div class="loading-message">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- チャット閲覧モーダル -->
+<div class="modal" id="chatViewModal">
+  <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h2>チャット履歴</h2>
+      <button class="btn-icon" onclick="closeModal('chatViewModal')" style="font-size: 1.5rem;">×</button>
+    </div>
+    <div id="chatViewContent">
+      <div class="loading-message">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // 認証チェック
+  if (!checkAuth('admin')) {
+    return;
+  }
+
+  // 問い合わせ一覧を読み込む
+  await loadSupportTickets();
+});
+
+// グローバル変数: サポートチケット一覧を保持
+let allSupportTickets = [];
+
+async function loadSupportTickets() {
+  try {
+    const response = await api.getSupportTickets({ limit: 1000 }); // すべてのチケットを取得
+    if (response.data && response.data.tickets) {
+      allSupportTickets = response.data.tickets;
+      displaySupportTickets(allSupportTickets);
+    }
+  } catch (error) {
+    console.error('問い合わせ一覧の読み込みエラー:', error);
+    showError('問い合わせ一覧の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function displaySupportTickets(tickets) {
+  const container = document.querySelector('.inquiry-list');
+  if (!container) return;
+
+  container.innerHTML = '';
+  if (tickets.length === 0) {
+    container.innerHTML = '<div class="empty-message">問い合わせがありません</div>';
+    return;
+  }
+
+  tickets.forEach(ticket => {
+    const createdAt = new Date(ticket.createdAt);
+    const dateStr = createdAt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = createdAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    const priorityClass = ticket.priority === 'URGENT' ? 'urgent' : '';
+    const priorityText = ticket.priority === 'URGENT' ? '緊急' : '';
+    const statusText = getTicketStatusText(ticket.status);
+    const statusClass = getTicketStatusClass(ticket.status);
+
+    const item = `
+      <div class="inquiry-item ${priorityClass}">
+        <div class="inquiry-header">
+          <div class="inquiry-meta">
+            <span class="inquiry-id">#${ticket.id.substring(0, 8)}</span>
+            <span class="inquiry-type">${ticket.type || '問い合わせ'}</span>
+            ${priorityText ? `<span class="inquiry-priority">${priorityText}</span>` : ''}
+          </div>
+          <div class="inquiry-date">${dateStr} ${timeStr}</div>
+        </div>
+        <div class="inquiry-content">
+          <h4>${ticket.subject || '件名なし'}</h4>
+          <p><strong>利用者:</strong> ${ticket.user?.name || '不明'} ${ticket.bookingId ? `/ <strong>予約ID:</strong> #${ticket.bookingId.substring(0, 8)}` : ''}</p>
+          <p class="inquiry-text">${ticket.message || ''}</p>
+        </div>
+        <div class="inquiry-footer">
+          <div class="inquiry-status">
+            <span class="status-badge ${statusClass}">${statusText}</span>
+            <span class="inquiry-assignee">${ticket.assignedTo ? `担当: ${ticket.assignedTo.name || '不明'}` : '未アサイン'}</span>
+          </div>
+          <div class="inquiry-actions">
+            <button class="btn btn-primary btn-small" onclick="openInquiryDetail('${ticket.id}')">対応する</button>
+            ${ticket.bookingId ? `<button class="btn btn-outline btn-small" onclick="viewChat('${ticket.bookingId}')">チャット閲覧</button>` : ''}
+            ${!ticket.assignedTo ? `<button class="btn btn-outline btn-small" onclick="assignToMe('${ticket.id}')">自分にアサイン</button>` : ''}
+            ${ticket.status === 'OPEN' ? `<button class="btn btn-outline btn-small" onclick="updateTicketStatus('${ticket.id}', 'IN_PROGRESS')">対応開始</button>` : ''}
+            ${ticket.status === 'IN_PROGRESS' ? `<button class="btn btn-outline btn-small" onclick="updateTicketStatus('${ticket.id}', 'CLOSED')">完了</button>` : ''}
+            <button class="btn btn-outline btn-small danger" onclick="deleteTicket('${ticket.id}')">削除</button>
+          </div>
+        </div>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', item);
+  });
+}
+
+function getTicketStatusText(status) {
+  switch (status) {
+    case 'OPEN': return '新規';
+    case 'IN_PROGRESS': return '対応中';
+    case 'RESOLVED': return '完了';
+    case 'CLOSED': return 'クローズ';
+    default: return status;
+  }
+}
+
+function getTicketStatusClass(status) {
+  switch (status) {
+    case 'OPEN': return 'pending';
+    case 'IN_PROGRESS': return 'in-progress';
+    case 'RESOLVED': case 'CLOSED': return 'active';
+    default: return '';
+  }
+}
+
+function showError(message) {
+  // 簡易的なエラー表示（将来的にはトースト通知などに置き換え可能）
+  alert('エラー: ' + message);
+}
+
+function showSuccess(message) {
+  // 簡易的な成功表示（将来的にはトースト通知などに置き換え可能）
+  alert('成功: ' + message);
+}
+
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('adminLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+
+// CSVエクスポート機能
+async function exportSupportTickets(buttonElement) {
+  try {
+    // ローディング表示
+    const button = buttonElement || document.querySelector('button[onclick*="exportSupportTickets"]');
+    const originalText = button?.textContent || 'CSVエクスポート';
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'エクスポート中...';
+    }
+
+    // サポートチケットデータを取得（まだ取得していない場合）
+    if (allSupportTickets.length === 0) {
+      const response = await api.getSupportTickets({ limit: 1000 });
+      allSupportTickets = response.data?.tickets || [];
+    }
+
+    if (allSupportTickets.length === 0) {
+      showError('エクスポートするデータがありません');
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+      return;
+    }
+
+    // CSV形式に変換
+    const csvContent = convertSupportTicketsToCSV(allSupportTickets);
+    
+    // ファイル名を生成
+    const filename = `support-tickets-${new Date().toISOString().split('T')[0]}.csv`;
+    
+    // ダウンロード
+    downloadCSV(csvContent, filename);
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+    
+    showSuccess('CSVファイルをダウンロードしました');
+  } catch (error) {
+    console.error('CSVエクスポートエラー:', error);
+    showError('CSVエクスポートに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    
+    // ボタンを復元
+    const button = buttonElement || document.querySelector('button[onclick*="exportSupportTickets"]');
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'CSVエクスポート';
+    }
+  }
+}
+
+// サポートチケットをCSV形式に変換
+function convertSupportTicketsToCSV(tickets) {
+  // CSVヘッダー
+  const headers = [
+    'ID',
+    '件名',
+    'タイプ',
+    'ステータス',
+    '優先度',
+    '利用者名',
+    '利用者メール',
+    '予約ID',
+    '担当者',
+    '作成日時',
+    '更新日時',
+    '内容',
+    '管理者回答'
+  ];
+
+  // CSV行を生成
+  const rows = tickets.map(ticket => {
+    const createdAt = new Date(ticket.createdAt).toLocaleString('ja-JP');
+    const updatedAt = new Date(ticket.updatedAt).toLocaleString('ja-JP');
+    const statusText = getTicketStatusText(ticket.status);
+    const priorityText = ticket.priority === 'URGENT' ? '緊急' : '通常';
+    
+    return [
+      ticket.id.substring(0, 8),
+      escapeCSV(ticket.subject || ''),
+      escapeCSV(ticket.type || ''),
+      statusText,
+      priorityText,
+      escapeCSV(ticket.user?.name || ''),
+      escapeCSV(ticket.user?.email || ''),
+      ticket.bookingId ? ticket.bookingId.substring(0, 8) : '',
+      escapeCSV(ticket.assignedTo?.name || ''),
+      createdAt,
+      updatedAt,
+      escapeCSV(ticket.content || ''),
+      escapeCSV(ticket.adminResponse || '')
+    ];
+  });
+
+  // CSV形式の文字列を生成
+  const csvRows = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ];
+
+  // BOMを追加してExcelで正しく開けるようにする
+  return '\uFEFF' + csvRows.join('\n');
+}
+
+// CSV用のエスケープ処理
+function escapeCSV(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  const stringValue = String(value);
+  // カンマ、ダブルクォート、改行を含む場合はダブルクォートで囲む
+  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+    return '"' + stringValue.replace(/"/g, '""') + '"';
+  }
+  return stringValue;
+}
+
+// CSVファイルをダウンロード
+function downloadCSV(csvContent, filename) {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
+async function openInquiryDetail(ticketId) {
+  try {
+    const response = await api.getSupportTicketById(ticketId);
+    const ticket = response.data;
+    
+    if (!ticket) {
+      throw new Error('問い合わせ情報が取得できませんでした');
+    }
+
+    const createdAt = new Date(ticket.createdAt);
+    const dateStr = createdAt.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const timeStr = createdAt.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const statusText = getTicketStatusText(ticket.status);
+    const statusClass = getTicketStatusClass(ticket.status);
+    const priorityText = ticket.priority === 'URGENT' ? '緊急' : '通常';
+
+    const content = `
+      <div class="admin-card">
+        <div class="info-grid">
+          <div class="info-item">
+            <label>問い合わせID</label>
+            <div>#${ticket.id.substring(0, 8)}</div>
+          </div>
+          <div class="info-item">
+            <label>タイプ</label>
+            <div>${ticket.type || '-'}</div>
+          </div>
+          <div class="info-item">
+            <label>優先度</label>
+            <div>${priorityText}</div>
+          </div>
+          <div class="info-item">
+            <label>ステータス</label>
+            <div><span class="status-badge ${statusClass}">${statusText}</span></div>
+          </div>
+          <div class="info-item">
+            <label>作成日時</label>
+            <div>${dateStr} ${timeStr}</div>
+          </div>
+          <div class="info-item">
+            <label>依頼者</label>
+            <div>${ticket.user?.name || '-'} (${ticket.user?.email || '-'})</div>
+          </div>
+          ${ticket.bookingId ? `
+          <div class="info-item">
+            <label>関連予約ID</label>
+            <div><a href="booking-detail.html?id=${ticket.bookingId}" class="btn-link">#${ticket.bookingId.substring(0, 8)}</a></div>
+          </div>
+          ` : ''}
+          <div class="info-item">
+            <label>担当者</label>
+            <div>${ticket.assignedTo ? ticket.assignedTo.name : '未アサイン'}</div>
+          </div>
+        </div>
+        <div style="margin-top: 1.5rem;">
+          <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">件名</label>
+          <div style="padding: 0.75rem; background: #f5f5f5; border-radius: 4px;">${ticket.subject || '-'}</div>
+        </div>
+        <div style="margin-top: 1.5rem;">
+          <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">メッセージ</label>
+          <div style="padding: 0.75rem; background: #f5f5f5; border-radius: 4px; white-space: pre-wrap;">${ticket.message || '-'}</div>
+        </div>
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem;">
+          ${ticket.status !== 'CLOSED' ? `
+          <button class="btn btn-primary" onclick="updateTicketStatusFromModal('${ticket.id}', '${ticket.status === 'OPEN' ? 'IN_PROGRESS' : 'CLOSED'}')">
+            ${ticket.status === 'OPEN' ? '対応開始' : '完了にする'}
+          </button>
+          ` : ''}
+          ${!ticket.assignedTo ? `
+          <button class="btn btn-outline" onclick="assignToMeFromModal('${ticket.id}')">自分にアサイン</button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+
+    document.getElementById('inquiryDetailContent').innerHTML = content;
+    document.getElementById('inquiryDetailModal').style.display = 'flex';
+  } catch (error) {
+    console.error('問い合わせ詳細の読み込みエラー:', error);
+    showError('問い合わせ詳細の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function viewChat(bookingId) {
+  try {
+    const response = await api.getMessages(bookingId, { limit: 100 });
+    const messages = response.data?.messages || [];
+    
+    let messagesHtml = '';
+    if (messages.length === 0) {
+      messagesHtml = '<div class="empty-message">メッセージがありません</div>';
+    } else {
+      messages.forEach(message => {
+        const messageDate = new Date(message.createdAt);
+        const dateStr = messageDate.toLocaleDateString('ja-JP', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        const timeStr = messageDate.toLocaleTimeString('ja-JP', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const isFromCustomer = message.senderRole === 'CUSTOMER';
+        messagesHtml += `
+          <div style="margin-bottom: 1rem; ${isFromCustomer ? 'text-align: right;' : ''}">
+            <div style="display: inline-block; max-width: 70%; padding: 0.75rem; background: ${isFromCustomer ? '#5B7FA6; color: white;' : '#f5f5f5;'}; border-radius: 8px;">
+              <div style="font-size: 0.875rem; margin-bottom: 0.25rem; opacity: 0.8;">
+                ${message.sender?.name || '不明'} - ${dateStr} ${timeStr}
+              </div>
+              <div>${message.content || ''}</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    const content = `
+      <div>
+        <div style="margin-bottom: 1rem;">
+          <a href="booking-detail.html?id=${bookingId}" class="btn-link">予約詳細を見る</a>
+        </div>
+        <div style="max-height: 60vh; overflow-y: auto; padding: 1rem; background: #f9f9f9; border-radius: 8px;">
+          ${messagesHtml}
+        </div>
+      </div>
+    `;
+
+    document.getElementById('chatViewContent').innerHTML = content;
+    document.getElementById('chatViewModal').style.display = 'flex';
+  } catch (error) {
+    console.error('チャット履歴の読み込みエラー:', error);
+    showError('チャット履歴の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+async function updateTicketStatusFromModal(ticketId, status) {
+  try {
+    await api.updateSupportTicket(ticketId, { status });
+    showSuccess('問い合わせステータスを更新しました');
+    closeModal('inquiryDetailModal');
+    await loadSupportTickets();
+  } catch (error) {
+    console.error('ステータス更新エラー:', error);
+    showError('ステータスの更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function assignToMeFromModal(ticketId) {
+  try {
+    const user = api.getUser();
+    if (!user || !user.id) {
+      throw new Error('ユーザー情報が取得できません');
+    }
+
+    await api.updateSupportTicket(ticketId, {
+      assignedToId: user.id,
+      status: 'IN_PROGRESS'
+    });
+    showSuccess('問い合わせをアサインしました');
+    closeModal('inquiryDetailModal');
+    await loadSupportTickets();
+  } catch (error) {
+    console.error('問い合わせアサインエラー:', error);
+    showError('問い合わせのアサインに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+window.onclick = function(event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
+  }
+}
+
+async function assignToMe(ticketId) {
+  if (!confirm('この問い合わせを自分にアサインしますか？')) {
+    return;
+  }
+
+  try {
+    const user = api.getUser();
+    if (!user || !user.id) {
+      throw new Error('ユーザー情報が取得できません');
+    }
+
+    await api.updateSupportTicket(ticketId, {
+      assignedToId: user.id,
+      status: 'IN_PROGRESS'
+    });
+    showSuccess('問い合わせをアサインしました');
+    await loadSupportTickets();
+  } catch (error) {
+    console.error('問い合わせアサインエラー:', error);
+    showError('問い合わせのアサインに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function updateTicketStatus(ticketId, status) {
+  try {
+    await api.updateSupportTicket(ticketId, { status });
+    showSuccess('問い合わせステータスを更新しました');
+    await loadSupportTickets();
+  } catch (error) {
+    console.error('ステータス更新エラー:', error);
+    showError('ステータスの更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function deleteTicket(ticketId) {
+  if (!confirm('この問い合わせを削除しますか？\nこの操作は取り消せません。')) {
+    return;
+  }
+
+  try {
+    await api.deleteSupportTicket(ticketId);
+    showSuccess('問い合わせを削除しました');
+    await loadSupportTickets();
+  } catch (error) {
+    console.error('問い合わせ削除エラー:', error);
+    showError('問い合わせの削除に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+</script>
+
+</body>
+</html>

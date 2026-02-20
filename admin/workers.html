@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ワーカー管理｜KAJISHIFT管理画面</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+// 認証チェック
+if (typeof checkAuth === 'function') {
+  if (!checkAuth('admin')) {
+    // リダイレクトされる
+  }
+} else {
+  // api.jsが読み込まれる前のフォールバック
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html" class="active">ワーカー管理</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <span class="admin-name">管理者 太郎</span>
+      <button class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    
+    <section class="admin-page-header">
+      <h1>ワーカー管理</h1>
+    </section>
+
+    <!-- 検索・フィルター -->
+    <section class="admin-filter-section">
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label>検索</label>
+            <input type="text" class="form-input" placeholder="氏名、メールアドレスで検索" />
+          </div>
+          <div class="filter-item">
+            <label>エリア</label>
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="sapporo">札幌市</option>
+              <option value="ebetsu">江別市</option>
+              <option value="kitahiroshima">北広島市</option>
+              <option value="ishikari">石狩市</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>評価</label>
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="5">5.0</option>
+              <option value="4">4.0以上</option>
+              <option value="3">3.0以上</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>状態</label>
+            <select class="form-select">
+              <option value="">すべて</option>
+              <option value="approved">承認済み</option>
+              <option value="pending">審査中</option>
+              <option value="suspended">停止中</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <button class="btn btn-primary">検索</button>
+            <button class="btn btn-outline">リセット</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ワーカー一覧 -->
+    <section class="admin-section">
+      <div class="section-header">
+        <h2 class="section-title">ワーカー一覧（全<span id="total-workers">-</span>名）</h2>
+        <button class="btn btn-outline btn-small" onclick="exportWorkers(this)">CSVエクスポート</button>
+      </div>
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>氏名</th>
+              <th>メールアドレス</th>
+              <th>対応エリア</th>
+              <th>評価</th>
+              <th>実績</th>
+              <th>本人確認</th>
+              <th>状態</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="workers-table-body">
+            <tr>
+              <td colspan="9" class="loading-message">読み込み中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="workers-pagination"></div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+let currentPage = 1;
+let totalPages = 1;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // 認証チェック
+  if (!checkAuth('admin')) {
+    return;
+  }
+
+  // 検索ボタン
+  document.querySelector('.filter-section .btn-primary').addEventListener('click', () => {
+    currentPage = 1;
+    loadWorkers();
+  });
+
+  // リセットボタン
+  document.querySelector('.filter-section .btn-outline').addEventListener('click', () => {
+    document.querySelectorAll('.filter-section input, .filter-section select').forEach(el => {
+      if (el.type === 'text') {
+        el.value = '';
+      } else if (el.tagName === 'SELECT') {
+        el.selectedIndex = 0;
+      }
+    });
+    currentPage = 1;
+    loadWorkers();
+  });
+
+  // 初期データ読み込み
+  await loadWorkers();
+});
+
+async function loadWorkers() {
+  try {
+    const filters = {
+      page: currentPage,
+      limit: 20
+    };
+
+    // 検索フィルターを追加
+    const approvalStatus = document.querySelector('.filter-section select[aria-label*="状態"]')?.value || 
+                           document.querySelectorAll('.filter-section select')[3]?.value;
+    const status = document.querySelectorAll('.filter-section select')[3]?.value;
+
+    if (approvalStatus) {
+      filters.approvalStatus = approvalStatus.toUpperCase();
+    }
+    if (status && status !== approvalStatus) {
+      filters.status = status.toUpperCase();
+    }
+
+    const response = await api.getAdminWorkers(filters);
+    
+    if (response.data && response.data.workers) {
+      const workers = response.data.workers;
+      const pagination = response.data.pagination;
+      
+      currentPage = pagination.page;
+      totalPages = pagination.totalPages;
+
+      document.getElementById('total-workers').textContent = pagination.total || 0;
+      displayWorkers(workers);
+      updatePagination(pagination);
+    } else {
+      throw new Error('予期しないレスポンス形式');
+    }
+  } catch (error) {
+    console.error('ワーカー一覧の読み込みエラー:', error);
+    showError('ワーカー一覧の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function displayWorkers(workers) {
+  const tbody = document.getElementById('workers-table-body');
+  tbody.innerHTML = '';
+
+  if (workers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-message">ワーカーがありません</td></tr>';
+    return;
+  }
+
+  workers.forEach(worker => {
+    const address = worker.address || '-';
+    const rating = worker.rating ? `⭐ ${worker.rating.toFixed(1)}` : '-';
+    const reviewCount = worker.reviewCount || 0;
+    const idDocumentStatus = worker.idDocumentUrl ? '確認済み' : '未確認';
+    const idDocumentClass = worker.idDocumentUrl ? 'active' : 'pending';
+    const approvalStatusText = getApprovalStatusText(worker.approvalStatus);
+    const approvalStatusClass = getApprovalStatusClass(worker.approvalStatus);
+
+    const row = `
+      <tr class="${worker.approvalStatus === 'PENDING' ? 'pending-row' : ''}">
+        <td>#${worker.id.substring(0, 8)}</td>
+        <td>${worker.name || '-'}</td>
+        <td>${worker.email || '-'}</td>
+        <td>${address}</td>
+        <td>${rating}</td>
+        <td>${reviewCount}件</td>
+        <td><span class="status-badge ${idDocumentClass}">${idDocumentStatus}</span></td>
+        <td><span class="status-badge ${approvalStatusClass}">${approvalStatusText}</span></td>
+        <td>
+          <a href="worker-detail.html?id=${worker.id}" class="btn-link">${worker.approvalStatus === 'PENDING' ? '審査' : '詳細'}</a>
+          ${worker.approvalStatus === 'APPROVED' ? `<button class="btn-link danger" onclick="suspendWorker('${worker.id}')">停止</button>` : ''}
+        </td>
+      </tr>
+    `;
+    tbody.insertAdjacentHTML('beforeend', row);
+  });
+}
+
+function updatePagination(pagination) {
+  const paginationEl = document.getElementById('workers-pagination');
+  if (!paginationEl) return;
+
+  paginationEl.innerHTML = `
+    <button class="btn btn-outline" ${pagination.page <= 1 ? 'disabled' : ''} onclick="currentPage = ${pagination.page - 1}; loadWorkers();">前へ</button>
+    <span class="page-info">${pagination.page} / ${pagination.totalPages}</span>
+    <button class="btn btn-outline" ${pagination.page >= pagination.totalPages ? 'disabled' : ''} onclick="currentPage = ${pagination.page + 1}; loadWorkers();">次へ</button>
+  `;
+}
+
+function getApprovalStatusText(status) {
+  switch (status) {
+    case 'PENDING': return '審査中';
+    case 'APPROVED': return '承認済み';
+    case 'REJECTED': return '却下';
+    default: return status;
+  }
+}
+
+function getApprovalStatusClass(status) {
+  switch (status) {
+    case 'PENDING': return 'pending';
+    case 'APPROVED': return 'active';
+    case 'REJECTED': return 'error';
+    default: return '';
+  }
+}
+
+async function suspendWorker(workerId) {
+  if (!confirm('このワーカーアカウントを停止しますか？\n停止されたアカウントはログインできなくなります。')) {
+    return;
+  }
+
+  try {
+    await api.updateWorker(workerId, { status: 'SUSPENDED' });
+    showSuccess('ワーカーを停止しました');
+    await loadWorkers();
+  } catch (error) {
+    console.error('ワーカー停止エラー:', error);
+    showError('ワーカーの停止に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function exportWorkers(buttonElement) {
+  try {
+    // 日付範囲を取得（フィルターから、オプション）
+    const dateInput = document.querySelector('.admin-filter-section input[type="date"]');
+    const startDate = dateInput?.value || '';
+    const endDate = dateInput?.value || '';
+
+    const params = {};
+    if (startDate) {
+      params.startDate = startDate;
+    }
+    if (endDate) {
+      params.endDate = endDate;
+    }
+    // 検索条件があれば追加（オプション）
+    const searchInput = document.querySelector('.admin-filter-section input[type="text"]');
+    if (searchInput?.value) {
+      params.search = searchInput.value;
+    }
+
+    // ローディング表示
+    const button = buttonElement || document.querySelector('button[onclick*="exportWorkers"]');
+    const originalText = button?.textContent || 'CSVエクスポート';
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'エクスポート中...';
+    }
+
+    const result = await api.downloadCSV('workers', params);
+    
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+    
+    showSuccess('CSVファイルをダウンロードしました: ' + (result.filename || 'workers-report.csv'));
+  } catch (error) {
+    console.error('CSVエクスポートエラー:', error);
+    showError('CSVエクスポートに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    
+    // ボタンを復元
+    const button = buttonElement || document.querySelector('button[onclick*="exportWorkers"]');
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'CSVエクスポート';
+    }
+  }
+}
+
+function showError(message) {
+  // 簡易的なエラー表示（将来的にはトースト通知などに置き換え可能）
+  alert('エラー: ' + message);
+}
+
+function showSuccess(message) {
+  // 簡易的な成功表示（将来的にはトースト通知などに置き換え可能）
+  alert('成功: ' + message);
+}
+
+function logout() {
+  if (confirm('ログアウトしますか？')) {
+    api.clearToken();
+    sessionStorage.removeItem('adminLoggedIn');
+    window.location.href = 'login.html';
+  }
+}
+</script>
+
+</body>
+</html>

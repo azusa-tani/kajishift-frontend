@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ワーカー登録｜KAJISHIFT</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="preload" href="../js/validation.js" as="script" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/validation.js" defer></script>
+</head>
+<body class="worker-login-page">
+  <div class="auth-container">
+    <div class="auth-box">
+      <div class="auth-header">
+        <a href="../index.html" class="auth-logo">KAJISHIFT</a>
+        <h1>ワーカー登録</h1>
+        <p>家事スキルを活かして働きませんか？</p>
+      </div>
+
+      <div class="error-message" id="errorMessage" style="display: none;"></div>
+      <div class="success-message" id="successMessage" style="display: none;"></div>
+
+      <form class="auth-form" id="registerForm">
+        <!-- 基本情報 -->
+        <div class="form-section">
+          <h2 class="form-section__title">基本情報</h2>
+          
+          <div class="form-group">
+            <label for="name" class="form-label">氏名 <span class="required">必須</span></label>
+            <input type="text" id="name" name="name" class="form-input" required placeholder="山田 太郎" />
+          </div>
+
+          <div class="form-group">
+            <label for="email" class="form-label">メールアドレス <span class="required">必須</span></label>
+            <input type="email" id="email" name="email" class="form-input" required placeholder="example@email.com" />
+          </div>
+
+          <div class="form-group">
+            <label for="phone" class="form-label">電話番号 <span class="required">必須</span></label>
+            <input type="tel" id="phone" name="phone" class="form-input" required placeholder="090-1234-5678" />
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label">パスワード <span class="required">必須</span></label>
+            <input type="password" id="password" name="password" class="form-input" required minlength="8" />
+            <p class="form-hint">8文字以上、英数字を含むパスワードを設定してください</p>
+            <div class="password-strength">
+              <div class="password-strength-bar"></div>
+            </div>
+            <div class="password-strength-text"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="password-confirm" class="form-label">パスワード（確認） <span class="required">必須</span></label>
+            <input type="password" id="password-confirm" name="password-confirm" class="form-input" required />
+          </div>
+        </div>
+
+        <!-- 住所情報 -->
+        <div class="form-section">
+          <h2 class="form-section__title">住所情報</h2>
+          
+          <div class="form-group">
+            <label for="address-pref" class="form-label">都道府県 <span class="required">必須</span></label>
+            <select id="address-pref" name="address-pref" class="form-input" required>
+              <option value="">選択してください</option>
+              <option value="hokkaido" selected>北海道</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="address-city" class="form-label">市区町村 <span class="required">必須</span></label>
+            <select id="address-city" name="address-city" class="form-input" required>
+              <option value="">選択してください</option>
+              <option value="sapporo">札幌市</option>
+              <option value="ebetsu">江別市</option>
+              <option value="kitahiroshima">北広島市</option>
+              <option value="ishikari">石狩市</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="address-detail" class="form-label">詳細住所 <span class="required">必須</span></label>
+            <input type="text" id="address-detail" name="address-detail" class="form-input" required placeholder="中央区南1条西1丁目" />
+          </div>
+        </div>
+
+        <!-- ワーカー情報 -->
+        <div class="form-section">
+          <h2 class="form-section__title">ワーカー情報</h2>
+          
+          <div class="form-group">
+            <label for="bio" class="form-label">自己紹介</label>
+            <textarea 
+              id="bio" 
+              name="bio" 
+              class="form-input" 
+              rows="4" 
+              placeholder="家事代行の経験や得意分野を教えてください（例: 家事代行歴5年。掃除と料理が得意です。）"></textarea>
+            <p class="form-hint">自己紹介を入力すると、依頼者にあなたのことを知ってもらいやすくなります</p>
+          </div>
+
+          <div class="form-group">
+            <label for="hourly-rate" class="form-label">希望時給（円）</label>
+            <input 
+              type="number" 
+              id="hourly-rate" 
+              name="hourly-rate" 
+              class="form-input" 
+              min="0" 
+              step="100" 
+              placeholder="例: 2500" />
+            <p class="form-hint">希望する時給を入力してください（後から変更可能です）</p>
+          </div>
+        </div>
+
+        <!-- 口座情報 -->
+        <div class="form-section">
+          <h2 class="form-section__title">口座情報</h2>
+          <p class="form-note">報酬の振込先を登録してください</p>
+          
+          <div class="form-group">
+            <label for="bank-name" class="form-label">銀行名 <span class="required">必須</span></label>
+            <input type="text" id="bank-name" name="bank-name" class="form-input" required placeholder="例: 北海道銀行" />
+          </div>
+
+          <div class="form-group">
+            <label for="bank-branch" class="form-label">支店名 <span class="required">必須</span></label>
+            <input type="text" id="bank-branch" name="bank-branch" class="form-input" required placeholder="例: 中央支店" />
+          </div>
+
+          <div class="form-group">
+            <label for="account-type" class="form-label">口座種別 <span class="required">必須</span></label>
+            <select id="account-type" name="account-type" class="form-input" required>
+              <option value="">選択してください</option>
+              <option value="ordinary">普通</option>
+              <option value="checking">当座</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="account-number" class="form-label">口座番号 <span class="required">必須</span></label>
+            <input type="text" id="account-number" name="account-number" class="form-input" required placeholder="1234567" />
+          </div>
+
+          <div class="form-group">
+            <label for="account-name" class="form-label">口座名義 <span class="required">必須</span></label>
+            <input type="text" id="account-name" name="account-name" class="form-input" required placeholder="ヤマダ タロウ" />
+          </div>
+        </div>
+
+        <!-- 本人確認書類 -->
+        <div class="form-section">
+          <h2 class="form-section__title">本人確認書類</h2>
+          <p class="form-note">運転免許証またはマイナンバーカードの画像をアップロードしてください</p>
+          
+          <div class="form-group">
+            <label for="id-document" class="form-label">本人確認書類 <span class="required">必須</span></label>
+            <input type="file" id="id-document" name="id-document" class="form-input" accept="image/*,.pdf" required />
+            <p class="form-hint">表面・裏面の両方をアップロードしてください（JPEG、PNG、PDF形式、10MB以下）</p>
+            
+            <!-- ファイルプレビュー -->
+            <div id="file-preview" class="file-preview" style="display: none;">
+              <div class="file-preview-item">
+                <img id="preview-image" src="" alt="プレビュー" style="max-width: 300px; max-height: 200px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+                <p id="preview-filename" class="file-preview-name"></p>
+                <button type="button" class="btn btn-outline btn-small" onclick="removeFile()" style="margin-top: 5px;">削除</button>
+              </div>
+            </div>
+            
+            <!-- アップロード状態 -->
+            <div id="upload-status" class="upload-status" style="display: none;">
+              <p class="upload-status-text">アップロード中...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 利用規約同意 -->
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="agree-terms" name="agree-terms" required />
+            <span><a href="#" target="_blank">利用規約</a>と<a href="#" target="_blank">プライバシーポリシー</a>に同意します <span class="required">必須</span></span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block">登録する</button>
+
+        <p class="auth-footer">
+          すでにアカウントをお持ちですか？ <a href="login.html">ログイン</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // グローバル変数
+    let idDocumentUrl = null;
+
+    // ページ読み込み時にバリデーションを設定
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('registerForm');
+      
+      // リアルタイムバリデーション設定
+      setupRealTimeValidation(document.getElementById('name'), Validators.required);
+      setupRealTimeValidation(document.getElementById('email'), Validators.email);
+      setupRealTimeValidation(document.getElementById('phone'), Validators.phone);
+      setupRealTimeValidation(document.getElementById('password'), Validators.password);
+      
+      // パスワード確認のバリデーション
+      const passwordConfirm = document.getElementById('password-confirm');
+      passwordConfirm.addEventListener('blur', () => {
+        const password = document.getElementById('password').value;
+        const error = Validators.passwordConfirm(password, passwordConfirm.value);
+        if (error) {
+          showError(passwordConfirm, error);
+        } else {
+          clearError(passwordConfirm);
+        }
+      });
+      
+      // パスワード強度表示
+      setupPasswordStrength(
+        document.getElementById('password'),
+        document.querySelector('.password-strength').parentElement
+      );
+      
+      // 電話番号自動フォーマット
+      setupPhoneFormat(document.getElementById('phone'));
+
+      // 本人確認書類のアップロード
+      const idDocumentInput = document.getElementById('id-document');
+      idDocumentInput.addEventListener('change', async function(e) {
+        if (e.target.files.length > 0) {
+          const file = e.target.files[0];
+          
+          // ファイルサイズチェック（10MB以下）
+          if (file.size > 10 * 1024 * 1024) {
+            showError('ファイルサイズは10MB以下にしてください', document.getElementById('errorMessage'));
+            e.target.value = '';
+            return;
+          }
+          
+          // ファイルタイプチェック
+          const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+          if (!allowedTypes.includes(file.type)) {
+            showError('JPEG、PNG、またはPDFファイルを選択してください', document.getElementById('errorMessage'));
+            e.target.value = '';
+            return;
+          }
+
+          // プレビューを表示
+          displayFilePreview(file);
+
+          // ファイルをアップロード
+          await uploadIdDocument(file);
+        } else {
+          // ファイルが選択されていない場合
+          hideFilePreview();
+          idDocumentUrl = null;
+        }
+      });
+    });
+
+    // フォーム送信時のバリデーション
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const validations = {
+        'name': Validators.required,
+        'email': Validators.email,
+        'phone': Validators.phone,
+        'password': Validators.password,
+        'password-confirm': (value) => {
+          const password = document.getElementById('password').value;
+          return Validators.passwordConfirm(password, value);
+        }
+      };
+      
+      if (!validateForm(this, validations)) {
+        const firstError = this.querySelector('.has-error input');
+        if (firstError) {
+          firstError.focus();
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+
+      // 本人確認書類のチェック
+      if (!idDocumentUrl) {
+        showError('本人確認書類をアップロードしてください', document.getElementById('errorMessage'));
+        document.getElementById('id-document').focus();
+        return;
+      }
+
+      // 住所を結合
+      const addressPref = document.getElementById('address-pref').value;
+      const addressCity = document.getElementById('address-city').value;
+      const addressDetail = document.getElementById('address-detail').value;
+      
+      const cityMap = {
+        'sapporo': '札幌市',
+        'ebetsu': '江別市',
+        'kitahiroshima': '北広島市',
+        'ishikari': '石狩市'
+      };
+      
+      const address = `${cityMap[addressCity] || addressCity}${addressDetail}`;
+
+      // 登録データを構築（FormData形式でファイルを含める）
+      const formData = new FormData();
+      formData.append('email', document.getElementById('email').value);
+      formData.append('password', document.getElementById('password').value);
+      formData.append('name', document.getElementById('name').value);
+      formData.append('phone', document.getElementById('phone').value);
+      formData.append('role', 'WORKER');
+      formData.append('address', address);
+      
+      const bio = document.getElementById('bio').value;
+      if (bio) formData.append('bio', bio);
+      
+      const hourlyRate = document.getElementById('hourly-rate').value;
+      if (hourlyRate) formData.append('hourlyRate', hourlyRate);
+      
+      const bankName = document.getElementById('bank-name').value;
+      if (bankName) formData.append('bankName', bankName);
+      
+      const branchName = document.getElementById('bank-branch').value;
+      if (branchName) formData.append('branchName', branchName);
+      
+      const accountType = document.getElementById('account-type').value;
+      if (accountType) formData.append('accountType', accountType);
+      
+      const accountNumber = document.getElementById('account-number').value;
+      if (accountNumber) formData.append('accountNumber', accountNumber);
+      
+      const accountName = document.getElementById('account-name').value;
+      if (accountName) formData.append('accountName', accountName);
+      
+      // 本人確認書類を追加
+      const idDocumentInput = document.getElementById('id-document');
+      if (idDocumentInput.files && idDocumentInput.files.length > 0) {
+        formData.append('idDocument', idDocumentInput.files[0]);
+      }
+
+      try {
+        // 登録ボタンを無効化
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = '登録中...';
+
+        // APIで登録（FormData形式で送信）
+        const response = await api.registerWithFile(formData);
+        
+        if (response.data && response.data.token) {
+          // トークンを保存
+          api.setToken(response.data.token);
+          if (response.data.user) {
+            api.setUser(response.data.user);
+          }
+          
+          alert('登録が完了しました。審査完了後、メールでお知らせします。');
+          // ログインページへリダイレクト
+          window.location.href = 'login.html';
+        } else {
+          throw new Error('登録に失敗しました');
+        }
+      } catch (error) {
+        console.error('登録エラー:', error);
+        showError('登録に失敗しました: ' + (error.message || 'エラーが発生しました'), document.getElementById('errorMessage'));
+        
+        // 登録ボタンを再有効化
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = false;
+        submitButton.textContent = '登録する';
+      }
+    });
+
+    // ファイルプレビューを表示
+    function displayFilePreview(file) {
+      const previewDiv = document.getElementById('file-preview');
+      const previewImage = document.getElementById('preview-image');
+      const previewFilename = document.getElementById('preview-filename');
+      
+      previewFilename.textContent = file.name;
+      
+      // 画像ファイルの場合のみプレビューを表示
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewImage.src = e.target.result;
+          previewImage.style.display = 'block';
+          previewDiv.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // PDFファイルの場合は画像を非表示
+        previewImage.style.display = 'none';
+        previewDiv.style.display = 'block';
+      }
+    }
+
+    // ファイルプレビューを非表示
+    function hideFilePreview() {
+      document.getElementById('file-preview').style.display = 'none';
+      document.getElementById('preview-image').src = '';
+      document.getElementById('preview-filename').textContent = '';
+    }
+
+    // ファイルを削除
+    function removeFile() {
+      document.getElementById('id-document').value = '';
+      hideFilePreview();
+      idDocumentUrl = null;
+      const uploadStatus = document.getElementById('upload-status');
+      uploadStatus.style.display = 'none';
+    }
+
+    // 本人確認書類をアップロード（プレビューのみ、実際のアップロードは登録時）
+    async function uploadIdDocument(file) {
+      const uploadStatus = document.getElementById('upload-status');
+      const uploadStatusText = uploadStatus.querySelector('.upload-status-text');
+      const errorMessage = document.getElementById('errorMessage');
+      const successMessage = document.getElementById('successMessage');
+      
+      // アップロード状態を表示
+      uploadStatus.style.display = 'block';
+      uploadStatusText.textContent = 'ファイルが選択されました（登録時にアップロードされます）';
+      uploadStatusText.style.color = '#28a745';
+      
+      // エラーメッセージをクリア
+      errorMessage.style.display = 'none';
+      showSuccess('本人確認書類を選択しました', successMessage);
+      
+      // ファイルが選択されたことを記録（登録時にFormDataに含める）
+      idDocumentUrl = 'selected'; // ファイルが選択されたことを示すフラグ
+    }
+  </script>
+</body>
+</html>
