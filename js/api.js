@@ -730,6 +730,16 @@ class ApiClient {
   }
 
   /**
+   * 管理者を新規登録（既存管理者のみが実行可能）
+   */
+  async registerAdmin(adminData) {
+    return this.request('/admin/register', {
+      method: 'POST',
+      body: adminData,
+    });
+  }
+
+  /**
    * ワーカー一覧を取得（管理者のみ）
    */
   async getAdminWorkers(params = {}) {

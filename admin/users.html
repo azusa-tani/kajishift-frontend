@@ -49,6 +49,7 @@ if (typeof checkAuth === 'function') {
     
     <section class="admin-page-header">
       <h1>利用者管理</h1>
+      <button class="btn btn-primary" onclick="openAdminRegisterModal()">新しい管理者を登録</button>
     </section>
 
     <!-- 検索・フィルター -->
@@ -117,6 +118,85 @@ if (typeof checkAuth === 'function') {
 
   </div>
 </main>
+
+<!-- 管理者登録モーダル -->
+<div id="adminRegisterModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>新しい管理者を登録</h2>
+      <button class="modal-close" onclick="closeAdminRegisterModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="adminRegisterForm">
+        <div class="form-group">
+          <label for="admin-name">氏名 <span class="required">必須</span></label>
+          <input 
+            type="text" 
+            id="admin-name" 
+            name="name" 
+            class="form-input" 
+            required 
+            placeholder="管理者 太郎"
+            autocomplete="name" />
+        </div>
+
+        <div class="form-group">
+          <label for="admin-email">メールアドレス <span class="required">必須</span></label>
+          <input 
+            type="email" 
+            id="admin-email" 
+            name="email" 
+            class="form-input" 
+            required 
+            placeholder="admin@kajishift.com"
+            autocomplete="email" />
+        </div>
+
+        <div class="form-group">
+          <label for="admin-phone">電話番号</label>
+          <input 
+            type="tel" 
+            id="admin-phone" 
+            name="phone" 
+            class="form-input" 
+            placeholder="090-1234-5678"
+            autocomplete="tel" />
+        </div>
+
+        <div class="form-group">
+          <label for="admin-password">パスワード <span class="required">必須</span></label>
+          <input 
+            type="password" 
+            id="admin-password" 
+            name="password" 
+            class="form-input" 
+            required 
+            minlength="6"
+            placeholder="6文字以上"
+            autocomplete="new-password" />
+          <p class="form-hint">6文字以上のパスワードを設定してください</p>
+        </div>
+
+        <div class="form-group">
+          <label for="admin-password-confirm">パスワード（確認） <span class="required">必須</span></label>
+          <input 
+            type="password" 
+            id="admin-password-confirm" 
+            name="password-confirm" 
+            class="form-input" 
+            required 
+            minlength="6"
+            autocomplete="new-password" />
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeAdminRegisterModal()">キャンセル</button>
+          <button type="submit" class="btn btn-primary">登録する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <script>
 let currentPage = 1;
@@ -355,6 +435,118 @@ function logout() {
     window.location.href = 'login.html';
   }
 }
+
+// 管理者登録モーダル
+function openAdminRegisterModal() {
+  document.getElementById('adminRegisterModal').style.display = 'flex';
+  document.getElementById('admin-name').focus();
+}
+
+function closeAdminRegisterModal() {
+  document.getElementById('adminRegisterModal').style.display = 'none';
+  document.getElementById('adminRegisterForm').reset();
+  clearAdminRegisterError();
+}
+
+function clearAdminRegisterError() {
+  const errorElement = document.getElementById('admin-register-error');
+  if (errorElement) {
+    errorElement.remove();
+  }
+}
+
+function showAdminRegisterError(message) {
+  clearAdminRegisterError();
+  const form = document.getElementById('adminRegisterForm');
+  const errorElement = document.createElement('div');
+  errorElement.id = 'admin-register-error';
+  errorElement.className = 'error-message';
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  errorElement.style.marginBottom = '1rem';
+  form.insertBefore(errorElement, form.firstChild);
+}
+
+// 管理者登録フォーム送信
+document.addEventListener('DOMContentLoaded', () => {
+  const adminRegisterForm = document.getElementById('adminRegisterForm');
+  if (adminRegisterForm) {
+    adminRegisterForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAdminRegisterError();
+
+      const name = document.getElementById('admin-name').value.trim();
+      const email = document.getElementById('admin-email').value.trim();
+      const phone = document.getElementById('admin-phone').value.trim();
+      const password = document.getElementById('admin-password').value;
+      const passwordConfirm = document.getElementById('admin-password-confirm').value;
+
+      // バリデーション
+      if (!name || !email || !password) {
+        showAdminRegisterError('氏名、メールアドレス、パスワードは必須です');
+        return;
+      }
+
+      if (password.length < 6) {
+        showAdminRegisterError('パスワードは6文字以上である必要があります');
+        return;
+      }
+
+      if (password !== passwordConfirm) {
+        showAdminRegisterError('パスワードが一致しません');
+        return;
+      }
+
+      // メールアドレスの形式チェック
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showAdminRegisterError('有効なメールアドレスを入力してください');
+        return;
+      }
+
+      const submitButton = adminRegisterForm.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = '登録中...';
+
+      try {
+        const adminData = {
+          name,
+          email,
+          password,
+          phone: phone || null
+        };
+
+        const response = await api.registerAdmin(adminData);
+
+        if (response.data) {
+          showSuccess('管理者の登録が完了しました');
+          closeAdminRegisterModal();
+          // 管理者一覧を再読み込み（管理者も表示するようにフィルターを変更）
+          await loadUsers();
+        } else {
+          throw new Error('登録に失敗しました');
+        }
+      } catch (error) {
+        console.error('管理者登録エラー:', error);
+        showAdminRegisterError(error.message || '管理者の登録に失敗しました');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    });
+  }
+
+  // モーダル外をクリックで閉じる
+  const modal = document.getElementById('adminRegisterModal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeAdminRegisterModal();
+      }
+    });
+  }
+});
 </script>
 
 </body>
