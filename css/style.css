@@ -234,7 +234,7 @@ header {
   letter-spacing: 0.04em;
 }
 
-.hero p {
+.hero p:not(.hero__subtitle):not(.hero__helper) {
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   margin-bottom: var(--space-6);
@@ -3204,11 +3204,11 @@ footer a:hover {
   margin-top: 1.5rem;
   text-align: center;
   font-size: 0.9rem;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .login-footer a {
-  color: var(--primary-color);
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
 }
@@ -4442,14 +4442,25 @@ footer a:hover {
   gap: var(--space-2);
 }
 
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .logo__image {
-  height: 32px;
+  height: 48px;
   width: auto;
   display: block;
 }
 
 .logo__text {
   display: inline-block;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
 }
 
 .header__nav {
@@ -4466,10 +4477,11 @@ footer a:hover {
 
 .nav__link {
   font-size: 0.875rem;
-  color: var(--color-text);
+  color: #2c3e50;
+  font-weight: var(--font-weight-medium);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .nav__link:hover,
@@ -4532,13 +4544,16 @@ footer a:hover {
 .hero__subtitle {
   font-size: 1rem;
   margin-bottom: var(--space-5);
-  opacity: 0.95;
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: var(--font-weight-medium);
 }
 
 @media (min-width: 768px) {
   .hero__subtitle {
     font-size: 1.125rem;
     margin-bottom: var(--space-6);
+    color: #ffffff !important;
   }
 }
 
@@ -4910,7 +4925,7 @@ footer a:hover {
 .footer__link {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.8);
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .footer__link:hover,
