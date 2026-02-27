@@ -65,7 +65,7 @@
     <p>予約内容を変更しますか？48時間前まで無料で変更可能です。</p>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('changeModal')">キャンセル</button>
-      <button class="btn btn-primary" onclick="window.location.href='booking.html'">変更する</button>
+      <button class="btn btn-primary" id="changeBookingButton">変更する</button>
     </div>
   </div>
 </div>
@@ -123,7 +123,32 @@ document.addEventListener('DOMContentLoaded', async function() {
       document.getElementById(tab + '-tab').classList.add('active');
     });
   });
+  
+  // 予約変更ボタンのイベントリスナーを追加（モーダルが表示された後に設定）
+  setupChangeBookingButton();
 });
+
+// 予約変更ボタンのイベントリスナーを設定する関数
+function setupChangeBookingButton() {
+  const changeBookingButton = document.getElementById('changeBookingButton');
+  console.log('setupChangeBookingButton called, button found:', changeBookingButton);
+  if (changeBookingButton) {
+    // 既存のイベントリスナーを削除（重複防止）
+    const newButton = changeBookingButton.cloneNode(true);
+    changeBookingButton.parentNode.replaceChild(newButton, changeBookingButton);
+    
+    // 新しいイベントリスナーを追加
+    newButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('変更するボタンがクリックされました');
+      proceedToChange();
+    });
+    console.log('イベントリスナーを追加しました');
+  } else {
+    console.error('changeBookingButton要素が見つかりません');
+  }
+}
 
 // 予約一覧を読み込む
 async function loadBookings() {
@@ -342,9 +367,45 @@ function generateStars(rating) {
 
 let currentCancelBookingId = null;
 
+let currentChangeBookingId = null;
+
 function openChangeModal(id) {
-  document.getElementById('changeModal').style.display = 'flex';
+  console.log('openChangeModal called with id:', id);
+  if (!id) {
+    console.error('予約IDが指定されていません');
+    alert('予約IDが取得できませんでした');
+    return;
+  }
+  currentChangeBookingId = id;
+  console.log('currentChangeBookingId set to:', currentChangeBookingId);
+  const modal = document.getElementById('changeModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    // モーダルが表示された後にイベントリスナーを再設定
+    setTimeout(() => {
+      setupChangeBookingButton();
+    }, 100);
+  } else {
+    console.error('changeModal要素が見つかりません');
+  }
 }
+
+function proceedToChange() {
+  console.log('proceedToChange called');
+  console.log('currentChangeBookingId:', currentChangeBookingId);
+  if (currentChangeBookingId) {
+    const url = `booking.html?id=${currentChangeBookingId}`;
+    console.log('Redirecting to:', url);
+    window.location.href = url;
+  } else {
+    console.error('予約IDが取得できませんでした');
+    alert('予約IDが取得できませんでした。ページを再読み込みしてください。');
+  }
+}
+
+// グローバルスコープに明示的に公開
+window.proceedToChange = proceedToChange;
+window.openChangeModal = openChangeModal;
 
 function openCancelModal(id) {
   currentCancelBookingId = id;
@@ -361,7 +422,11 @@ function openReviewModal(id) {
 
 function closeModal(modalId) {
   document.getElementById(modalId).style.display = 'none';
-  currentCancelBookingId = null;
+  if (modalId === 'cancelModal') {
+    currentCancelBookingId = null;
+  } else if (modalId === 'changeModal') {
+    currentChangeBookingId = null;
+  }
 }
 
 async function confirmCancel() {
