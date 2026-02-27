@@ -85,15 +85,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     return;
   }
 
-  // URLパラメータから予約IDを取得
+  // URLパラメータから予約IDを取得（bookingまたはbookingIdの両方に対応）
   const urlParams = new URLSearchParams(window.location.search);
-  bookingId = urlParams.get('bookingId');
+  bookingId = urlParams.get('booking') || urlParams.get('bookingId');
 
   if (!bookingId) {
     alert('予約IDが指定されていません');
     window.location.href = 'bookings.html';
     return;
   }
+  
+  console.log('チャットページ: 予約IDを取得しました:', bookingId);
 
   // ユーザー情報を取得
   const user = api.getUser();
