@@ -77,6 +77,7 @@ let bookingId = null;
 let currentBooking = null;
 let currentUserId = null;
 let loadedMessageIds = new Set(); // 既に表示したメッセージIDを記録
+let tempMessageIds = new Set(); // 一時メッセージIDを追跡
 
 // ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
@@ -121,11 +122,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // メッセージ受信イベント
     socketManager.onMessage((message) => {
+      console.log('WebSocketでメッセージを受信:', message);
       // この予約に関連するメッセージのみ処理
       if (message.bookingId === bookingId) {
         // 既に表示済みのメッセージはスキップ
         if (!loadedMessageIds.has(message.id)) {
-          addMessageToUI(message.content, message.senderId === currentUserId ? 'sent' : 'received', message);
+          // 送信したメッセージの場合、一時メッセージを削除
+          if (message.senderId === currentUserId) {
+            // 一時メッセージを探して削除
+            tempMessageIds.forEach(tempId => {
+              const tempElement = document.getElementById(tempId);
+              if (tempElement) {
+                tempElement.remove();
+                tempMessageIds.delete(tempId);
+              }
+            });
+          }
+          // 実際のメッセージを追加
+          addMessageToUI(message.content || '', message.senderId === currentUserId ? 'sent' : 'received', message);
           loadedMessageIds.add(message.id);
         }
       }
@@ -318,36 +332,59 @@ async function sendMessage() {
     return;
   }
 
+  // 送信前にUIに表示（楽観的更新）
+  const tempId = 'temp-' + Date.now();
+  tempMessageIds.add(tempId);
+  const tempMessage = {
+    id: tempId,
+    content: text,
+    senderId: currentUserId,
+    createdAt: new Date().toISOString()
+  };
+  addMessageToUI(text, 'sent', tempMessage);
+  const originalText = text; // エラー時の復元用
+  input.value = '';
+  
   try {
-    // 送信前にUIに表示（楽観的更新）
-    const tempId = 'temp-' + Date.now();
-    const tempMessage = {
-      id: tempId,
-      content: text,
-      senderId: currentUserId,
-      createdAt: new Date().toISOString()
-    };
-    addMessageToUI(text, 'sent', tempMessage);
-    input.value = '';
-    
-    // APIで送信（WebSocketで自動的に受信される）
-    await api.sendMessage({
+    // APIで送信
+    const response = await api.sendMessage({
       bookingId: bookingId,
       content: text
     });
     
-    // 一時メッセージを削除（実際のメッセージがWebSocketで来るため）
-    setTimeout(() => {
+    console.log('メッセージ送信成功:', response);
+    
+    // 送信成功後、実際のメッセージIDを取得できた場合は一時メッセージを更新
+    if (response && response.data && response.data.id) {
+      const actualMessageId = response.data.id;
       const tempElement = document.getElementById(tempId);
       if (tempElement) {
-        tempElement.remove();
+        tempElement.id = actualMessageId;
+        loadedMessageIds.add(actualMessageId);
+        tempMessageIds.delete(tempId);
       }
-    }, 1000);
+    } else {
+      // メッセージIDが取得できない場合は、メッセージ一覧を再読み込み
+      setTimeout(async () => {
+        const tempElement = document.getElementById(tempId);
+        if (tempElement && tempMessageIds.has(tempId)) {
+          // 一時メッセージがまだ残っている場合、メッセージ一覧を再読み込み
+          await loadMessages();
+          tempMessageIds.delete(tempId);
+        }
+      }, 2000);
+    }
   } catch (error) {
     console.error('メッセージ送信エラー:', error);
     showError('メッセージの送信に失敗しました: ' + (error.message || 'エラーが発生しました'));
     // エラー時は入力内容を復元
-    input.value = text;
+    input.value = originalText;
+    // 一時メッセージを削除
+    const tempElement = document.getElementById(tempId);
+    if (tempElement) {
+      tempElement.remove();
+      tempMessageIds.delete(tempId);
+    }
   }
 }
 
