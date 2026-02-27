@@ -333,6 +333,34 @@ class ApiClient {
     });
   }
 
+  /**
+   * 予約を承諾（ワーカーのみ）
+   */
+  async acceptBooking(bookingId) {
+    return this.request(`/bookings/${bookingId}/accept`, {
+      method: 'POST',
+    });
+  }
+
+  /**
+   * 予約を拒否（ワーカーのみ）
+   */
+  async rejectBooking(bookingId, reason = null) {
+    return this.request(`/bookings/${bookingId}/reject`, {
+      method: 'POST',
+      body: reason ? { reason } : {},
+    });
+  }
+
+  /**
+   * 作業完了（ワーカーのみ）
+   */
+  async completeBooking(bookingId) {
+    return this.request(`/bookings/${bookingId}/complete`, {
+      method: 'POST',
+    });
+  }
+
   // ==================== ワーカーAPI ====================
 
   /**
@@ -973,6 +1001,55 @@ class ApiClient {
     // ファイル名を取得（Content-Dispositionヘッダーから）
     const contentDisposition = response.headers.get('content-disposition');
     let filename = `${reportType}-report-${new Date().toISOString().split('T')[0]}.csv`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+
+    // Blobとして取得してダウンロード
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+
+    return { success: true, filename };
+  }
+
+  /**
+   * Excelファイルをダウンロード（管理者のみ）
+   * @param {string} reportType - レポートタイプ（bookings, users, workers, revenue）
+   * @param {object} params - クエリパラメータ（startDate, endDateなど）
+   */
+  async downloadExcel(reportType, params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/admin/reports/${reportType}/export/excel${queryString ? `?${queryString}` : ''}`;
+    
+    const url = `${this.baseURL}${endpoint}`;
+    const headers = {};
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(url, {
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Excelのダウンロードに失敗しました' }));
+      throw new Error(error.message || 'Excelのダウンロードに失敗しました');
+    }
+
+    // ファイル名を取得（Content-Dispositionヘッダーから）
+    const contentDisposition = response.headers.get('content-disposition');
+    let filename = `${reportType}-report-${new Date().toISOString().split('T')[0]}.xlsx`;
     if (contentDisposition) {
       const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
       if (filenameMatch) {

@@ -174,6 +174,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     return;
   }
   
+  // UUID形式の簡易バリデーション（数値のみのIDは無効）
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(bookingId)) {
+    showError('無効な予約IDです。予約一覧から正しい予約を選択してください。');
+    document.getElementById('booking-detail-card').innerHTML = `
+      <div class="error-message">
+        <p><strong>無効な予約ID</strong></p>
+        <p>予約IDはUUID形式である必要があります。</p>
+        <p style="margin-top: 1rem; font-size: 0.875rem; color: #666;">
+          予約ID: ${bookingId}<br>
+          予約一覧から正しい予約を選択してください。
+        </p>
+        <div style="margin-top: 1rem;">
+          <a href="bookings.html" class="btn btn-outline">予約一覧に戻る</a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
   // 予約詳細を読み込む
   await loadBookingDetail(bookingId);
 });
@@ -183,12 +203,23 @@ let currentBooking = null;
 // 予約詳細を読み込む
 async function loadBookingDetail(bookingId) {
   try {
+    console.log('予約詳細を読み込み中... bookingId:', bookingId);
+    
+    if (!bookingId) {
+      throw new Error('予約IDが指定されていません');
+    }
+    
     const response = await api.getBookingById(bookingId);
-    currentBooking = response.data;
+    console.log('APIレスポンス:', response);
+    
+    // レスポンスの形式を確認
+    currentBooking = response.data || response;
     
     if (!currentBooking) {
       throw new Error('予約が見つかりません');
     }
+    
+    console.log('予約データ:', currentBooking);
     
     // 予約詳細を表示
     displayBookingDetail(currentBooking);
@@ -210,9 +241,28 @@ async function loadBookingDetail(bookingId) {
     }
   } catch (error) {
     console.error('予約詳細の取得エラー:', error);
-    showError(error.message || '予約詳細の取得に失敗しました');
-    document.getElementById('booking-detail-card').innerHTML = 
-      '<p class="error-message">データの読み込みに失敗しました</p>';
+    console.error('エラー詳細:', {
+      message: error.message,
+      stack: error.stack,
+      bookingId: bookingId
+    });
+    
+    const errorMessage = error.message || '予約詳細の取得に失敗しました';
+    showError(errorMessage);
+    
+    document.getElementById('booking-detail-card').innerHTML = `
+      <div class="error-message">
+        <p><strong>データの読み込みに失敗しました</strong></p>
+        <p>${errorMessage}</p>
+        <p style="margin-top: 1rem; font-size: 0.875rem; color: #666;">
+          予約ID: ${bookingId || '未指定'}<br>
+          ブラウザのコンソール（F12）で詳細なエラー情報を確認できます。
+        </p>
+        <div style="margin-top: 1rem;">
+          <a href="bookings.html" class="btn btn-outline">予約一覧に戻る</a>
+        </div>
+      </div>
+    `;
   }
 }
 

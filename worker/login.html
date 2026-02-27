@@ -194,17 +194,11 @@
             }
             
             // ログイン成功
-            if (typeof showSuccess === 'function') {
-              showSuccess('ログインに成功しました');
-            }
-            
             // sessionStorageにも設定（既存のダッシュボードページとの互換性のため）
             sessionStorage.setItem('workerLoggedIn', 'true');
             
             // ダッシュボードにリダイレクト
-            setTimeout(() => {
-              window.location.href = 'dashboard.html';
-            }, 500);
+            window.location.href = 'dashboard.html';
           } else {
             console.error('予期しないレスポンス形式:', response);
             throw new Error('ログインに失敗しました。サーバーの応答が不正です。');

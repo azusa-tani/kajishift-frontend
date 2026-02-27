@@ -123,12 +123,8 @@
           }
           
           // ログイン成功
-          showSuccess('ログインに成功しました');
-          
           // ダッシュボードにリダイレクト
-          setTimeout(() => {
-            window.location.href = 'dashboard.html';
-          }, 500);
+          window.location.href = 'dashboard.html';
         } else {
           throw new Error('ログインに失敗しました');
         }

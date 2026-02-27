@@ -226,7 +226,11 @@ function displayJobDetail(booking) {
     </div>
 
     <div class="job-detail-actions">
-      ${booking.workerId ? `
+      ${booking.status === 'COMPLETED' ? `
+        <button class="btn btn-outline btn-large" disabled>作業完了済み</button>
+      ` : booking.status === 'IN_PROGRESS' || booking.status === 'CONFIRMED' ? `
+        <button class="btn btn-primary btn-large" onclick="completeJob('${booking.id}')">作業を完了する</button>
+      ` : booking.workerId ? `
         <button class="btn btn-outline btn-large" disabled>既に承諾済み</button>
         <button class="btn btn-primary btn-large" disabled>この仕事を承諾する</button>
       ` : `
@@ -268,16 +272,7 @@ async function acceptJob(bookingId) {
   }
 
   try {
-    const user = api.getUser();
-    if (!user || !user.id) {
-      throw new Error('ユーザー情報が取得できません');
-    }
-    
-    // 予約を更新してワーカーIDを設定（承諾）
-    await api.updateBooking(bookingId, {
-      workerId: user.id
-    });
-
+    await api.acceptBooking(bookingId);
     alert('仕事を承諾しました！');
     // 詳細ページを再読み込み
     await loadJobDetail(bookingId);
@@ -305,30 +300,30 @@ async function confirmRejectJob(bookingId) {
   const reason = document.getElementById('rejectReason').value.trim();
   
   try {
-    // 辞退理由がある場合は、サポートチケットを作成するか、または予約にメモを追加
-    // ここでは、予約のステータスを変更するか、または単に仕事一覧に戻る形にします
-    // バックエンドに辞退用のエンドポイントがある場合は、それを使用してください
-    
-    // 現時点では、予約をキャンセルする形で実装
-    // または、辞退リストに追加するAPIがある場合はそれを使用
-    // ここでは、シンプルに仕事一覧に戻る形にします
-    
-    if (reason) {
-      // 辞退理由がある場合は、サポートチケットを作成するか、または予約にメモを追加
-      // 現時点では、アラートで確認してから仕事一覧に戻る
-      alert('仕事を辞退しました。\n理由: ' + (reason || 'なし'));
-    } else {
-      if (!confirm('この仕事を辞退しますか？')) {
-        return;
-      }
-      alert('仕事を辞退しました。');
-    }
-    
+    await api.rejectBooking(bookingId, reason || null);
+    alert('仕事を辞退しました。');
     closeModal('rejectJobModal');
     window.location.href = 'jobs.html';
   } catch (error) {
     console.error('仕事辞退エラー:', error);
     alert('仕事の辞退に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+// 作業を完了
+async function completeJob(bookingId) {
+  if (!confirm('作業を完了しますか？\n完了後、依頼者に通知されます。')) {
+    return;
+  }
+
+  try {
+    await api.completeBooking(bookingId);
+    alert('作業を完了しました！');
+    // 詳細ページを再読み込み
+    await loadJobDetail(bookingId);
+  } catch (error) {
+    console.error('作業完了エラー:', error);
+    alert('作業の完了に失敗しました: ' + (error.message || 'エラーが発生しました'));
   }
 }
 

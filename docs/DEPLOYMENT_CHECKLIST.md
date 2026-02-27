@@ -1,6 +1,6 @@
 # デプロイ前チェックリスト
 
-最終更新日: 2026年2月18日
+最終更新日: 2026年2月24日
 
 ## 📋 概要
 
@@ -12,10 +12,21 @@
 
 以下の項目は既に実装済みです：
 
-- ✅ `js/api.js`の`baseURL`を環境変数対応に修正
-- ✅ `js/socket.js`の`serverURL`を環境変数対応に修正
+- ✅ `js/api.js`の`baseURL`を環境自動切り替え対応に修正（localhost判定で本番環境URL自動設定）
+- ✅ `js/socket.js`の`serverURL`を環境自動切り替え対応に修正
 - ✅ `service-worker.js`のエラーページパスを`/errors/`に修正
-- ✅ `js/config.js`設定ファイルを作成
+- ✅ `js/config.js`設定ファイルを作成（デプロイ時の環境変数設定用）
+- ✅ `netlify.toml`作成（Netlifyデプロイ設定、リダイレクトルール、セキュリティヘッダー）
+- ✅ `_redirects`ファイル作成（SPA用リダイレクトルール）
+
+**更新日**: 2026年2月24日
+
+### 2026年2月24日の更新内容
+
+- ✅ 管理者登録機能のセキュリティ強化
+  - `admin/login.html`から新規登録リンクを削除（セキュリティ強化）
+  - `admin/users.html`に管理者登録モーダルを追加（既存管理者のみが新しい管理者を登録可能）
+  - `js/api.js`に`registerAdmin`メソッドを追加（`POST /api/admin/register`）
 
 ---
 
@@ -246,17 +257,18 @@ error_page 403 /errors/403.html;
 
 ### デプロイ前
 
-- [x] `js/api.js`の環境変数対応（実装済み）
-- [x] `js/socket.js`の環境変数対応（実装済み）
+- [x] `js/api.js`の環境自動切り替え対応（実装済み・localhost判定で自動設定）
+- [x] `js/socket.js`の環境自動切り替え対応（実装済み）
 - [x] `service-worker.js`のエラーページパス修正（実装済み）
-- [x] `js/config.js`設定ファイル作成（実装済み）
-- [ ] **`js/config.js`を本番環境のURLに編集**
-- [ ] すべてのHTMLファイルで`config.js`を読み込んでいるか確認
-- [ ] バックエンドのCORS設定を更新
+- [x] `netlify.toml`作成（実装済み）
+- [x] `_redirects`ファイル作成（実装済み）
+- [ ] バックエンドのCORS設定を更新（Netlify URLを許可）
 - [ ] HTTPSが使用可能か確認
 - [ ] エラーページのサーバー設定を確認
 - [ ] robots.txtとsitemap.xmlを確認
 - [ ] 画像パスが正しいか確認
+
+**注意**: `js/api.js`と`js/socket.js`は環境に応じて自動的にURLを切り替えます（localhostの場合は開発環境、それ以外は本番環境）。`js/config.js`の編集は不要です。
 
 ### デプロイ後
 

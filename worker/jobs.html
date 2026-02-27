@@ -299,11 +299,7 @@ async function acceptJob(bookingId) {
   }
 
   try {
-    // 予約を更新してワーカーIDを設定（承諾）
-    await api.updateBooking(bookingId, {
-      workerId: api.getUser().id
-    });
-
+    await api.acceptBooking(bookingId);
     alert('仕事を承諾しました！');
     // 一覧を再読み込み
     await loadJobs();

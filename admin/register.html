@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#5B7FA6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="KAJISHIFT" />
+  <title>管理者登録｜KAJISHIFT管理画面</title>
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="description" content="KAJISHIFT管理画面の新規登録ページ" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://kajishift.jp/admin/register.html" />
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="preload" href="../js/validation.js" as="script" />
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/validation.js" defer></script>
+</head>
+<body class="admin-login-page">
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <h1>KAJISHIFT</h1>
+        <h2>管理者登録</h2>
+        <p>管理画面アカウントを作成します</p>
+      </div>
+      <div class="error-message"></div>
+      <form class="login-form" id="registerForm" novalidate>
+        <div class="form-group">
+          <label for="name">氏名 <span class="required">必須</span></label>
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            class="form-input" 
+            required 
+            placeholder="山田 太郎"
+            autocomplete="name"
+            aria-required="true"
+            aria-label="氏名" />
+        </div>
+
+        <div class="form-group">
+          <label for="email">メールアドレス <span class="required">必須</span></label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-input" 
+            required 
+            placeholder="admin@example.com"
+            autocomplete="email"
+            aria-required="true"
+            aria-label="メールアドレス" />
+        </div>
+
+        <div class="form-group">
+          <label for="phone">電話番号 <span class="required">必須</span></label>
+          <input 
+            type="tel" 
+            id="phone" 
+            name="phone" 
+            class="form-input" 
+            required 
+            placeholder="090-1234-5678"
+            autocomplete="tel"
+            aria-required="true"
+            aria-label="電話番号" />
+        </div>
+
+        <div class="form-group">
+          <label for="password">パスワード <span class="required">必須</span></label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-input" 
+            required 
+            minlength="8"
+            autocomplete="new-password"
+            aria-required="true"
+            aria-label="パスワード"
+            aria-describedby="password-hint" />
+          <p id="password-hint" class="form-hint">8文字以上、英数字を含むパスワードを設定してください</p>
+          <div class="password-strength" aria-live="polite" aria-atomic="true">
+            <div class="password-strength-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+          </div>
+          <div class="password-strength-text" aria-live="polite"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="password-confirm">パスワード（確認） <span class="required">必須</span></label>
+          <input 
+            type="password" 
+            id="password-confirm" 
+            name="password-confirm" 
+            class="form-input" 
+            required
+            autocomplete="new-password"
+            aria-required="true"
+            aria-label="パスワード（確認）" />
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-item">
+            <input 
+              type="checkbox" 
+              id="agree-terms" 
+              name="agree-terms" 
+              required
+              aria-required="true"
+              aria-describedby="terms-hint" />
+            <span>利用規約とプライバシーポリシーに同意します <span class="required">必須</span></span>
+          </label>
+          <p id="terms-hint" class="sr-only">利用規約とプライバシーポリシーへの同意が必要です</p>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-large btn-block" aria-label="登録ボタン">登録する</button>
+
+        <div class="login-footer">
+          <p>すでにアカウントをお持ちですか？ <a href="login.html">ログイン</a></p>
+        </div>
+
+        <div class="login-security-note">
+          <p>⚠️ 管理者アカウントは適切な権限を持つ担当者のみが作成してください</p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // エラー表示関数
+    function showError(message) {
+      const errorElement = document.querySelector('.error-message');
+      if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    // 成功表示関数
+    function showSuccess(message) {
+      const errorElement = document.querySelector('.error-message');
+      if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        errorElement.style.color = '#28a745';
+        errorElement.style.backgroundColor = '#d4edda';
+        errorElement.style.borderColor = '#c3e6cb';
+      }
+    }
+
+    // エラーをクリア
+    function clearError() {
+      const errorElement = document.querySelector('.error-message');
+      if (errorElement) {
+        errorElement.textContent = '';
+        errorElement.style.display = 'none';
+      }
+    }
+
+    // ページ読み込み時にバリデーションを設定
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('registerForm');
+      
+      // リアルタイムバリデーション設定
+      setupRealTimeValidation(document.getElementById('name'), Validators.required);
+      setupRealTimeValidation(document.getElementById('email'), Validators.email);
+      setupRealTimeValidation(document.getElementById('phone'), Validators.phone);
+      setupRealTimeValidation(document.getElementById('password'), Validators.password);
+      
+      // パスワード確認のバリデーション
+      const passwordConfirm = document.getElementById('password-confirm');
+      passwordConfirm.addEventListener('blur', () => {
+        const password = document.getElementById('password').value;
+        const error = Validators.passwordConfirm(password, passwordConfirm.value);
+        if (error) {
+          showError(error);
+        } else {
+          clearError();
+        }
+      });
+      
+      // パスワード強度表示
+      setupPasswordStrength(
+        document.getElementById('password'),
+        document.querySelector('.password-strength').parentElement
+      );
+      
+      // 電話番号自動フォーマット
+      setupPhoneFormat(document.getElementById('phone'));
+    });
+
+    // フォーム送信時のバリデーションとAPI連携
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      // エラーメッセージをクリア
+      clearError();
+      
+      const validations = {
+        'name': Validators.required,
+        'email': Validators.email,
+        'phone': Validators.phone,
+        'password': Validators.password,
+        'password-confirm': (value) => {
+          const password = document.getElementById('password').value;
+          return Validators.passwordConfirm(password, value);
+        }
+      };
+      
+      if (!validateForm(this, validations)) {
+        const firstError = this.querySelector('.has-error input');
+        if (firstError) {
+          firstError.focus();
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+      
+      // 利用規約同意チェック
+      if (!document.getElementById('agree-terms').checked) {
+        showError('利用規約とプライバシーポリシーに同意してください');
+        return;
+      }
+      
+      // フォームデータを取得
+      const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        password: document.getElementById('password').value,
+        role: 'ADMIN'
+      };
+      
+      const submitButton = this.querySelector('button[type="submit"]');
+      const originalButtonText = submitButton.textContent;
+      
+      // ローディング状態
+      submitButton.disabled = true;
+      submitButton.textContent = '登録中...';
+      
+      try {
+        // APIで登録
+        const response = await api.register(formData);
+        
+        if (response.data && response.data.user) {
+          // ロールチェック（管理者であることを確認）
+          if (response.data.user.role !== 'ADMIN') {
+            throw new Error('管理者アカウントの登録に失敗しました');
+          }
+          
+          // 登録成功
+          showSuccess('登録が完了しました。管理画面に移動しています...');
+          
+          // ダッシュボードにリダイレクト
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 1000);
+        } else {
+          throw new Error('登録に失敗しました');
+        }
+      } catch (error) {
+        // エラー処理
+        console.error('登録エラー:', error);
+        showError(error.message || '登録に失敗しました。入力内容を確認してください。');
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+      }
+    });
+  </script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('../service-worker.js')
+          .then((registration) => {
+            console.log('Service Worker registered successfully:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
