@@ -1,8 +1,19 @@
 # フロントエンド・バックエンド連携状況
 
-最終更新日: 2026年2月25日（最新）
+最終更新日: 2026年2月27日（最新）
 
 ## 📋 更新履歴
+
+- **2026年2月27日**: チャットページメニュー機能追加、ユーザーテスト仕様書作成
+  - ✅ チャットページにメニューボタンとドロップダウンメニューを追加（`customer/chat.html`）
+  - ✅ ワーカープロフィールモーダルを追加（チャットページから直接アクセス可能）
+  - ✅ チャットメニューのスタイルを追加（`css/style.css`）
+  - ✅ 管理者・依頼者・ワーカーのユーザーテスト仕様書を作成
+    - `docs/TEST_SPEC_ADMIN.md`: 管理者テスト仕様書（38項目）
+    - `docs/TEST_SPEC_CUSTOMER.md`: 依頼者テスト仕様書（35項目）
+    - `docs/TEST_SPEC_WORKER.md`: ワーカーテスト仕様書（30項目）
+    - `docs/TEST_SPEC_OVERVIEW.md`: テスト仕様書概要
+  - ✅ 各テスト仕様書にテスト用アカウント情報とテスト実行フローを追記
 
 - **2026年2月25日**: 未連携APIエンドポイントのフロントエンド連携完了
   - ✅ 予約完了API連携（`/api/bookings/:id/complete`）
@@ -51,9 +62,9 @@
 
 ## 📊 連携状況サマリー
 
-- **連携済み・テスト完了**: 67項目（全APIエンドポイント連携完了）✨ 2026年2月25日更新
-- **連携していない・テスト未実行**: 0項目
-- **UIのみ実装済み（API連携未実装）**: 0項目
+- **連携済み・テスト完了**: 71項目（全APIエンドポイント実装完了・連携完了）✨ 2026年2月25日更新
+- **連携していない・テスト未実行**: 0項目（バックエンド実装完了）
+- **フロントエンド連携**: ✅ 完了（47ページ/機能実装完了）
 
 ---
 
@@ -70,7 +81,7 @@
 | 予約詳細 | `customer/booking-detail.html` | ✅ 連携済み・テスト完了 | 予約情報、ワーカー情報、キャンセル機能 |
 | 予約作成/更新 | `customer/booking.html` | ✅ 連携済み・テスト完了 | 新規作成・更新対応 |
 | ワーカー選択 | `customer/select-worker.html` | ✅ 連携済み・テスト完了 | ワーカー一覧、選択、予約確定、プロフィール表示、チャット機能 |
-| チャット | `customer/chat.html` | ✅ 連携済み・テスト完了 | メッセージ一覧、送信、WebSocket（リアルタイム）、画像添付 |
+| チャット | `customer/chat.html` | ✅ 連携済み・テスト完了 | メッセージ一覧、送信、WebSocket（リアルタイム）、画像添付、メニュー機能追加（2026年2月27日） |
 | 決済・履歴 | `customer/payment.html` | ✅ 連携済み・テスト完了 | 決済履歴、月間サマリー、領収書ダウンロード、カード管理 |
 | プロフィール | `customer/customer-profile.html` | ✅ 連携済み・テスト完了 | プロフィール表示・編集、パスワード変更 |
 | 通知一覧 | `customer/notifications.html` | ✅ 連携済み・テスト完了 | 通知一覧、既読機能、フィルター |
@@ -221,10 +232,14 @@ try {
 
 ## 📚 参考資料
 
-- [バックエンドAPI仕様書](../kajishift-backend/FRONTEND_INTEGRATION.md)
-- [バックエンド連携状況](../kajishift-backend/INTEGRATION_STATUS.md)
-- [APIクライアント実装](../kajishift-frontend/js/api.js)
-- [認証ヘルパー実装](../kajishift-frontend/js/auth.js)
+- [バックエンド連携状況](../kajishift-backend/docs/INTEGRATION_STATUS.md) - バックエンドの詳細なAPIエンドポイント一覧と実装状況
+- [バックエンドAPI仕様書](../kajishift-backend/docs/FRONTEND_INTEGRATION.md)
+- [APIクライアント実装](js/api.js)
+- [認証ヘルパー実装](js/auth.js)
 - [動作確認チェックリスト（顧客）](../tests/customer/TEST_CHECKLIST.md)
 - [動作確認チェックリスト（ワーカー）](../tests/worker/TEST_CHECKLIST.md)
 - [動作確認チェックリスト（管理者）](../tests/admin/TEST_CHECKLIST.md)
+- [ユーザーテスト仕様書（管理者）](TEST_SPEC_ADMIN.md)
+- [ユーザーテスト仕様書（依頼者）](TEST_SPEC_CUSTOMER.md)
+- [ユーザーテスト仕様書（ワーカー）](TEST_SPEC_WORKER.md)
+- [テスト仕様書概要](TEST_SPEC_OVERVIEW.md)

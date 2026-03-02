@@ -176,11 +176,11 @@
               </label>
               <label class="checkbox-item">
                 <input type="checkbox" name="service" value="laundry" />
-                <span class="checkbox-label">洗濯・アイロン</span>
+                <span class="checkbox-label">洗濯</span>
               </label>
               <label class="checkbox-item">
                 <input type="checkbox" name="service" value="shopping" />
-                <span class="checkbox-label">買い物代行</span>
+                <span class="checkbox-label">買い物代行（日用品・食材）</span>
               </label>
               <label class="checkbox-item">
                 <input type="checkbox" name="service" value="other" />
@@ -345,6 +345,7 @@ async function loadBookingForEdit(bookingId) {
         '洗濯・アイロン': 'laundry',
         '洗濯': 'laundry',
         '買い物代行': 'shopping',
+        '買い物代行（日用品・食材）': 'shopping',
         'その他': 'other'
       };
       
@@ -420,11 +421,11 @@ document.getElementById('bookingForm').addEventListener('submit', async function
   const selectedServices = Array.from(serviceCheckboxes).map(cb => {
     const value = cb.value;
     const labelMap = {
-      'cleaning': '掃除・清掃',
+      'cleaning': '掃除',
       'cooking': '料理',
       'tidying': '片付け',
-      'laundry': '洗濯・アイロン',
-      'shopping': '買い物代行',
+      'laundry': '洗濯',
+      'shopping': '買い物代行（日用品・食材）',
       'other': 'その他'
     };
     return labelMap[value] || value;
