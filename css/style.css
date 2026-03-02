@@ -4782,16 +4782,18 @@ footer a:hover {
 .btn--flow {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-3);
   background: var(--color-primary);
   color: var(--color-bg);
   border: 2px solid var(--color-primary);
-  padding: 12px 24px;
+  padding: 16px 32px;
   border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-medium);
   text-decoration: none;
   transition: all 0.2s ease;
+  margin: 0 auto;
 }
 
 .btn--flow:hover,
@@ -4805,10 +4807,11 @@ footer a:hover {
 }
 
 .btn--flow__arrow {
-  width: 20px;
-  height: 20px;
+  width: 1em;
+  height: 1em;
   object-fit: contain;
   transition: transform 0.2s ease;
+  vertical-align: middle;
 }
 
 .btn--flow:hover .btn--flow__arrow {
