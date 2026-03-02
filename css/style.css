@@ -4845,12 +4845,15 @@ footer a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
 .feature-card__icon-image {
-  width: 3rem;
-  height: 3rem;
+  width: 2rem;
+  height: 2rem;
   object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 
 .feature-card__title {
