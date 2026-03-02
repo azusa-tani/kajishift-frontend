@@ -4849,8 +4849,8 @@ footer a:hover {
 }
 
 .feature-card__icon-image {
-  width: 2rem;
-  height: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
   object-fit: contain;
   display: block;
   margin: 0 auto;
