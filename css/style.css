@@ -4666,6 +4666,22 @@ footer a:hover {
   outline-offset: 2px;
 }
 
+.btn--outline {
+  background: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+}
+
+.btn--outline:hover,
+.btn--outline:focus-visible {
+  background: var(--color-primary);
+  color: var(--color-bg);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* カードリスト */
 .card-list {
   display: grid;
@@ -4752,6 +4768,12 @@ footer a:hover {
   line-height: 1.8;
   color: var(--color-text);
   text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.how-it-works__cta {
+  text-align: center;
+  margin-top: var(--space-6);
   max-width: 700px;
   margin: 0 auto;
 }
@@ -5059,6 +5081,191 @@ footer a:hover {
   color: var(--color-text-secondary);
   line-height: var(--line-height-relaxed);
   margin-bottom: var(--space-6);
+}
+
+/* ===== ご利用の流れページ ===== */
+
+/* パンくずリスト */
+.breadcrumb {
+  background: var(--color-bg-light);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.breadcrumb__list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--font-size-sm);
+}
+
+.breadcrumb__item {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb__item:not(:last-child)::after {
+  content: '>';
+  margin-left: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.breadcrumb__item a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb__item a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+.breadcrumb__item[aria-current="page"] {
+  color: var(--color-text-secondary);
+}
+
+/* ページヘッダー */
+.page-header {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: #fff;
+  padding: var(--space-8) 0;
+  text-align: center;
+}
+
+.page-header__title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--space-4) 0;
+  line-height: var(--line-height-tight);
+}
+
+.page-header__subtitle {
+  font-size: var(--font-size-lg);
+  margin: 0;
+  opacity: 0.95;
+  line-height: var(--line-height-relaxed);
+}
+
+@media (min-width: 768px) {
+  .page-header__title {
+    font-size: 2.5rem;
+  }
+  
+  .page-header__subtitle {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* フローステップ */
+.flow-section {
+  padding: var(--space-8) 0;
+}
+
+.flow-section--worker {
+  background: var(--color-bg-light);
+}
+
+.flow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin: var(--space-8) 0;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.flow-step {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  position: relative;
+}
+
+.flow-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 60px;
+  width: 2px;
+  height: calc(100% + var(--space-6));
+  background: var(--color-border);
+}
+
+.flow-step__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 50%;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+  box-shadow: var(--shadow-md);
+}
+
+.flow-section--worker .flow-step__number {
+  background: var(--color-accent);
+}
+
+.flow-step__content {
+  flex: 1;
+  padding-top: var(--space-1);
+}
+
+.flow-step__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--space-3) 0;
+  color: var(--color-text);
+}
+
+.flow-step__text {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.flow-cta {
+  text-align: center;
+  margin-top: var(--space-8);
+}
+
+@media (min-width: 768px) {
+  .flow-steps {
+    gap: var(--space-7);
+  }
+  
+  .flow-step {
+    gap: var(--space-6);
+  }
+  
+  .flow-step__number {
+    width: 48px;
+    height: 48px;
+    font-size: var(--font-size-xl);
+  }
+  
+  .flow-step:not(:last-child)::after {
+    left: 24px;
+    top: 72px;
+  }
+  
+  .flow-step__title {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .flow-step__text {
+    font-size: var(--font-size-lg);
+  }
 }
 
 @media (min-width: 768px) {
