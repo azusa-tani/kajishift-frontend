@@ -606,6 +606,12 @@ footer a:hover {
   margin-bottom: 40px;
 }
 
+.export-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
