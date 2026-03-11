@@ -157,7 +157,20 @@ window.SOCKET_SERVER_URL = 'https://api.kajishift.jp';
 
 ---
 
-**最終更新**: 2026年2月25日
+**最終更新**: 2026年3月2日
+
+### 2026年3月2日の更新内容
+
+- ✅ トップページのUI改善
+  - 「ご利用の流れ」ボタンのスタイル改善（`index.html`、`css/style.css`）
+    - ボタンサイズを拡大（パディング: `16px 32px`、フォントサイズ: `var(--font-size-lg)`）
+    - 中央配置を確実にするため`justify-content: center`と`margin: 0 auto`を追加
+    - 矢印アイコンのサイズを`1em`（テキストと同じサイズ）に調整
+  - 特徴カードのアイコンを画像に変更（`index.html`、`css/style.css`）
+    - お金のアイコン（💰）→ `object_gamaguchi.png`
+    - カレンダーのアイコン（📅）→ `business_karenda.png`
+    - 盾のアイコン（🛡️）→ `business_tate.png`
+    - アイコンサイズを`3.5rem`（56px）に設定し、中央配置を実装
 
 ### 2026年2月25日の更新内容
 
