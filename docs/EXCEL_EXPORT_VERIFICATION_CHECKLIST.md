@@ -182,7 +182,7 @@
 
 2. **APIエンドポイントの確認**
    - バックエンドの`/api/admin/reports/{reportType}/export/excel`エンドポイントが正しく実装されているか確認
-   - Swagger UI（`https://kajishift-api.onrender.com/api-docs`）で確認
+   - Swagger UI（`https://kajishift-backend-production.up.railway.app/api-docs`）で確認
 
 3. **認証トークンの確認**
    - ローカルストレージにトークンが保存されているか確認
@@ -205,7 +205,7 @@
    - ネットワークタブでAPIレスポンスのエラーメッセージを確認
 
 2. **バックエンドログの確認**
-   - Renderダッシュボードでログを確認
+   - Railwayダッシュボードでログを確認
    - エラーの詳細を確認
 
 ---

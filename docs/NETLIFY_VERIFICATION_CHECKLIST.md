@@ -37,7 +37,7 @@
 2. **Network**タブを開く
 3. ログインを試行
 4. 以下を確認：
-   - [ ] APIリクエストが`https://kajishift-api.onrender.com/api`に送信されているか
+   - [ ] APIリクエストが`https://kajishift-backend-production.up.railway.app/api`に送信されているか
    - [ ] CORSエラーが発生していないか
    - [ ] レスポンスが正常に返ってきているか（200 OK）
 
@@ -56,7 +56,7 @@
 3. **Console**タブを確認
 4. 以下を確認：
    - [ ] `Socket.io接続成功`のメッセージが表示されるか
-   - [ ] WebSocket接続が`https://kajishift-api.onrender.com`に確立されているか
+   - [ ] WebSocket接続が`https://kajishift-backend-production.up.railway.app`に確立されているか
    - [ ] エラーメッセージが表示されていないか
 
 ### 5. エラーページ確認
@@ -140,15 +140,15 @@
 
 ### CORSエラーが発生する場合
 
-1. Renderダッシュボードで`CORS_ORIGIN`環境変数を確認
+1. Railwayダッシュボードで`CORS_ORIGIN`環境変数を確認
 2. `https://stellar-phoenix-fa7d94.netlify.app`が含まれているか確認
 3. 含まれていない場合は追加（カンマ区切り）
 
 ### API接続エラーが発生する場合
 
 1. 開発者ツールの**Network**タブでエラーの詳細を確認
-2. API URLが`https://kajishift-api.onrender.com/api`になっているか確認
-3. バックエンドサーバーが起動しているか確認（Renderダッシュボードで確認）
+2. API URLが`https://kajishift-backend-production.up.railway.app/api`になっているか確認
+3. バックエンドサーバーが起動しているか確認（Railwayダッシュボードで確認）
 
 ### Service Workerエラーが発生する場合
 
@@ -171,7 +171,7 @@
 | トップページ表示 | ✅ OK | すべての要素が正しく表示される |
 | ログインページ表示 | ✅ OK | 依頼者・ワーカー・管理者すべて正常 |
 | HTTPS | ✅ OK | SSL証明書正常、鍵アイコン表示 |
-| API接続 | ✅ OK | `https://kajishift-api.onrender.com/api`に正常接続、CORSエラーなし |
+| API接続 | ✅ OK | `https://kajishift-backend-production.up.railway.app/api`に正常接続、CORSエラーなし |
 | WebSocket接続 | ✅ OK | Socket.io接続成功、リアルタイム通信正常 |
 | エラーページ | ✅ OK | 404/500/403ページが正しく表示される |
 | Service Worker | ✅ OK | 正常に登録・動作中 |

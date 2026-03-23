@@ -42,8 +42,8 @@
 
 ```javascript
 // 本番環境の設定例
-window.API_BASE_URL = 'https://api.kajishift.jp/api';
-window.SOCKET_SERVER_URL = 'https://api.kajishift.jp';
+window.API_BASE_URL = 'https://kajishift-backend-production.up.railway.app/api';
+window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app';
 ```
 
 **開発環境**: このファイルを編集する必要はありません（デフォルト値が使用されます）
@@ -177,7 +177,7 @@ error_page 403 /errors/403.html;
 
 5. **環境変数の設定**（オプション）
    - 現在、`js/api.js`と`js/socket.js`は環境に応じて自動的にURLを切り替えるため、環境変数の設定は不要です
-   - バックエンドURL: `https://kajishift-api.onrender.com`
+   - バックエンドURL: `https://kajishift-backend-production.up.railway.app`
 
 6. **カスタムドメイン設定**（オプション）
    - Site settings → Domain management
@@ -198,8 +198,8 @@ error_page 403 /errors/403.html;
 
 4. **環境変数の設定**（オプション）
    - Project settings → Environment Variables
-   - `API_BASE_URL`: `https://api.kajishift.jp/api`
-   - `SOCKET_SERVER_URL`: `https://api.kajishift.jp`
+   - `API_BASE_URL`: `https://kajishift-backend-production.up.railway.app/api`
+   - `SOCKET_SERVER_URL`: `https://kajishift-backend-production.up.railway.app`
 
 #### GitHub Pages
 
@@ -413,7 +413,7 @@ error_page 403 /errors/403.html;
    - バックエンドサーバーのログを確認
 
 3. **APIドキュメント**
-   - Swagger UI: `https://api.kajishift.jp/api-docs`（本番環境のURL）
+   - Swagger UI: `https://kajishift-backend-production.up.railway.app/api-docs`（本番環境のURL）
 
 ---
 

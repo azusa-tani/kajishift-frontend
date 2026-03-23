@@ -1,8 +1,13 @@
 # フロントエンド・バックエンド連携状況
 
-最終更新日: 2026年2月27日（最新）
+最終更新日: 2026年3月23日（最新）
 
 ## 📋 更新履歴
+
+- **2026年3月23日**: バックエンドをRenderからRailwayへ移行、フロントエンド接続先URLを更新
+  - ✅ APIベースURLをRailwayへ変更（`https://kajishift-backend-production.up.railway.app/api`）
+  - ✅ WebSocketサーバーURLをRailwayへ変更（`https://kajishift-backend-production.up.railway.app`）
+  - ✅ 本番バックエンドURLのドキュメント記載をRailwayに更新
 
 - **2026年2月27日**: チャットページメニュー機能追加、ユーザーテスト仕様書作成
   - ✅ チャットページにメニューボタンとドロップダウンメニューを追加（`customer/chat.html`）

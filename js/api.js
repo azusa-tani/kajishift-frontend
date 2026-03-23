@@ -17,7 +17,7 @@ class ApiClient {
                            window.location.hostname === '';
       this.baseURL = isDevelopment 
         ? 'http://localhost:3000/api'
-        : 'https://kajishift-api.onrender.com/api';
+        : 'https://kajishift-backend-production.up.railway.app/api';
     }
     this.token = localStorage.getItem('token') || null;
     this.user = null;

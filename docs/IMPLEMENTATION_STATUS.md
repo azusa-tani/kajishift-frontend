@@ -2,10 +2,10 @@
 
 ## 📊 実装状況サマリー
 
-- **フロントエンド**: ✅ 完了（静的HTMLサイト）
+- **フロントエンド**: ✅ 完了（静的HTMLサイト・Vercel本番環境デプロイ済み）
 - **バックエンド**: ✅ 完了（全71エンドポイント実装完了・本番環境デプロイ済み）
 - **データベース**: ✅ 完了（PostgreSQL + Prisma）
-- **インフラ**: ✅ 完了（開発環境完了、本番環境デプロイ済み：バックエンドはRender、フロントエンドはNetlify）
+- **インフラ**: ✅ 完了（開発環境完了、本番環境デプロイ済み：バックエンドはRailway、フロントエンドはVercel）
 - **セキュリティ**: ✅ 完了（Helmet、Rate Limiting、入力値検証など）
 - **テスト**: ⚠️ 部分実装（APIテストスクリプト完了、ユニットテスト未実装）
 
@@ -333,7 +333,7 @@
 - ✅ **Swagger/OpenAPI**
   - 全71エンドポイントのドキュメント化完了
   - Swagger UI実装
-  - アクセスURL: `http://localhost:3000/api-docs`（開発環境）、`https://kajishift-api.onrender.com/api-docs`（本番環境）
+  - アクセスURL: `http://localhost:3000/api-docs`（開発環境）、`https://kajishift-backend-production.up.railway.app/api-docs`（本番環境）
 
 #### 本番環境準備
 - ✅ **PM2設定**
@@ -621,10 +621,10 @@
 - [ ] **CSRF対策**
   - トークンベースのCSRF対策
 
-- [ ] **個人情報保護**
-  - プライバシーポリシー作成（フロントエンド）
-  - 利用規約作成（フロントエンド）
-  - 個人情報保護方針作成
+- [x] **個人情報保護** ✅ 完了
+  - ✅ プライバシーポリシー作成（privacy.html）
+  - ✅ 利用規約作成（terms.html）
+  - ✅ 特定商取引法に基づく表記（legal.html）
 
 #### 推奨項目
 - [ ] **定期的なセキュリティ更新**
@@ -684,17 +684,17 @@
 ### 8. 法的要件
 
 #### 必須項目
-- [ ] **利用規約**
-  - サービス利用規約
-  - 特定商取引法に基づく表記
+- [x] **利用規約** ✅ 完了
+  - ✅ サービス利用規約（terms.html）
 
-- [ ] **プライバシーポリシー**
-  - 個人情報の取り扱い
-  - Cookieポリシー
+- [x] **プライバシーポリシー** ✅ 完了
+  - ✅ 個人情報の取り扱い（privacy.html）
+  - ✅ Cookieポリシー（privacy.htmlに含む）
 
-- [ ] **その他の法的文書**
-  - 免責事項
-  - 著作権表示
+- [x] **その他の法的文書** ✅ 完了
+  - ✅ 特定商取引法に基づく表記（legal.html）
+  - ✅ 免責事項（terms.htmlに含む）
+  - ✅ 著作権表示（各ページに含む）
 
 ---
 
@@ -720,15 +720,15 @@
    - ✅ レート制限完了
    - ⚠️ CSRF対策（トークンベース）未実装
 
-4. **インフラ構築**
-   - 本番サーバー構築
-   - データベース環境構築（本番環境）
-   - SSL証明書設定
+4. **インフラ構築** ✅ 完了
+   - ✅ 本番サーバー構築（バックエンド: Railway、フロントエンド: Vercel）
+   - ✅ データベース環境構築（本番環境）
+   - ✅ SSL証明書設定（HTTPS対応）
 
-5. **法的文書作成**
-   - 利用規約（フロントエンド）
-   - プライバシーポリシー（フロントエンド）
-   - 特定商取引法に基づく表記
+5. **法的文書作成** ✅ 完了
+   - ✅ 利用規約（terms.html）
+   - ✅ プライバシーポリシー（privacy.html）
+   - ✅ 特定商取引法に基づく表記（legal.html）
 
 ### 🟡 優先度: 高（リリース後早期に必要）
 
@@ -748,9 +748,9 @@
    - ❌ 統合テスト未実装
    - ❌ E2Eテスト未実装
 
-4. **CI/CDパイプライン**
+4. **CI/CDパイプライン** ✅ 完了
+   - ✅ 自動デプロイ実装（GitHub push → Vercel自動デプロイ）
    - ❌ 自動テスト実行未実装
-   - ❌ 自動デプロイ未実装
 
 ### 🟢 優先度: 中（機能拡張時に実装）
 
@@ -793,8 +793,8 @@
 
 ### 実装状況のまとめ
 
-- ✅ **フロントエンド**: 静的HTMLサイトとして完成（Netlifyデプロイ準備完了）
-- ✅ **バックエンド**: 全71エンドポイント実装完了（Render本番環境デプロイ済み）
+- ✅ **フロントエンド**: 静的HTMLサイトとして完成（Vercel本番環境デプロイ済み）
+- ✅ **バックエンド**: 全71エンドポイント実装完了（Railway本番環境デプロイ済み）
 - ✅ **データベース**: PostgreSQL + Prisma実装完了
 - ✅ **セキュリティ**: 基本的なセキュリティ対策実装完了
 - ✅ **APIドキュメント**: Swagger/OpenAPI実装完了
@@ -806,6 +806,9 @@
 - ✅ **カード管理機能**: API実装完了
 - ✅ **システム設定機能**: API実装完了
 - ✅ **レポート・エクスポート機能**: CSV/Excelエクスポート実装完了
+- ✅ **フロントエンド本番公開**: Vercelデプロイ完了（https://kajishift-frontend.vercel.app）
+- ✅ **CI/CD構築**: GitHubとVercelの連携完了（自動デプロイ）
+- ✅ **法務ページ**: 利用規約・プライバシーポリシー・特定商取引法公開完了
 
 ### 次のステップ
 
@@ -816,10 +819,12 @@
    - ✅ WebSocket（Socket.io）リアルタイム通信実装完了
 
 2. **本番環境構築** ✅ 完了
-   - ✅ バックエンドサーバー環境構築（Renderデプロイ済み）
+   - ✅ バックエンドサーバー環境構築（Railwayデプロイ済み）
    - ✅ データベース環境構築（PostgreSQL本番環境）
    - ✅ SSL証明書設定（HTTPS対応）
-   - ⚠️ フロントエンドデプロイ（Netlify準備完了、デプロイ待ち）
+   - ✅ フロントエンドデプロイ（Vercelデプロイ完了）
+   - ✅ CI/CD構築（GitHub push → Vercel自動デプロイ）
+   - ✅ 公開URL確立（https://kajishift-frontend.vercel.app）
 
 3. **外部サービス連携**
    - 決済ゲートウェイ連携
@@ -830,23 +835,48 @@
    - 統合テスト
    - E2Eテスト
 
-5. **法的文書作成**
-   - 利用規約
-   - プライバシーポリシー
-   - 特定商取引法に基づく表記
+5. **法的文書作成** ✅ 完了
+   - ✅ 利用規約（terms.html）
+   - ✅ プライバシーポリシー（privacy.html）
+   - ✅ 特定商取引法に基づく表記（legal.html）
 
 ### バックエンドAPI情報
 
 - **プロジェクトパス**: `C:\Users\谷口 梓\Desktop\kajishift-backend`
 - **技術スタック**: Node.js + Express.js + Prisma ORM + PostgreSQL
 - **総エンドポイント数**: 71個（全APIエンドポイント実装完了・連携完了）
-- **本番環境URL**: `https://kajishift-api.onrender.com`
-- **Swaggerドキュメント**: `http://localhost:3000/api-docs`（開発環境）、`https://kajishift-api.onrender.com/api-docs`（本番環境）
+- **本番環境URL**: `https://kajishift-backend-production.up.railway.app`
+- **Swaggerドキュメント**: `http://localhost:3000/api-docs`（開発環境）、`https://kajishift-backend-production.up.railway.app/api-docs`（本番環境）
 - **詳細ドキュメント**: バックエンドプロジェクト内の`docs/HANDOVER_COMPLETE.md`を参照
+
+### フロントエンドデプロイ情報
+
+- **デプロイ先**: Vercel
+- **本番環境URL**: `https://kajishift-frontend.vercel.app`
+- **デプロイ方法**: GitHub連携による自動デプロイ（CI/CD）
+- **Application Preset**: Other（静的HTMLサイト）
+- **確認済みページ**:
+  - ✅ `index.html` - トップページ
+  - ✅ `/customer/login.html` - 依頼者ログイン
+  - ✅ `/worker/login.html` - ワーカーログイン
+  - ✅ `/admin/login.html` - 管理者ログイン
+  - ✅ `/terms.html` - 利用規約
+  - ✅ `/privacy.html` - プライバシーポリシー
+  - ✅ `/legal.html` - 特定商取引法に基づく表記
 
 ---
 
-**最終更新**: 2026年3月2日
+**最終更新**: 2026年3月
+
+### 2026年3月の更新内容
+
+- ✅ フロントエンド本番公開完了
+  - NetlifyからVercelへ移行（クレジット問題回避）
+  - 公開URL: https://kajishift-frontend.vercel.app
+  - GitHubとVercelの連携設定完了（CI/CD構築）
+  - 静的HTMLサイトとして正常にデプロイ（Application Preset: Other）
+  - 3ロールログイン画面確認完了（依頼者・ワーカー・管理者）
+  - 利用規約・プライバシーポリシー・特定商取引法ページ公開完了
 
 ### 2026年3月2日の更新内容
 
@@ -870,11 +900,12 @@
   - 「買い物代行」→「買い物代行（日用品・食材）」
   - `index.html`、`customer/booking.html`、`worker/jobs.html`など全ファイルに反映
 
-- ✅ Netlifyデプロイ準備完了
+- ✅ Vercelデプロイ完了
   - GitHubリポジトリ: `azusa-tani/kajishift-frontend`
-  - `netlify.toml`設定完了
-  - `_redirects`ファイル設定完了
+  - `vercel.json`設定完了
+  - GitHubとVercelの連携完了（CI/CD構築）
   - 環境自動切り替え対応完了
+  - 本番環境URL: https://kajishift-frontend.vercel.app
 
 ### 2026年2月25日の更新内容
 

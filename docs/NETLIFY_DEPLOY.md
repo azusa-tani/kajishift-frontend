@@ -13,10 +13,10 @@
 ### 1. バックエンドのデプロイ確認
 
 - [x] バックエンドAPIがデプロイ済みであること
-- [x] バックエンドのURL: `https://kajishift-api.onrender.com`
+- [x] バックエンドのURL: `https://kajishift-backend-production.up.railway.app`
 - [ ] バックエンドのCORS設定でフロントエンドのNetlify URLが許可されていること
 
-**重要**: バックエンドのCORS設定を更新する必要があります。Renderの環境変数で`CORS_ORIGIN`に複数のURLをカンマ区切りで設定してください：
+**重要**: バックエンドのCORS設定を更新する必要があります。Railwayの環境変数で`CORS_ORIGIN`に複数のURLをカンマ区切りで設定してください：
 
 ```
 CORS_ORIGIN=http://localhost:5500,https://kajishift-frontend.netlify.app
@@ -28,7 +28,7 @@ CORS_ORIGIN=http://localhost:5500,https://kajishift-frontend.netlify.app
 CORS_ORIGIN=http://localhost:5500,https://kajishift-frontend.netlify.app,https://kajishift.jp
 ```
 
-設定後、Renderでサービスを再デプロイしてください。
+設定後、Railwayでサービスを再デプロイしてください。
 
 ### 2. フロントエンドの設定確認
 
@@ -42,7 +42,7 @@ CORS_ORIGIN=http://localhost:5500,https://kajishift-frontend.netlify.app,https:/
 
 **注意**: `js/api.js`と`js/socket.js`は、環境に応じて自動的にAPI URLを切り替えます：
 - `localhost`の場合: `http://localhost:3000`
-- それ以外（Netlify）: `https://kajishift-api.onrender.com`
+- それ以外（Netlify）: `https://kajishift-backend-production.up.railway.app`
 
 ---
 
@@ -129,8 +129,8 @@ git push -u origin main
 
 1. **Site settings** → **Environment variables**
 2. 以下の変数を追加（通常は不要）:
-   - `API_BASE_URL`: `https://kajishift-api.onrender.com/api`
-   - `SOCKET_SERVER_URL`: `https://kajishift-api.onrender.com`
+   - `API_BASE_URL`: `https://kajishift-backend-production.up.railway.app/api`
+   - `SOCKET_SERVER_URL`: `https://kajishift-backend-production.up.railway.app`
 
 ---
 
@@ -148,7 +148,7 @@ git push -u origin main
 1. ブラウザの開発者ツール（F12）を開く
 2. **Network**タブを開く
 3. ログインを試行
-4. APIリクエストが`https://kajishift-api.onrender.com/api`に送信されているか確認
+4. APIリクエストが`https://kajishift-backend-production.up.railway.app/api`に送信されているか確認
 5. エラーが発生していないか確認
 
 ### 3. WebSocket接続確認
@@ -156,7 +156,7 @@ git push -u origin main
 1. ログイン後、チャット機能を開く
 2. ブラウザの開発者ツール（F12）を開く
 3. **Console**タブで`Socket.io接続成功`のメッセージを確認
-4. WebSocket接続が`https://kajishift-api.onrender.com`に確立されているか確認
+4. WebSocket接続が`https://kajishift-backend-production.up.railway.app`に確立されているか確認
 
 ### 4. Service Worker確認
 
@@ -182,7 +182,7 @@ git push -u origin main
 **原因**: バックエンドのCORS設定でフロントエンドのNetlify URLが許可されていない
 
 **解決方法**:
-1. Renderダッシュボードで`kajishift-api`サービスの「Environment」タブを開く
+1. Railwayダッシュボードでサービスの「Environment Variables」設定を開く
 2. `CORS_ORIGIN`環境変数を確認・更新
 3. 複数のURLをカンマ区切りで設定（例: `http://localhost:5500,https://kajishift-frontend.netlify.app`）
 4. 「Save changes」をクリックして再デプロイ
@@ -194,7 +194,7 @@ git push -u origin main
 
 **確認項目**:
 1. ブラウザの開発者ツール（F12）でネットワークタブを確認
-2. リクエストURLが`https://kajishift-api.onrender.com/api`になっているか確認
+2. リクエストURLが`https://kajishift-backend-production.up.railway.app/api`になっているか確認
 3. バックエンドAPIサーバーが起動しているか確認
 4. `js/api.js`の環境判定ロジックが正しく動作しているか確認
 
@@ -229,7 +229,7 @@ git push -u origin main
 - [x] `netlify.toml`の作成（完了）
 - [x] `_redirects`ファイルの作成（完了）
 - [x] バックエンドのCORS設定を複数オリジン対応に更新（完了）
-- [ ] バックエンドのRender環境変数でNetlify URLを許可
+- [ ] バックエンドのRailway環境変数でNetlify URLを許可
 - [ ] GitHubリポジトリにプッシュ（GitHub連携を使用する場合）
 
 ### デプロイ後

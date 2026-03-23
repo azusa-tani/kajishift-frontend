@@ -35,7 +35,7 @@ class SocketManager {
                              window.location.hostname === '';
         serverURL = isDevelopment 
           ? 'http://localhost:3000'
-          : 'https://kajishift-api.onrender.com';
+          : 'https://kajishift-backend-production.up.railway.app';
       }
     }
     if (this.socket && this.isConnected) {

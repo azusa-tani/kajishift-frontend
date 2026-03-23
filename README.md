@@ -77,7 +77,7 @@ npx --yes http-server -p 5500
 - **[連携完了](docs/INTEGRATION_COMPLETE.md)** - 連携完了時の設定方法
 - **[サーバー起動方法](docs/README_SERVER.md)** - サーバー起動の詳細手順
 - **[デプロイ前チェックリスト](docs/DEPLOYMENT_CHECKLIST.md)** - Webデプロイ前の確認・修正項目
-- **[Netlifyデプロイ手順](docs/NETLIFY_DEPLOY.md)** - Netlifyへのデプロイ手順
+- **[Vercelデプロイ手順](docs/VERCEL_DEPLOY.md)** - Vercelへのデプロイ手順
 
 ### テストチェックリスト
 
@@ -98,6 +98,17 @@ npx --yes http-server -p 5500
 - 認証チェック: `js/auth.js`の`checkAuth(role)`関数を使用
 - APIクライアント: `js/api.js`の`ApiClient`クラス
 
+## 🚀 本番環境
+
+### フロントエンド
+- **本番URL**: https://kajishift-frontend.vercel.app
+- **デプロイ先**: Vercel
+- **CI/CD**: GitHub push → 自動デプロイ
+
+### バックエンド
+- **本番URL**: https://kajishift-backend-production.up.railway.app
+- **Swaggerドキュメント**: https://kajishift-backend-production.up.railway.app/api-docs
+
 ## ⚙️ 環境設定
 
 ### 開発環境
@@ -110,8 +121,8 @@ npx --yes http-server -p 5500
 
 ```javascript
 // js/config.js
-window.API_BASE_URL = 'https://api.kajishift.jp/api';
-window.SOCKET_SERVER_URL = 'https://api.kajishift.jp';
+window.API_BASE_URL = 'https://kajishift-backend-production.up.railway.app/api';
+window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app';
 ```
 
 詳細は[デプロイ前チェックリスト](docs/DEPLOYMENT_CHECKLIST.md)を参照してください。
@@ -157,7 +168,24 @@ window.SOCKET_SERVER_URL = 'https://api.kajishift.jp';
 
 ---
 
-**最終更新**: 2026年3月2日
+**最終更新**: 2026年3月
+
+### 2026年3月の更新内容
+
+- ✅ フロントエンド本番公開完了
+  - NetlifyからVercelへ移行（クレジット問題回避）
+  - 公開URL: https://kajishift-frontend.vercel.app
+  - GitHubとVercelの連携設定完了（CI/CD構築）
+  - 静的HTMLサイトとして正常にデプロイ（Application Preset: Other）
+  - 3ロールログイン画面確認完了（依頼者・ワーカー・管理者）
+  - 利用規約・プライバシーポリシー・特定商取引法ページ公開完了
+
+### 2026年3月23日の更新内容
+
+- ✅ バックエンドをRenderからRailwayへ移行し、接続設定を更新
+  - APIベースURLをRailwayエンドポイントへ更新: `https://kajishift-backend-production.up.railway.app/api`
+  - WebSocketサーバーURLをRailwayエンドポイントへ更新: `https://kajishift-backend-production.up.railway.app`
+  - READMEおよび連携ドキュメント内の本番バックエンドURL表記をRailwayへ更新
 
 ### 2026年3月2日の更新内容
 
@@ -193,7 +221,7 @@ window.SOCKET_SERVER_URL = 'https://api.kajishift.jp';
 ### 2026年2月18日の更新内容
 
 - ✅ デプロイ前の必須修正完了（環境自動切り替え、Service Workerパス修正）
-- ✅ Netlifyデプロイ設定完了（`netlify.toml`、`_redirects`作成）
+- ✅ Vercelデプロイ設定完了（`vercel.json`作成）
 - ✅ 管理者登録機能追加（`admin/register.html`作成）
 
 **作成者**: AI Assistant (Cursor)
