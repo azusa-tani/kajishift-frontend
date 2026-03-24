@@ -22,6 +22,8 @@
   /* ボーダーカラー */
   --color-border: #E1E8ED;
   --color-border-light: #F0F4F8;
+  --danger-color: #dc3545;
+  --danger-color-dark: #c62828;
   
   /* フォントサイズ */
   --font-size-xs: 12px;
@@ -912,17 +914,17 @@ footer a:hover {
 }
 
 .btn-danger,
-.btn.danger {
-  background: #dc3545;
-  border-color: #dc3545;
-  color: #fff;
+.btn.btn-danger {
+  background: var(--danger-color);
+  border-color: var(--danger-color);
+  color: #ffffff !important;
 }
 
 .btn-danger:hover,
-.btn.danger:hover {
-  background: #c62828;
-  border-color: #c62828;
-  color: #fff;
+.btn.btn-danger:hover {
+  background: var(--danger-color-dark);
+  border-color: var(--danger-color-dark);
+  color: #ffffff !important;
 }
 
 .today-schedule {
@@ -1411,15 +1413,49 @@ footer a:hover {
   margin-bottom: 12px;
 }
 .worker-display-card .worker-details {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.worker-display-card .worker-avatar-large {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-light);
+  font-size: 1.8rem;
+}
+.worker-display-card .worker-text {
+  min-width: 0;
+}
+.worker-display-card .worker-text h3 {
+  margin: 0 0 6px;
+}
+.worker-display-card .worker-rating {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.worker-display-card .rating-score {
+  font-size: clamp(20px, 5vw, 24px);
+  line-height: 1;
+}
+.worker-display-card .worker-bio {
+  margin: 6px 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
 }
 .worker-display-card .worker-actions {
   margin-top: 10px;
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: flex-start;
 }
 .worker-display-card .btn.btn-primary {
   box-shadow: var(--shadow-sm);
@@ -2135,7 +2171,8 @@ footer a:hover {
   background: #f7f7f7;
 }
 
-.settings-item.danger {
+.settings-item.link-danger,
+.link-danger {
   color: #dc3545;
 }
 
@@ -3570,14 +3607,15 @@ footer a:hover {
   font-weight: 600;
 }
 
-.btn.danger {
-  color: #dc3545;
-  border-color: #dc3545;
+.btn--outline.danger {
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+  background: #fff;
 }
 
-.btn.danger:hover {
-  background: #dc3545;
-  color: #fff;
+.btn--outline.danger:hover {
+  background: var(--danger-color);
+  color: #ffffff !important;
 }
 
 /* ===== Customer Bookings Refresh ===== */
@@ -5706,15 +5744,6 @@ footer a:hover {
 
 .radio-item input[type="radio"] {
   cursor: pointer;
-}
-
-.btn-link.danger {
-  color: #dc3545;
-}
-
-.btn-link.danger:hover {
-  color: #c62828;
-  text-decoration: underline;
 }
 
 /* ===== Responsive for Admin Pages ===== */

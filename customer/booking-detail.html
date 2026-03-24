@@ -332,7 +332,7 @@ function displayBookingDetail(booking) {
     actionsHtml = `
       ${booking.worker ? `<button class="btn btn--outline btn-action" onclick="window.location.href='chat.html?booking=${booking.id}'">チャット</button>` : ''}
       <button class="btn btn--outline btn-action" onclick="window.location.href='booking.html?id=${booking.id}'">予約変更</button>
-      <button class="btn btn-danger" onclick="openCancelModal()">キャンセル</button>
+      <button class="btn btn--outline btn-action danger" onclick="openCancelModal()">キャンセル</button>
     `;
   }
   
@@ -408,6 +408,10 @@ function displayBookingDetail(booking) {
 function displayWorkerInfo(worker) {
   const workerCard = document.getElementById('worker-info-card');
   const workerDetails = document.getElementById('worker-details');
+  const existingActions = workerCard.querySelector('.worker-actions');
+  if (existingActions) {
+    existingActions.remove();
+  }
   
   const rating = worker.rating ? worker.rating.toFixed(1) : null;
   const reviewCount = worker.reviewCount || 0;
@@ -439,7 +443,7 @@ function displayWorkerInfo(worker) {
   
   // ワーカーのアクションボタン
   const workerActions = document.createElement('div');
-  workerActions.className = 'worker-actions';
+  workerActions.className = 'worker-actions btn-group';
   workerActions.innerHTML = `
     <button class="btn btn--outline btn-action" onclick="window.location.href='select-worker.html?id=${worker.id}'">プロフィールを見る</button>
     ${currentBooking && currentBooking.status !== 'COMPLETED' && currentBooking.status !== 'CANCELLED' ? `

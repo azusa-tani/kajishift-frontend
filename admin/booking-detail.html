@@ -404,7 +404,7 @@ function displayActionButtons(booking) {
 
   // キャンセルボタン（完了・キャンセル以外の場合）
   if (booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED') {
-    buttons.push(`<button class="btn btn-danger" onclick="openCancelModal()">キャンセル</button>`);
+    buttons.push(`<button class="btn btn--outline btn-action danger" onclick="openCancelModal()">キャンセル</button>`);
   }
 
   // チャット履歴へのリンク（ワーカーが割り当てられている場合）

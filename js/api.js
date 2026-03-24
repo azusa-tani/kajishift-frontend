@@ -657,7 +657,7 @@ class ApiClient {
     
     const downloadUrl = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.style.display = 'none';
+    a.classList.add('is-hidden');
     a.href = downloadUrl;
     a.download = filename;
     document.body.appendChild(a);

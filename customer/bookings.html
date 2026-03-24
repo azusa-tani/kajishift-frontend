@@ -52,19 +52,19 @@
 
 <!-- 予約変更モーダル -->
 <div class="modal" id="changeModal">
-  <div class="modal-content">
+  <div class="modal-content card-standard">
     <h2>予約変更</h2>
     <p>予約内容を変更しますか？48時間前まで無料で変更可能です。</p>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('changeModal')">キャンセル</button>
-      <button class="btn btn-primary" id="changeBookingButton">変更する</button>
+      <button class="btn btn--outline btn-action" onclick="closeModal('changeModal')">キャンセル</button>
+      <button class="btn btn-primary btn-action" id="changeBookingButton">変更する</button>
     </div>
   </div>
 </div>
 
 <!-- キャンセルモーダル -->
 <div class="modal" id="cancelModal">
-  <div class="modal-content">
+  <div class="modal-content card-standard">
     <h2>予約をキャンセル</h2>
     <div class="cancellation-fee-info">
       <p><strong>キャンセル料について:</strong></p>
@@ -76,8 +76,8 @@
       <p class="fee-amount">今回のキャンセル料: <strong>¥0</strong>（48時間以上前のため）</p>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('cancelModal')">戻る</button>
-      <button class="btn btn-primary danger" onclick="confirmCancel()">キャンセル確定</button>
+      <button class="btn btn--outline btn-action" onclick="closeModal('cancelModal')">戻る</button>
+      <button class="btn btn-danger" onclick="confirmCancel()">キャンセル確定</button>
     </div>
   </div>
 </div>
@@ -273,9 +273,9 @@ function createBookingCard(booking) {
   } else {
     // 今後の予約
     actionsHtml = `
-      <button class="btn btn-outline" onclick="openChangeModal('${booking.id}')">予約変更</button>
-      <button class="btn btn-outline" onclick="openChat('${booking.id}')">チャット</button>
-      <button class="btn btn-outline danger" onclick="openCancelModal('${booking.id}')">キャンセル</button>
+      <button class="btn btn--outline btn-action" onclick="openChangeModal('${booking.id}')">予約変更</button>
+      <button class="btn btn--outline btn-action" onclick="openChat('${booking.id}')">チャット</button>
+      <button class="btn btn--outline btn-action danger" onclick="openCancelModal('${booking.id}')">キャンセル</button>
       <a href="booking-detail.html?id=${booking.id}" class="btn btn-primary">詳細を見る</a>
     `;
   }

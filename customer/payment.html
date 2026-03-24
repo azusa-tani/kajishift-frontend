@@ -484,7 +484,7 @@ function displayCards(cards) {
         <div class="credit-card__actions">
           ${!card.isDefault ? `<button class="btn-link" onclick="setDefaultCard('${card.id}')">デフォルトに設定</button>` : ''}
           <button class="btn-link" onclick="editCard('${card.id}')">編集</button>
-          <button class="btn-link danger" onclick="deleteCard('${card.id}')">削除</button>
+          <button class="btn btn-danger btn-small" onclick="deleteCard('${card.id}')">削除</button>
         </div>
       </div>
     `;

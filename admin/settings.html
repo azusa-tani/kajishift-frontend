@@ -385,7 +385,7 @@ async function loadServices() {
           <td><span class="status-badge ${service.isActive ? 'active' : 'inactive'}">${service.isActive ? '有効' : '無効'}</span></td>
           <td>
             <button class="btn-link" onclick="editService('${service.id}')">編集</button>
-            <button class="btn-link danger" onclick="deleteService('${service.id}')">削除</button>
+            <button class="btn btn-danger btn-small" onclick="deleteService('${service.id}')">削除</button>
           </td>
         </tr>
       `;
@@ -419,7 +419,7 @@ async function loadAreas() {
           <td><span class="status-badge ${area.isActive ? 'active' : 'inactive'}">${area.isActive ? '有効' : '無効'}</span></td>
           <td>
             <button class="btn-link" onclick="editArea('${area.id}')">編集</button>
-            <button class="btn-link danger" onclick="deleteArea('${area.id}')">削除</button>
+            <button class="btn btn-danger btn-small" onclick="deleteArea('${area.id}')">削除</button>
           </td>
         </tr>
       `;

@@ -319,7 +319,7 @@ function displaySupportTickets(tickets) {
             ${!ticket.assignedTo ? `<button class="btn btn-outline btn-small" onclick="assignToMe('${ticket.id}')">自分にアサイン</button>` : ''}
             ${ticket.status === 'OPEN' ? `<button class="btn btn-outline btn-small" onclick="updateTicketStatus('${ticket.id}', 'IN_PROGRESS')">対応開始</button>` : ''}
             ${ticket.status === 'IN_PROGRESS' ? `<button class="btn btn-outline btn-small" onclick="updateTicketStatus('${ticket.id}', 'CLOSED')">完了</button>` : ''}
-            <button class="btn btn-outline btn-small danger" onclick="deleteTicket('${ticket.id}')">削除</button>
+            <button class="btn btn-danger btn-small" onclick="deleteTicket('${ticket.id}')">削除</button>
           </div>
         </div>
       </div>

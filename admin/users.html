@@ -304,7 +304,7 @@ function displayUsers(users) {
           <a href="user-detail.html?id=${user.id}" class="btn-link">詳細</a>
           ${user.status === 'SUSPENDED' 
             ? `<button class="btn-link" onclick="activateUser('${user.id}')">有効化</button>`
-            : `<button class="btn-link danger" onclick="suspendUser('${user.id}')">停止</button>`
+            : `<button class="btn btn-danger btn-small" onclick="suspendUser('${user.id}')">停止</button>`
           }
         </td>
       </tr>

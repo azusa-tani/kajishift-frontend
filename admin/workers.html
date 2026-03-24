@@ -235,7 +235,7 @@ function displayWorkers(workers) {
         <td><span class="status-badge ${approvalStatusClass}">${approvalStatusText}</span></td>
         <td>
           <a href="worker-detail.html?id=${worker.id}" class="btn-link">${worker.approvalStatus === 'PENDING' ? '審査' : '詳細'}</a>
-          ${worker.approvalStatus === 'APPROVED' ? `<button class="btn-link danger" onclick="suspendWorker('${worker.id}')">停止</button>` : ''}
+          ${worker.approvalStatus === 'APPROVED' ? `<button class="btn btn-danger btn-small" onclick="suspendWorker('${worker.id}')">停止</button>` : ''}
         </td>
       </tr>
     `;
