@@ -436,7 +436,7 @@ function addService() {
   document.getElementById('serviceForm').reset();
   document.getElementById('serviceId').value = '';
   document.getElementById('serviceIsActive').checked = true;
-  document.getElementById('serviceModal').style.display = 'flex';
+  document.getElementById('serviceModal').classList.add('is-open');
 }
 
 async function editService(id) {
@@ -457,7 +457,7 @@ async function editService(id) {
     document.getElementById('serviceBasePrice').value = service.basePrice || '';
     document.getElementById('serviceDisplayOrder').value = service.displayOrder || 0;
     document.getElementById('serviceIsActive').checked = service.isActive;
-    document.getElementById('serviceModal').style.display = 'flex';
+    document.getElementById('serviceModal').classList.add('is-open');
   } catch (error) {
     console.error('サービスメニュー取得エラー:', error);
     showError('サービスメニューの取得に失敗しました: ' + (error.message || 'エラーが発生しました'));
@@ -492,7 +492,7 @@ async function saveService() {
 }
 
 function closeServiceModal() {
-  document.getElementById('serviceModal').style.display = 'none';
+  document.getElementById('serviceModal').classList.remove('is-open');
 }
 
 async function deleteService(id) {
@@ -515,7 +515,7 @@ function addArea() {
   document.getElementById('areaForm').reset();
   document.getElementById('areaId').value = '';
   document.getElementById('areaIsActive').checked = true;
-  document.getElementById('areaModal').style.display = 'flex';
+  document.getElementById('areaModal').classList.add('is-open');
 }
 
 async function editArea(id) {
@@ -536,7 +536,7 @@ async function editArea(id) {
     document.getElementById('areaPostalCode').value = area.postalCode || '';
     document.getElementById('areaDisplayOrder').value = area.displayOrder || 0;
     document.getElementById('areaIsActive').checked = area.isActive;
-    document.getElementById('areaModal').style.display = 'flex';
+    document.getElementById('areaModal').classList.add('is-open');
   } catch (error) {
     console.error('エリア取得エラー:', error);
     showError('エリアの取得に失敗しました: ' + (error.message || 'エラーが発生しました'));
@@ -571,7 +571,7 @@ async function saveArea() {
 }
 
 function closeAreaModal() {
-  document.getElementById('areaModal').style.display = 'none';
+  document.getElementById('areaModal').classList.remove('is-open');
 }
 
 async function deleteArea(id) {
@@ -609,7 +609,7 @@ function showError(message) {
 
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
+    event.target.classList.remove('is-open');
   }
 }
 </script>

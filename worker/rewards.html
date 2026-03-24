@@ -36,19 +36,19 @@
     
     <section class="rewards-header">
       <h1>報酬管理</h1>
-      <p>あなたの報酬履歴と支払い情報を確認できます</p>
+      <p class="text-muted">あなたの報酬履歴と支払い情報を確認できます</p>
     </section>
 
     <!-- 今月のサマリー -->
-    <section class="rewards-summary-section">
+    <section class="rewards-summary-section section-block card-standard">
       <h2 class="section-title" id="summaryTitle">2024年3月の報酬</h2>
-      <div class="rewards-summary-card" id="summaryCard">
+      <div class="rewards-summary-card reward-summary-card premium-summary-card" id="summaryCard">
         <div class="loading-message">読み込み中...</div>
       </div>
     </section>
 
     <!-- 支払い履歴 -->
-    <section class="payment-history">
+    <section class="payment-history section-block card-standard">
       <h2 class="section-title">支払い履歴</h2>
       <div class="payment-list" id="paymentList">
         <div class="loading-message">読み込み中...</div>
@@ -56,7 +56,7 @@
     </section>
 
     <!-- 今月の仕事詳細 -->
-    <section class="rewards-detail">
+    <section class="rewards-detail section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">今月の仕事詳細</h2>
         <select class="filter-select" id="monthSelect" onchange="onMonthChange()">
@@ -71,9 +71,9 @@
     </section>
 
     <!-- 支払い情報 -->
-    <section class="payment-info-section">
+    <section class="payment-info-section section-block card-standard">
       <h2 class="section-title">支払い情報</h2>
-      <div class="payment-info-card">
+      <div class="payment-info-card card-standard">
         <div class="info-row">
           <span class="info-label">振込先銀行</span>
           <span class="info-value">北海道銀行 中央支店</span>
@@ -91,8 +91,8 @@
           <span class="info-value">タナカ ハナコ</span>
         </div>
         <div class="info-note">
-          <p>※ 報酬は毎月5日に前月分を振り込みます。</p>
-          <p>※ 口座情報の変更は<a href="profile.html">プロフィールページ</a>から行えます。</p>
+          <p class="text-muted">※ 報酬は毎月5日に前月分を振り込みます。</p>
+          <p class="text-muted">※ 口座情報の変更は<a href="profile.html">プロフィールページ</a>から行えます。</p>
         </div>
       </div>
     </section>
@@ -214,7 +214,7 @@ function displaySummary(bookings, year, month) {
   });
 
   document.getElementById('summaryCard').innerHTML = `
-    <div class="summary-grid">
+      <div class="summary-grid">
       <div class="summary-item">
         <div class="summary-label">今月の合計</div>
         <div class="summary-amount">¥${totalAmount.toLocaleString()}</div>
@@ -256,14 +256,14 @@ function displayPaymentHistory(payments) {
     const statusClass = payment.status === 'COMPLETED' ? 'active' : '';
     
     return `
-      <div class="payment-item">
+      <div class="payment-item card-standard">
         <div class="payment-info">
           <div class="payment-date">${dateStr}</div>
           <div class="payment-amount">¥${payment.amount ? payment.amount.toLocaleString() : '-'}</div>
         </div>
         <div class="payment-status">
           <span class="status-badge ${statusClass}">${status}</span>
-          ${payment.status === 'COMPLETED' ? `<div class="payment-date-detail">${dateStr} 振込完了</div>` : ''}
+          ${payment.status === 'COMPLETED' ? `<div class="payment-date-detail text-muted">${dateStr} 振込完了</div>` : ''}
         </div>
       </div>
     `;

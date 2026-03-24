@@ -48,24 +48,24 @@ if (typeof checkAuth === 'function') {
   <div class="admin-container">
     
     <section class="admin-page-header">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="flex justify-between items-center">
         <div>
           <h1>ワーカー詳細</h1>
-          <a href="workers.html" class="btn-link" style="margin-top: 0.5rem; display: inline-block;">← ワーカー一覧に戻る</a>
+          <a href="workers.html" class="btn-action-link mt-sm inline-block">← ワーカー一覧に戻る</a>
         </div>
-        <div id="actionButtons" style="display: flex; gap: 0.5rem;">
+        <div id="actionButtons" class="flex gap-2">
           <!-- 動的にボタンを追加 -->
         </div>
       </div>
     </section>
 
     <!-- ローディング表示 -->
-    <div id="loadingMessage" class="loading-message" style="text-align: center; padding: 2rem;">
+    <div id="loadingMessage" class="loading-message text-center p-8">
       ワーカー情報を読み込み中...
     </div>
 
     <!-- ワーカー詳細情報 -->
-    <div id="workerContent" style="display: none;">
+    <div id="workerContent" class="is-hidden">
       
       <!-- 基本情報 -->
       <section class="admin-section">
@@ -115,7 +115,7 @@ if (typeof checkAuth === 'function') {
           <div class="info-grid">
             <div class="info-item">
               <label>自己紹介</label>
-              <div id="workerBio" style="white-space: pre-wrap;">-</div>
+              <div id="workerBio" class="whitespace-pre-wrap">-</div>
             </div>
             <div class="info-item">
               <label>希望時給</label>
@@ -175,7 +175,7 @@ if (typeof checkAuth === 'function') {
               <label>本人確認書類</label>
               <div id="idDocumentStatus">-</div>
             </div>
-            <div id="idDocumentPreview" style="margin-top: 1rem;"></div>
+            <div id="idDocumentPreview" class="mt-md"></div>
           </div>
         </div>
       </section>
@@ -241,8 +241,8 @@ async function loadWorkerDetail() {
 
 function displayWorkerDetail(worker) {
   // ローディングを非表示
-  document.getElementById('loadingMessage').style.display = 'none';
-  document.getElementById('workerContent').style.display = 'block';
+  document.getElementById('loadingMessage').classList.add('is-hidden');
+  document.getElementById('workerContent').classList.remove('is-hidden');
 
   // 基本情報
   document.getElementById('workerId').textContent = `#${worker.id.substring(0, 8)}`;
@@ -291,7 +291,7 @@ function displayWorkerDetail(worker) {
     document.getElementById('idDocumentStatus').innerHTML = 
       '<span class="status-badge active">確認済み</span>';
     document.getElementById('idDocumentPreview').innerHTML = `
-      <a href="${worker.idDocumentUrl}" target="_blank" class="btn btn-outline">
+      <a href="${worker.idDocumentUrl}" target="_blank" class="btn btn--outline btn-action">
         本人確認書類を確認する
       </a>
     `;
@@ -312,18 +312,18 @@ function displayActionButtons(worker) {
   if (worker.approvalStatus === 'PENDING') {
     // 審査中の場合は承認/却下ボタン
     actionButtons.innerHTML = `
-      <button class="btn btn-primary" onclick="approveWorker('APPROVED')">承認</button>
-      <button class="btn btn-outline danger" onclick="approveWorker('REJECTED')">却下</button>
+      <button class="btn btn-primary btn-action" onclick="approveWorker('APPROVED')">承認</button>
+      <button class="btn btn-danger" onclick="approveWorker('REJECTED')">却下</button>
     `;
   } else if (worker.approvalStatus === 'APPROVED' && worker.status !== 'SUSPENDED') {
     // 承認済みで停止されていない場合は停止ボタン
     actionButtons.innerHTML = `
-      <button class="btn btn-outline danger" onclick="suspendWorker()">停止</button>
+      <button class="btn btn-danger" onclick="suspendWorker()">停止</button>
     `;
   } else if (worker.status === 'SUSPENDED') {
     // 停止されている場合は有効化ボタン
     actionButtons.innerHTML = `
-      <button class="btn btn-primary" onclick="activateWorker()">有効化</button>
+      <button class="btn btn-primary btn-action" onclick="activateWorker()">有効化</button>
     `;
   }
 }

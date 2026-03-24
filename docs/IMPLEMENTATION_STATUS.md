@@ -944,3 +944,42 @@
 3. **Netlifyデプロイ対応**
    - ✅ Netlifyデプロイ手順ドキュメント作成（`docs/NETLIFY_DEPLOY.md`）
 **作成者**: AI Assistant (Cursor)
+
+### 2026年3月23日の更新内容
+
+- ✅ 決済・履歴ページ（`customer/payment.html`）UI刷新
+  - カード管理を実カード風レイアウトに変更（ブランド・末尾4桁・EXP・名義をカードUIで表示）
+  - 月間サマリーカードを強調（大きめアイコン・柔らかい背景、`.summary-card--soft`）
+  - 履歴テーブルの行間拡大・ホバー時の薄背景追加、領収書DLをアイコンボタン化（🧾）
+  - ブランド別擬似ロゴ（VISA/MC/JCB/AMEX/Discover）を `.credit-card__brand::before` で表示
+  - CSS追記: `.payment-cards`, `.credit-card*`, `.summary-icon`, `.receipt-btn` ほか
+
+- ✅ お気に入りページ（`customer/favorites.html`）UI刷新
+  - グリッドレイアウト導入（PC:3列/Tablet:2列/Mobile:1列）`.favorites-grid`
+  - モダンカード（`.favorite-card`）へ統一、ホバーで軽い浮上アニメーション
+  - カテゴリタグ（`.category-tag`）、引用風ボイス（`.favorite-voice`）を追加
+  - お気に入り解除は右上ハートで実装、削除時はフェードアウト演出（`.is-removing`）
+  - 空状態を改善し「ワーカーを探す」ボタンを強調
+
+- ✅ 予約フロー最適化（お気に入り→予約のショートカット）
+  - `favorites.html` の「予約する」から `booking.html?workerId=...` で遷移
+  - `booking.html` にクイック予約モードを実装
+    - 指名ワーカー保持、予約作成直後に `updateBooking` でワーカー確定→`booking-detail.html`へ遷移
+    - Step2に「いつもの予約内容」カード（住所・サービスのサマリー）と大きなCTA「いつもの内容で次へ」を追加
+    - プロフィールから住所補完、最新予約からサービス内容を推測（未設定時のみ反映）
+
+- ✅ 予約詳細ページ（`customer/booking-detail.html`）UI刷新
+  - ヘッダーでサービス名・金額・ステータスを表示し、3ステップの進捗インジケーターを実装
+  - メイン情報カード（日時・場所・料金）をアイコン付きグリッドで視覚整理（`.booking-info-card`, `.info-grid`）
+  - ワーカープロフィールカードを `.worker-display-card` で洗練し、「チャットで連絡」を主アクションに
+  - キャンセルポリシーを柔らかい背景（`.cancellation-policy.soft`）で表示
+  - 地図プレースホルダをモダンなグリッド背景のサーフェスで表現（`.map-placeholder.modern`）
+  - モバイル時は下部固定アクションバー `.action-bar--fixed` でチャット導線を常時提示
+
+- ✅ 共通CSS（`css/style.css`）追記
+  - 決済・お気に入り・予約詳細で使用する新規コンポーネントクラスを多数追加
+  - レスポンシブ（<=1024px/<=768px）時の列数・縦積みレイアウトを調整
+
+影響範囲:
+- 依頼者向け: `payment.html`, `favorites.html`, `booking.html`, `booking-detail.html`, `css/style.css`
+- 既存APIの利用方法は不変（`api.js` の `getFavorites`, `getBookings`, `getBookingById`, `updateBooking`, `getMe`, `getWorkers` など）

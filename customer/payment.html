@@ -314,7 +314,7 @@ function displayPaymentHistory(payments) {
   }
   
   let html = `
-    <table>
+    <table class="payments-table modern">
       <thead>
         <tr>
           <th>日付</th>
@@ -360,8 +360,8 @@ function displayPaymentHistory(payments) {
         <td><span class="status-badge ${status.class}">${status.text}</span></td>
         <td>
           ${payment.status === 'COMPLETED' ? `
-            <button class="btn-link" onclick="downloadReceipt('${payment.id}')" id="receipt-btn-${payment.id}">領収書</button>
-          ` : '-'}
+            <button class="btn-icon receipt-btn" onclick="downloadReceipt('${payment.id}')" id="receipt-btn-${payment.id}" title="領収書をダウンロード" aria-label="領収書をダウンロード">🧾</button>
+          ` : '<span class="muted">-</span>'}
         </td>
       </tr>
     `;
@@ -388,15 +388,18 @@ function displayMonthlySummary(payments) {
   const average = count > 0 ? Math.round(total / count) : 0;
   
   container.innerHTML = `
-    <div class="summary-card">
+    <div class="summary-card summary-card--soft">
+      <div class="summary-icon">🧾</div>
       <div class="summary-label">今月の利用回数</div>
       <div class="summary-value">${count}回</div>
     </div>
-    <div class="summary-card">
+    <div class="summary-card summary-card--soft">
+      <div class="summary-icon">💳</div>
       <div class="summary-label">今月の合計金額</div>
       <div class="summary-value">¥${total.toLocaleString()}</div>
     </div>
-    <div class="summary-card">
+    <div class="summary-card summary-card--soft">
+      <div class="summary-icon">📈</div>
       <div class="summary-label">平均単価</div>
       <div class="summary-value">¥${average.toLocaleString()}</div>
     </div>
@@ -461,30 +464,31 @@ function displayCards(cards) {
     'unknown': 'その他'
   };
 
-  container.innerHTML = cards.map(card => {
+  container.innerHTML = `<div class="payment-cards">` + cards.map(card => {
     const brand = brandMap[card.brand] || card.brand;
+    const brandKey = String(card.brand || 'unknown').toLowerCase();
     const expiryDate = `${String(card.expiryMonth).padStart(2, '0')}/${String(card.expiryYear).slice(-2)}`;
     const defaultBadge = card.isDefault ? '<span class="status-badge active">デフォルト</span>' : '';
 
     return `
-      <div class="card-item" data-card-id="${card.id}">
-        <div class="card-info">
-          <div class="card-brand">${brand}</div>
-          <div class="card-number">**** **** **** ${card.last4}</div>
-          <div class="card-details">
-            <span class="card-expiry">有効期限: ${expiryDate}</span>
-            <span class="card-name">${escapeHtml(card.cardholderName)}</span>
-            ${defaultBadge}
-          </div>
+      <div class="credit-card card-brand-${brandKey}" data-card-id="${card.id}">
+        <div class="credit-card__brand-row">
+          <span class="credit-card__brand" data-brand="${brandKey}">${brand}</span>
+          ${defaultBadge}
         </div>
-        <div class="card-actions">
+        <div class="credit-card__number">•••• •••• •••• ${card.last4}</div>
+        <div class="credit-card__meta">
+          <span>EXP ${expiryDate}</span>
+          <span>${escapeHtml(card.cardholderName)}</span>
+        </div>
+        <div class="credit-card__actions">
           ${!card.isDefault ? `<button class="btn-link" onclick="setDefaultCard('${card.id}')">デフォルトに設定</button>` : ''}
           <button class="btn-link" onclick="editCard('${card.id}')">編集</button>
           <button class="btn-link danger" onclick="deleteCard('${card.id}')">削除</button>
         </div>
       </div>
     `;
-  }).join('');
+  }).join('') + `</div>`;
 }
 
 // モーダル関連
@@ -494,17 +498,17 @@ function openCardModal() {
   document.getElementById('cardForm').reset();
   document.getElementById('cardModalTitle').textContent = 'クレジットカードを追加';
   document.getElementById('cardSubmitBtn').textContent = '追加する';
-  document.getElementById('cardModal').style.display = 'flex';
+  document.getElementById('cardModal').classList.add('is-open');
 }
 
 function closeCardModal() {
-  document.getElementById('cardModal').style.display = 'none';
+  document.getElementById('cardModal').classList.remove('is-open');
   document.getElementById('cardForm').reset();
   currentEditCardId = null;
 }
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = 'none';
+  document.getElementById(modalId).classList.remove('is-open');
   if (modalId === 'editCardModal') {
     document.getElementById('editCardForm').reset();
     currentEditCardId = null;
@@ -581,7 +585,7 @@ async function editCard(cardId) {
     document.getElementById('editCardholderName').value = card.cardholderName;
     document.getElementById('editIsDefault').checked = card.isDefault;
 
-    document.getElementById('editCardModal').style.display = 'flex';
+    document.getElementById('editCardModal').classList.add('is-open');
   } catch (error) {
     console.error('カード編集エラー:', error);
     showError('カード情報の取得に失敗しました');
@@ -708,7 +712,7 @@ async function downloadReceipt(paymentId) {
 
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
+    event.target.classList.remove('is-open');
   }
 }
 </script>

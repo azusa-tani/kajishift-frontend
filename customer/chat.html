@@ -44,12 +44,12 @@
         <div class="chat-avatar">👤</div>
         <div class="chat-partner-text">
           <h2 id="partnerName">読み込み中...</h2>
-          <p class="chat-status" id="partnerStatus">-</p>
+          <p class="chat-status" id="partnerStatus"><span class="status-dot" aria-hidden="true"></span>-</p>
         </div>
       </div>
       <div class="chat-menu-container">
         <button class="btn-icon" id="chatMenuBtn" aria-label="メニュー">⋯</button>
-        <div class="chat-menu-dropdown" id="chatMenuDropdown" style="display: none;">
+        <div class="chat-menu-dropdown is-hidden" id="chatMenuDropdown">
           <button class="chat-menu-item" id="viewWorkerProfileBtn">
             <span>👤</span> ワーカープロフィールを見る
           </button>
@@ -70,15 +70,15 @@
 
     <!-- チャット入力エリア -->
     <div class="chat-input-area">
-      <button class="btn-icon" id="attachBtn" aria-label="画像添付">📎</button>
-      <input type="file" id="fileInput" style="display: none;" accept="image/*" />
+      <button class="btn-icon chat-attach-btn" id="attachBtn" aria-label="画像添付">＋</button>
+      <input type="file" id="fileInput" class="is-hidden" accept="image/*" />
       <textarea 
         class="chat-input" 
         id="messageInput" 
         placeholder="メッセージを入力..."
         rows="1"
       ></textarea>
-      <button class="btn btn-primary" id="sendBtn">送信</button>
+      <button class="btn btn-primary chat-send-btn" id="sendBtn" aria-label="送信">✈</button>
     </div>
 
   </div>
@@ -86,10 +86,10 @@
 
 <!-- ワーカープロフィールモーダル -->
 <div class="modal" id="workerProfileModal">
-  <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+  <div class="modal-content card-standard modal-content--wide">
+    <div class="modal-inline-header">
       <h2>ワーカープロフィール</h2>
-      <button class="btn-icon" onclick="closeModal('workerProfileModal')" style="font-size: 1.5rem;">×</button>
+      <button class="btn-icon modal-close-lg" onclick="closeModal('workerProfileModal')">×</button>
     </div>
     <div id="workerProfileContent">
       <div class="loading-message">読み込み中...</div>
@@ -104,6 +104,8 @@ let currentBooking = null;
 let currentUserId = null;
 let loadedMessageIds = new Set(); // 既に表示したメッセージIDを記録
 let tempMessageIds = new Set(); // 一時メッセージIDを追跡
+let lastSentAnimAt = 0;
+let sentBurstCount = 0;
 
 // ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
@@ -165,7 +167,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
           }
           // 実際のメッセージを追加
-          addMessageToUI(message.content || '', message.senderId === currentUserId ? 'sent' : 'received', message);
+          const messageType = message.senderId === currentUserId ? 'sent' : 'received';
+          addMessageToUI(message.content || '', messageType, message, { animate: messageType === 'received' });
           loadedMessageIds.add(message.id);
         }
       }
@@ -192,14 +195,14 @@ function setupChatMenu() {
   // メニューボタンのクリックイベント
   menuBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    const isVisible = menuDropdown.style.display !== 'none';
-    menuDropdown.style.display = isVisible ? 'none' : 'block';
+    const isVisible = !menuDropdown.classList.contains('is-hidden');
+    menuDropdown.classList.toggle('is-hidden', isVisible);
   });
   
   // メニュー外をクリックしたら閉じる
   document.addEventListener('click', function(e) {
     if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
-      menuDropdown.style.display = 'none';
+      menuDropdown.classList.add('is-hidden');
     }
   });
   
@@ -212,7 +215,7 @@ function setupChatMenu() {
       } else {
         alert('ワーカー情報が取得できません');
       }
-      menuDropdown.style.display = 'none';
+      menuDropdown.classList.add('is-hidden');
     });
   }
   
@@ -225,7 +228,7 @@ function setupChatMenu() {
       } else {
         alert('予約IDが取得できません');
       }
-      menuDropdown.style.display = 'none';
+      menuDropdown.classList.add('is-hidden');
     });
   }
   
@@ -234,7 +237,7 @@ function setupChatMenu() {
   if (viewBookingListBtn) {
     viewBookingListBtn.addEventListener('click', function() {
       window.location.href = 'bookings.html';
-      menuDropdown.style.display = 'none';
+      menuDropdown.classList.add('is-hidden');
     });
   }
 }
@@ -372,7 +375,7 @@ function displayMessages(messages) {
           <div class="message-content">
             ${imageUrl ? `
               <div class="message-image">
-                <img src="${imageUrl}" alt="送信された画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+                <img src="${imageUrl}" class="chat-image-clickable" alt="送信された画像" onclick="openImageModal('${imageUrl}')" />
               </div>
             ` : ''}
             ${message.content && message.content !== '[画像]' ? `
@@ -390,7 +393,7 @@ function displayMessages(messages) {
           <div class="message-content">
             ${imageUrl ? `
               <div class="message-image">
-                <img src="${imageUrl}" alt="受信した画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+                <img src="${imageUrl}" class="chat-image-clickable" alt="受信した画像" onclick="openImageModal('${imageUrl}')" />
               </div>
             ` : ''}
             ${message.content && message.content !== '[画像]' ? `
@@ -430,7 +433,7 @@ async function sendMessage() {
     senderId: currentUserId,
     createdAt: new Date().toISOString()
   };
-  addMessageToUI(text, 'sent', tempMessage);
+  addMessageToUI(text, 'sent', tempMessage, { animateSent: true });
   const originalText = text; // エラー時の復元用
   input.value = '';
   
@@ -533,7 +536,7 @@ async function sendImageMessage(file) {
 }
 
 // UIにメッセージを追加
-function addMessageToUI(text, type, message) {
+function addMessageToUI(text, type, message, options = {}) {
   const container = document.getElementById('chatMessages');
   
   // 空のメッセージを削除
@@ -562,6 +565,14 @@ function addMessageToUI(text, type, message) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${type}`;
   messageDiv.id = message.id || 'temp-' + Date.now();
+  if (options.animate) {
+    messageDiv.classList.add('message-enter');
+  }
+  if (options.animateSent && type === 'sent') {
+    messageDiv.classList.add('message-sent-enter');
+    const delayMs = getSentStaggerDelay();
+    messageDiv.style.setProperty('--sent-stagger-delay', `${delayMs}ms`);
+  }
   
   const timeStr = messageDate.toLocaleTimeString('ja-JP', {
     hour: '2-digit',
@@ -575,7 +586,7 @@ function addMessageToUI(text, type, message) {
       <div class="message-content">
         ${imageUrl ? `
           <div class="message-image">
-            <img src="${imageUrl}" alt="送信された画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+            <img src="${imageUrl}" class="chat-image-clickable" alt="送信された画像" onclick="openImageModal('${imageUrl}')" />
           </div>
         ` : ''}
         ${text && text !== '[画像]' && text !== '[画像を送信中...]' ? `
@@ -591,7 +602,7 @@ function addMessageToUI(text, type, message) {
       <div class="message-content">
         ${imageUrl ? `
           <div class="message-image">
-            <img src="${imageUrl}" alt="受信した画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+            <img src="${imageUrl}" class="chat-image-clickable" alt="受信した画像" onclick="openImageModal('${imageUrl}')" />
           </div>
         ` : ''}
         ${text && text !== '[画像]' ? `
@@ -603,7 +614,34 @@ function addMessageToUI(text, type, message) {
   }
   
   container.appendChild(messageDiv);
+  if (options.animate) {
+    requestAnimationFrame(() => {
+      messageDiv.classList.add('is-visible');
+    });
+  }
+  if (options.animateSent && type === 'sent') {
+    requestAnimationFrame(() => {
+      messageDiv.classList.add('is-visible-sent');
+    });
+  }
   scrollToBottom();
+}
+
+// 連投時にだけ短いスタッガーをつける（トトトンッ: 0ms -> 40ms -> 80ms -> 120ms）
+function getSentStaggerDelay() {
+  const now = Date.now();
+  const burstWindowMs = 850;
+  const stepMs = 40;
+  const maxDelayMs = 120;
+
+  if (now - lastSentAnimAt > burstWindowMs) {
+    sentBurstCount = 0;
+  } else {
+    sentBurstCount += 1;
+  }
+
+  lastSentAnimAt = now;
+  return Math.min(sentBurstCount * stepMs, maxDelayMs);
 }
 
 // HTMLエスケープ
@@ -643,7 +681,7 @@ function addImageMessageToUI(imageUrl, type, message, messageId) {
     messageDiv.innerHTML = `
       <div class="message-content">
         <div class="message-image">
-          <img src="${imageUrl}" alt="送信された画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+          <img src="${imageUrl}" class="chat-image-clickable" alt="送信された画像" onclick="openImageModal('${imageUrl}')" />
         </div>
         <div class="message-time">${timeStr}</div>
       </div>
@@ -653,7 +691,7 @@ function addImageMessageToUI(imageUrl, type, message, messageId) {
       <div class="message-avatar">👤</div>
       <div class="message-content">
         <div class="message-image">
-          <img src="${imageUrl}" alt="受信した画像" onclick="openImageModal('${imageUrl}')" style="cursor: pointer;" />
+          <img src="${imageUrl}" class="chat-image-clickable" alt="受信した画像" onclick="openImageModal('${imageUrl}')" />
         </div>
         <div class="message-time">${timeStr}</div>
       </div>
@@ -667,15 +705,11 @@ function addImageMessageToUI(imageUrl, type, message, messageId) {
 // 画像モーダルを開く
 function openImageModal(imageUrl) {
   const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.style.display = 'flex';
-  modal.style.alignItems = 'center';
-  modal.style.justifyContent = 'center';
-  modal.style.zIndex = '10000';
+  modal.className = 'modal modal-image-viewer is-open';
   modal.innerHTML = `
-    <div style="position: relative; max-width: 90vw; max-height: 90vh;">
-      <button class="btn-icon" onclick="this.closest('.modal').remove()" style="position: absolute; top: -40px; right: 0; font-size: 1.5rem; color: white; background: rgba(0,0,0,0.5); border-radius: 50%; width: 40px; height: 40px;">×</button>
-      <img src="${imageUrl}" alt="拡大画像" style="max-width: 100%; max-height: 90vh; border-radius: 8px;" />
+    <div class="image-viewer-frame">
+      <button class="btn-icon image-viewer-close" onclick="this.closest('.modal').remove()">×</button>
+      <img src="${imageUrl}" class="image-viewer-image" alt="拡大画像" />
     </div>
   `;
   modal.onclick = function(e) {
@@ -700,7 +734,7 @@ window.addEventListener('beforeunload', function() {
 async function viewWorkerProfile(workerId) {
   try {
     document.getElementById('workerProfileContent').innerHTML = '<div class="loading-message">読み込み中...</div>';
-    document.getElementById('workerProfileModal').style.display = 'flex';
+    document.getElementById('workerProfileModal').classList.add('is-open');
     
     const response = await api.getWorkerById(workerId);
     const worker = response.data;
@@ -794,7 +828,7 @@ async function loadWorkerProfileReviews(workerId) {
 
 // モーダルを閉じる
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = 'none';
+  document.getElementById(modalId).classList.remove('is-open');
 }
 
 // ユーティリティ関数

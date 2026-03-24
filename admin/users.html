@@ -123,8 +123,8 @@ if (typeof checkAuth === 'function') {
 </main>
 
 <!-- 管理者登録モーダル -->
-<div id="adminRegisterModal" class="modal" style="display: none;">
-  <div class="modal-content">
+<div id="adminRegisterModal" class="modal">
+  <div class="modal-content card-standard">
     <div class="modal-header">
       <h2>新しい管理者を登録</h2>
       <button class="modal-close" onclick="closeAdminRegisterModal()">&times;</button>
@@ -473,12 +473,12 @@ function logout() {
 
 // 管理者登録モーダル
 function openAdminRegisterModal() {
-  document.getElementById('adminRegisterModal').style.display = 'flex';
+  document.getElementById('adminRegisterModal').classList.add('is-open');
   document.getElementById('admin-name').focus();
 }
 
 function closeAdminRegisterModal() {
-  document.getElementById('adminRegisterModal').style.display = 'none';
+  document.getElementById('adminRegisterModal').classList.remove('is-open');
   document.getElementById('adminRegisterForm').reset();
   clearAdminRegisterError();
 }
@@ -495,10 +495,8 @@ function showAdminRegisterError(message) {
   const form = document.getElementById('adminRegisterForm');
   const errorElement = document.createElement('div');
   errorElement.id = 'admin-register-error';
-  errorElement.className = 'error-message';
+  errorElement.className = 'error-message mb-md';
   errorElement.textContent = message;
-  errorElement.style.display = 'block';
-  errorElement.style.marginBottom = '1rem';
   form.insertBefore(errorElement, form.firstChild);
 }
 

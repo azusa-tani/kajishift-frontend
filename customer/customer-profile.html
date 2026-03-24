@@ -22,7 +22,7 @@
     </nav>
     <div class="header-actions">
       <button class="btn-icon" id="notificationBtn" aria-label="通知">
-        <span class="notification-badge" style="display: none;">0</span>
+        <span class="notification-badge is-hidden">0</span>
         🔔
       </button>
       <a href="customer-profile.html" class="avatar">👤</a>
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       const notificationBadge = document.querySelector('.notification-badge');
       if (notificationBadge) {
         notificationBadge.textContent = notificationResponse.count;
-        notificationBadge.style.display = 'block';
+        notificationBadge.classList.remove('is-hidden');
       }
     }
   } catch (error) {
@@ -240,7 +240,7 @@ function editBasicInfo() {
   document.getElementById('editAddress').value = currentUser.address || '';
 
   // モーダルを表示
-  document.getElementById('editBasicInfoModal').style.display = 'flex';
+  document.getElementById('editBasicInfoModal').classList.add('is-open');
 }
 
 // 基本情報編集フォーム送信
@@ -273,13 +273,13 @@ document.getElementById('editBasicInfoForm').addEventListener('submit', async (e
 });
 
 function closeEditBasicInfoModal() {
-  document.getElementById('editBasicInfoModal').style.display = 'none';
+  document.getElementById('editBasicInfoModal').classList.remove('is-open');
 }
 
 // パスワード変更
 function changePassword() {
   document.getElementById('changePasswordForm').reset();
-  document.getElementById('changePasswordModal').style.display = 'flex';
+  document.getElementById('changePasswordModal').classList.add('is-open');
 }
 
 // パスワード変更フォーム送信
@@ -317,7 +317,7 @@ document.getElementById('changePasswordForm').addEventListener('submit', async (
 });
 
 function closeChangePasswordModal() {
-  document.getElementById('changePasswordModal').style.display = 'none';
+  document.getElementById('changePasswordModal').classList.remove('is-open');
   document.getElementById('changePasswordForm').reset();
 }
 
@@ -337,7 +337,7 @@ function showSuccess(message) {
 
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
+    event.target.classList.remove('is-open');
   }
 }
 </script>

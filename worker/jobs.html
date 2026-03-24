@@ -36,12 +36,12 @@
     
     <section class="jobs-header">
       <h1>仕事を探す</h1>
-      <p>あなたの条件に合った仕事を表示しています</p>
+      <p class="text-muted">あなたの条件に合った仕事を表示しています</p>
     </section>
 
     <!-- フィルター -->
-    <section class="filter-section">
-      <div class="filter-card">
+    <section class="filter-section section-block card-standard">
+      <div class="filter-card card-standard">
         <h3>条件で絞り込む</h3>
         <div class="filter-grid">
           <div class="filter-item">
@@ -79,13 +79,13 @@
             </select>
           </div>
         </div>
-        <button class="btn btn-primary" id="filterButton">絞り込む</button>
+        <button class="btn btn-primary btn-action" id="filterButton">絞り込む</button>
       </div>
     </section>
 
     <!-- 仕事一覧 -->
-    <section class="jobs-list-section">
-      <div class="jobs-stats">
+    <section class="jobs-list-section section-block card-standard">
+      <div class="jobs-stats text-muted">
         <span>条件に合う仕事: <strong id="jobCount">0件</strong></span>
       </div>
 
@@ -93,10 +93,10 @@
         <div class="loading-message">仕事を読み込み中...</div>
       </div>
 
-      <div class="pagination" id="pagination" style="display: none;">
-        <button class="btn btn-outline" id="prevButton" disabled>前へ</button>
-        <span class="page-info" id="pageInfo">1 / 1</span>
-        <button class="btn btn-outline" id="nextButton" disabled>次へ</button>
+      <div class="pagination is-hidden" id="pagination">
+        <button class="btn btn--outline btn-action" id="prevButton" disabled>前へ</button>
+        <span class="page-info text-muted" id="pageInfo">1 / 1</span>
+        <button class="btn btn--outline btn-action" id="nextButton" disabled>次へ</button>
       </div>
     </section>
 
@@ -252,23 +252,23 @@ function displayJobs(bookings) {
     const location = addressParts.length > 0 ? addressParts[0] + (addressParts[1] ? '市' : '') : booking.address || '-';
 
     return `
-      <div class="job-card">
+      <div class="job-card card-standard">
         <div class="job-header">
           <span class="job-date">${dateStr} ${timeStr}</span>
-          <span class="job-status ${statusClass}">${statusText}</span>
+          <span class="status-badge ${statusClass === 'new' ? 'badge-new' : 'pending'}">${statusText}</span>
         </div>
         <h3 class="job-title">${booking.serviceType || '-'}</h3>
         <div class="job-info">
           <span class="job-location">📍 ${location}</span>
-          <span class="job-payment">💰 ${price}</span>
+          <span class="status-badge job-reward-badge">報酬 ${price}</span>
         </div>
-        <p class="job-description">${booking.notes || '特記事項なし'}</p>
+        <p class="job-description text-muted">${booking.notes || '特記事項なし'}</p>
         <div class="job-tags">
           <span class="tag">${booking.serviceType || '-'}</span>
         </div>
         <div class="job-actions">
-          <a href="job-detail.html?id=${booking.id}" class="btn btn-outline">詳細を見る</a>
-          <button class="btn btn-primary" onclick="acceptJob('${booking.id}')">承諾する</button>
+          <a href="job-detail.html?id=${booking.id}" class="btn btn--outline btn-action">詳細を見る</a>
+          <button class="btn btn-primary btn-action" onclick="acceptJob('${booking.id}')">承諾する</button>
         </div>
       </div>
     `;
@@ -287,9 +287,9 @@ function updatePagination() {
   pageInfo.textContent = `${currentPage} / ${totalPages}`;
   
   if (totalPages > 1) {
-    pagination.style.display = 'flex';
+    pagination.classList.remove('is-hidden');
   } else {
-    pagination.style.display = 'none';
+    pagination.classList.add('is-hidden');
   }
 }
 

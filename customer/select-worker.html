@@ -73,7 +73,7 @@
     </section>
 
     <!-- 料金サマリー -->
-    <section class="price-summary">
+    <section class="price-summary price-summary--sticky" id="priceSummarySection">
       <div class="price-card">
         <h3>料金サマリー</h3>
         <div class="price-details" id="priceDetails">
@@ -96,8 +96,8 @@
 
     <!-- 確定ボタン -->
     <div class="selection-actions">
-      <button class="btn btn-outline" onclick="history.back()">戻る</button>
-      <button class="btn btn-primary btn-large" onclick="confirmBooking()">このワーカーで予約確定</button>
+      <button class="btn btn--outline btn-action" onclick="history.back()">戻る</button>
+      <button class="btn btn-primary btn-large btn-action" onclick="confirmBooking()">このワーカーで予約確定</button>
     </div>
 
   </div>
@@ -118,10 +118,10 @@
 
 <!-- ワーカープロフィールモーダル -->
 <div class="modal" id="workerProfileModal">
-  <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+  <div class="modal-content card-standard modal-content--wide">
+    <div class="modal-inline-header">
       <h2>ワーカープロフィール</h2>
-      <button class="btn-icon" onclick="closeModal('workerProfileModal')" style="font-size: 1.5rem;">×</button>
+      <button class="btn-icon modal-close-lg" onclick="closeModal('workerProfileModal')">×</button>
     </div>
     <div id="workerProfileContent">
       <div class="loading-message">読み込み中...</div>
@@ -157,6 +157,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // ワーカー一覧を取得
   await loadWorkers();
+
+  // モバイル時の料金サマリーフローティング設定
+  setupPriceSummaryFloating();
 });
 
 // 予約情報を読み込む
@@ -245,7 +248,10 @@ function displayWorkers(workersList) {
     const totalPrice = hourlyRate * duration;
 
     return `
-      <div class="worker-card" data-worker-id="${worker.id}" data-hourly-rate="${hourlyRate}">
+      <div class="worker-card worker-card--modern" data-worker-id="${worker.id}" data-hourly-rate="${hourlyRate}">
+        <button class="btn-icon btn-favorite" id="favorite-btn-${worker.id}" onclick="toggleFavorite('${worker.id}')" aria-label="お気に入り">
+          <span id="favorite-icon-${worker.id}">♡</span>
+        </button>
         <div class="worker-select">
           <input type="radio" name="worker" id="worker${index}" value="${worker.id}" />
           <label for="worker${index}"></label>
@@ -263,7 +269,7 @@ function displayWorkers(workersList) {
             </div>
           </div>
           
-          <div class="worker-stats">
+          <div class="worker-stats worker-stats--highlight">
             <div class="stat-item">
               <span class="stat-label">実績</span>
               <span class="stat-value">${reviewCount}件</span>
@@ -291,9 +297,6 @@ function displayWorkers(workersList) {
           <div class="worker-actions">
             <button class="btn btn-outline btn-small" onclick="viewWorkerProfile('${worker.id}')">プロフィールを見る</button>
             <button class="btn btn-outline btn-small" onclick="chatWithWorker('${worker.id}')">チャットで相談</button>
-            <button class="btn-icon btn-favorite" id="favorite-btn-${worker.id}" onclick="toggleFavorite('${worker.id}')" aria-label="お気に入り">
-              <span id="favorite-icon-${worker.id}">♡</span>
-            </button>
           </div>
         </div>
       </div>
@@ -343,6 +346,51 @@ function sortWorkers(sortBy) {
   }
   
   displayWorkers(sorted);
+}
+
+// ===== 料金サマリーのフローティング切替 =====
+function setupPriceSummaryFloating() {
+  const section = document.getElementById('priceSummarySection');
+  if (!section) return;
+
+  const showFloatingWithAnimation = () => {
+    section.classList.add('price-summary--floating');
+    section.classList.remove('price-summary--sticky');
+    document.body.classList.add('has-floating-summary');
+
+    // 一度非表示状態を作ってから表示し、フェード+スライドを発火させる
+    section.classList.remove('is-visible');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        section.classList.add('is-visible');
+      });
+    });
+  };
+
+  const showSticky = () => {
+    section.classList.remove('price-summary--floating', 'is-visible');
+    section.classList.add('price-summary--sticky');
+    document.body.classList.remove('has-floating-summary');
+  };
+
+  const applyMode = () => {
+    if (window.innerWidth <= 992) {
+      showFloatingWithAnimation();
+    } else {
+      showSticky();
+    }
+  };
+
+  // 初期適用
+  applyMode();
+
+  // リサイズと向き変更で更新（デバウンス）
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(applyMode, 150);
+  });
+  window.addEventListener('orientationchange', applyMode);
 }
 
 // 料金サマリーを更新
@@ -402,7 +450,7 @@ async function confirmBooking() {
 async function viewWorkerProfile(workerId) {
   try {
     document.getElementById('workerProfileContent').innerHTML = '<div class="loading-message">読み込み中...</div>';
-    document.getElementById('workerProfileModal').style.display = 'flex';
+    document.getElementById('workerProfileModal').classList.add('is-open');
     
     const response = await api.getWorkerById(workerId);
     const worker = response.data;
@@ -418,17 +466,17 @@ async function viewWorkerProfile(workerId) {
 
     const content = `
       <div class="admin-card">
-        <div style="text-align: center; margin-bottom: 1.5rem;">
-          <div style="font-size: 4rem; margin-bottom: 0.5rem;">👤</div>
-          <h2 style="margin-bottom: 0.5rem;">${worker.name || '名前未設定'}</h2>
-          <div style="margin-bottom: 0.5rem;">
+        <div class="text-center mb-lg">
+          <div class="text-4xl mb-sm">👤</div>
+          <h2 class="mb-sm">${worker.name || '名前未設定'}</h2>
+          <div class="mb-sm">
             <span class="stars">${stars}</span>
             <span class="rating-score">${rating.toFixed(1)}</span>
             <span class="rating-count">（評価数: ${reviewCount}件）</span>
           </div>
         </div>
         
-        <div class="info-grid" style="margin-bottom: 1.5rem;">
+        <div class="info-grid mb-lg">
           <div class="info-item">
             <label>時給</label>
             <div>¥${hourlyRate.toLocaleString()}/時間</div>
@@ -444,14 +492,14 @@ async function viewWorkerProfile(workerId) {
         </div>
         
         ${worker.bio ? `
-        <div style="margin-bottom: 1.5rem;">
-          <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">自己紹介</label>
-          <div style="padding: 0.75rem; background: #f5f5f5; border-radius: 4px; white-space: pre-wrap;">${worker.bio}</div>
+        <div class="mb-lg">
+          <label class="form-label">自己紹介</label>
+          <div class="bg-light rounded-md p-3 whitespace-pre-wrap">${worker.bio}</div>
         </div>
         ` : ''}
         
-        <div id="workerProfileReviews" style="margin-top: 1.5rem;">
-          <h3 style="margin-bottom: 1rem;">レビュー</h3>
+        <div id="workerProfileReviews" class="mt-lg">
+          <h3 class="mb-md">レビュー</h3>
           <div class="loading-message-small">レビューを読み込み中...</div>
         </div>
       </div>
@@ -492,18 +540,18 @@ async function loadWorkerProfileReviews(workerId) {
       });
       
       return `
-        <div style="padding: 1rem; background: #f9f9f9; border-radius: 8px; margin-bottom: 0.75rem;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <div class="bg-light rounded-md p-4 mb-md">
+          <div class="flex justify-between mb-sm">
             <span class="stars">${stars}</span>
-            <span style="font-size: 0.875rem; color: #666;">${dateStr}</span>
+            <span class="text-sm text-muted">${dateStr}</span>
           </div>
-          ${review.comment ? `<p style="margin: 0; white-space: pre-wrap;">${escapeHtml(review.comment)}</p>` : ''}
+          ${review.comment ? `<p class="whitespace-pre-wrap no-margin">${escapeHtml(review.comment)}</p>` : ''}
         </div>
       `;
     }).join('');
     
     reviewsElement.innerHTML = `
-      <h3 style="margin-bottom: 1rem;">レビュー</h3>
+      <h3 class="mb-md">レビュー</h3>
       ${reviewsHTML}
     `;
   } catch (error) {
@@ -534,12 +582,12 @@ async function chatWithWorker(workerId) {
 }
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = 'none';
+  document.getElementById(modalId).classList.remove('is-open');
 }
 
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
+    event.target.classList.remove('is-open');
   }
 }
 
@@ -626,7 +674,8 @@ function updateFavoriteButton(workerId, isFavorite) {
   
   if (iconElement) {
     iconElement.textContent = isFavorite ? '♥' : '♡';
-    iconElement.style.color = isFavorite ? '#e74c3c' : '#999';
+    iconElement.classList.toggle('text-danger', isFavorite);
+    iconElement.classList.toggle('text-muted', !isFavorite);
   }
   
   if (buttonElement) {

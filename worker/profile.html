@@ -34,39 +34,39 @@
 <main class="worker-main">
   <div class="container">
     
-    <section class="profile-header" id="profileHeader">
+    <section class="profile-header section-block card-standard" id="profileHeader">
       <div class="loading-message">プロフィールを読み込み中...</div>
     </section>
 
     <!-- 基本情報 -->
-    <section class="profile-section">
+    <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">基本情報</h2>
-        <button class="btn btn-outline btn-small" onclick="editBasicInfo()">編集</button>
+        <button class="btn btn--outline btn-small btn-action-link" onclick="editBasicInfo()">編集</button>
       </div>
-      <div class="profile-card" id="basicInfoCard">
+      <div class="profile-card card-standard" id="basicInfoCard">
         <div class="loading-message">読み込み中...</div>
       </div>
     </section>
 
     <!-- 専門スキル -->
-    <section class="profile-section">
+    <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">自己紹介・時給</h2>
-        <button class="btn btn-outline btn-small" onclick="editProfile()">編集</button>
+        <button class="btn btn--outline btn-small btn-action-link" onclick="editProfile()">編集</button>
       </div>
-      <div class="profile-card" id="profileInfoCard">
+      <div class="profile-card card-standard" id="profileInfoCard">
         <div class="loading-message">読み込み中...</div>
       </div>
     </section>
 
     <!-- 対応エリア -->
-    <section class="profile-section">
+    <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">対応エリア</h2>
-        <button class="btn btn-outline btn-small">編集</button>
+        <button class="btn btn--outline btn-small btn-action-link">編集</button>
       </div>
-      <div class="profile-card">
+      <div class="profile-card card-standard">
         <div class="area-list">
           <div class="area-item">
             <span class="area-name">札幌市</span>
@@ -89,12 +89,12 @@
     </section>
 
     <!-- 利用可能時間 -->
-    <section class="profile-section">
+    <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">利用可能時間</h2>
-        <button class="btn btn-outline btn-small">編集</button>
+        <button class="btn btn--outline btn-small btn-action-link">編集</button>
       </div>
-      <div class="profile-card">
+      <div class="profile-card card-standard">
         <div class="availability-table">
           <table>
             <thead>
@@ -139,48 +139,48 @@
     </section>
 
     <!-- 評価・レビュー -->
-    <section class="profile-section">
+    <section class="profile-section section-block card-standard">
       <h2 class="section-title">評価・レビュー</h2>
-      <div class="reviews-summary">
+      <div class="reviews-summary card-standard">
         <div class="review-stat">
-          <div class="stat-number">4.8</div>
+          <div class="stat-number summary-amount">4.8</div>
           <div class="stat-label">総合評価</div>
         </div>
         <div class="review-breakdown">
           <div class="breakdown-item">
             <span>5★</span>
             <div class="breakdown-bar">
-              <div class="breakdown-fill" style="width: 80%"></div>
+              <div class="breakdown-fill rating-fill-80"></div>
             </div>
-            <span>20件</span>
+            <span class="text-muted">20件</span>
           </div>
           <div class="breakdown-item">
             <span>4★</span>
             <div class="breakdown-bar">
-              <div class="breakdown-fill" style="width: 15%"></div>
+              <div class="breakdown-fill rating-fill-15"></div>
             </div>
-            <span>4件</span>
+            <span class="text-muted">4件</span>
           </div>
           <div class="breakdown-item">
             <span>3★</span>
             <div class="breakdown-bar">
-              <div class="breakdown-fill" style="width: 4%"></div>
+              <div class="breakdown-fill rating-fill-4"></div>
             </div>
-            <span>1件</span>
+            <span class="text-muted">1件</span>
           </div>
           <div class="breakdown-item">
             <span>2★</span>
             <div class="breakdown-bar">
-              <div class="breakdown-fill" style="width: 0%"></div>
+              <div class="breakdown-fill rating-fill-0"></div>
             </div>
-            <span>0件</span>
+            <span class="text-muted">0件</span>
           </div>
           <div class="breakdown-item">
             <span>1★</span>
             <div class="breakdown-bar">
-              <div class="breakdown-fill" style="width: 0%"></div>
+              <div class="breakdown-fill rating-fill-0"></div>
             </div>
-            <span>0件</span>
+            <span class="text-muted">0件</span>
           </div>
         </div>
       </div>
@@ -190,20 +190,20 @@
       </div>
       
       <!-- ページネーション -->
-      <div class="pagination" id="reviews-pagination" style="display: none;">
-        <button class="btn btn-outline" id="reviews-prev-btn" onclick="changeReviewsPage(-1)">前へ</button>
-        <span class="page-info" id="reviews-page-info">1 / 1</span>
-        <button class="btn btn-outline" id="reviews-next-btn" onclick="changeReviewsPage(1)">次へ</button>
+      <div class="pagination is-hidden" id="reviews-pagination">
+        <button class="btn btn--outline btn-action" id="reviews-prev-btn" onclick="changeReviewsPage(-1)">前へ</button>
+        <span class="page-info text-muted" id="reviews-page-info">1 / 1</span>
+        <button class="btn btn--outline btn-action" id="reviews-next-btn" onclick="changeReviewsPage(1)">次へ</button>
       </div>
     </section>
 
     <!-- 口座情報 -->
-    <section class="profile-section">
+    <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">口座情報</h2>
-        <button class="btn btn-outline btn-small">編集</button>
+        <button class="btn btn--outline btn-small btn-action-link">編集</button>
       </div>
-      <div class="profile-card">
+      <div class="profile-card card-standard">
         <div class="info-row">
           <span class="info-label">銀行名</span>
           <span class="info-value">北海道銀行</span>
@@ -228,26 +228,26 @@
     </section>
 
     <!-- 設定 -->
-    <section class="profile-section">
+    <section class="profile-section section-block card-standard">
       <h2 class="section-title">設定</h2>
-      <div class="settings-list">
-        <a href="#" class="settings-item">
+      <div class="settings-list card-standard">
+        <a href="#" class="settings-item btn-action-link">
           <span>通知設定</span>
           <span>→</span>
         </a>
-        <a href="#" class="settings-item">
+        <a href="#" class="settings-item btn-action-link">
           <span>パスワード変更</span>
           <span>→</span>
         </a>
-        <a href="../terms.html" class="settings-item" target="_blank">
+        <a href="../terms.html" class="settings-item btn-action-link" target="_blank">
           <span>利用規約</span>
           <span>→</span>
         </a>
-        <a href="../privacy.html" class="settings-item" target="_blank">
+        <a href="../privacy.html" class="settings-item btn-action-link" target="_blank">
           <span>プライバシーポリシー</span>
           <span>→</span>
         </a>
-        <a href="#" class="settings-item danger" onclick="logout(); return false;">
+        <a href="#" class="settings-item btn-action-link danger" onclick="logout(); return false;">
           <span>ログアウト</span>
           <span>→</span>
         </a>
@@ -272,7 +272,7 @@
 
 <!-- 基本情報編集モーダル -->
 <div class="modal" id="editBasicInfoModal">
-  <div class="modal-content">
+  <div class="modal-content card-standard">
     <h2>基本情報を編集</h2>
     <form id="editBasicInfoForm">
       <div class="form-group">
@@ -292,8 +292,8 @@
         <input type="text" class="form-input" id="editAddress" />
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn btn-outline" onclick="closeModal('editBasicInfoModal')">キャンセル</button>
-        <button type="submit" class="btn btn-primary">保存</button>
+        <button type="button" class="btn btn--outline btn-action" onclick="closeModal('editBasicInfoModal')">キャンセル</button>
+        <button type="submit" class="btn btn-primary btn-action">保存</button>
       </div>
     </form>
   </div>
@@ -368,7 +368,6 @@ function displayProfile(user) {
   } else {
     document.getElementById('reviews-list').innerHTML = '<div class="empty-message">レビューがありません</div>';
   }
-}
 
   // 基本情報
   document.getElementById('basicInfoCard').innerHTML = `
@@ -400,11 +399,11 @@ function displayProfile(user) {
   document.getElementById('profileInfoCard').innerHTML = `
     <div class="info-row">
       <span class="info-label">自己紹介</span>
-      <span class="info-value">${user.bio || '未設定'}</span>
+      <span class="info-value text-muted">${user.bio || '未設定'}</span>
     </div>
     <div class="info-row">
       <span class="info-label">時給</span>
-      <span class="info-value">${user.hourlyRate ? `¥${user.hourlyRate.toLocaleString()}` : '未設定'}</span>
+      <span class="info-value summary-amount">${user.hourlyRate ? `¥${user.hourlyRate.toLocaleString()}` : '未設定'}</span>
     </div>
   `;
 }
@@ -423,7 +422,7 @@ function editBasicInfo() {
   document.getElementById('editAddress').value = currentUser.address || '';
 
   // モーダルを表示
-  document.getElementById('editBasicInfoModal').style.display = 'flex';
+  document.getElementById('editBasicInfoModal').classList.add('is-open');
 }
 
 // 基本情報編集フォームの送信
@@ -463,12 +462,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = 'none';
+  document.getElementById(modalId).classList.remove('is-open');
 }
 
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
+    event.target.classList.remove('is-open');
   }
 }
 
@@ -612,11 +611,11 @@ function updateReviewsPagination(pagination) {
   const nextBtn = document.getElementById('reviews-next-btn');
 
   if (totalReviewsPages <= 1) {
-    paginationElement.style.display = 'none';
+    paginationElement.classList.add('is-hidden');
     return;
   }
 
-  paginationElement.style.display = 'flex';
+  paginationElement.classList.remove('is-hidden');
   pageInfo.textContent = `${currentReviewsPage} / ${totalReviewsPages}`;
   prevBtn.disabled = currentReviewsPage <= 1;
   nextBtn.disabled = currentReviewsPage >= totalReviewsPages;

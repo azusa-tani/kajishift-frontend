@@ -257,7 +257,7 @@ if (typeof checkAuth === 'function') {
           <span>手動設定</span>
         </label>
       </div>
-      <input type="number" class="form-input" id="manualFee" placeholder="0" disabled style="margin-top: 8px;" />
+      <input type="number" class="form-input mt-8" id="manualFee" placeholder="0" disabled />
     </div>
     <div class="form-group">
       <label>メモ</label>
@@ -478,11 +478,11 @@ function updatePagination(status, pagination) {
 
 function openCancelModal(bookingId) {
   document.getElementById('cancelModal').dataset.bookingId = bookingId;
-  document.getElementById('cancelModal').style.display = 'flex';
+  document.getElementById('cancelModal').classList.add('is-open');
 }
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = 'none';
+  document.getElementById(modalId).classList.remove('is-open');
 }
 
 async function confirmCancel() {
@@ -615,7 +615,7 @@ document.querySelectorAll('input[name="fee-type"]').forEach(radio => {
 
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
+    event.target.classList.remove('is-open');
   }
 }
 

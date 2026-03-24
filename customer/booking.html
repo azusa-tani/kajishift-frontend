@@ -40,13 +40,28 @@
       <p>希望の日時と内容を選択してください</p>
     </section>
 
-    <div class="error-message"></div>
+    <div class="error-message" id="formError"></div>
+
+    <nav class="step-indicator" aria-label="予約ウィザードの進行状況">
+      <div class="step-indicator__item is-active" data-step="1">
+        <span class="step-indicator__num">1</span>
+        <span class="step-indicator__label">日時</span>
+      </div>
+      <div class="step-indicator__item" data-step="2">
+        <span class="step-indicator__num">2</span>
+        <span class="step-indicator__label">内容/住所</span>
+      </div>
+      <div class="step-indicator__item" data-step="3">
+        <span class="step-indicator__num">3</span>
+        <span class="step-indicator__label">確認</span>
+      </div>
+    </nav>
 
     <!-- 予約フォーム -->
-    <form class="booking-form" id="bookingForm" novalidate>
+    <form class="booking-form" id="booking-wizard" novalidate>
       
       <!-- ステップ1: 希望日時 -->
-      <div class="form-section">
+      <section class="form-section wizard-step active" data-step="1">
         <h2 class="form-section-title">
           <span class="step-number" aria-hidden="true">1</span>
           希望日時を選択
@@ -109,56 +124,25 @@
             <p id="duration-hint" class="form-hint">※ 最低2時間から、延長はできません</p>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- ステップ2: 住所 -->
-      <div class="form-section">
+      <section class="form-section wizard-step" data-step="2">
         <h2 class="form-section-title">
           <span class="step-number">2</span>
-          住所を入力
+          サービス内容と住所
         </h2>
         <div class="form-card">
-          <div class="form-group">
-            <label for="address-pref">都道府県 <span class="required">必須</span></label>
-            <select id="address-pref" name="pref" class="form-select" required>
-              <option value="">選択してください</option>
-              <option value="hokkaido" selected>北海道</option>
-            </select>
+          <div class="quick-shortcut-card is-hidden" id="quickShortcutCard">
+            <h3>いつもの予約内容</h3>
+            <div class="quick-shortcut-summary">
+              <p><strong>サービス:</strong> <span id="quickServiceSummary">未設定</span></p>
+              <p><strong>住所:</strong> <span id="quickAddressSummary">未設定</span></p>
+            </div>
+            <button type="button" class="btn btn-primary btn-large quick-shortcut-btn" id="quickNextBtn">いつもの内容で次へ</button>
           </div>
-          
-          <div class="form-group">
-            <label for="address-city">市区町村 <span class="required">必須</span></label>
-            <select id="address-city" name="city" class="form-select" required>
-              <option value="">選択してください</option>
-              <option value="sapporo">札幌市</option>
-              <option value="ebetsu">江別市</option>
-              <option value="kitahiroshima">北広島市</option>
-              <option value="ishikari">石狩市</option>
-            </select>
-            <p class="form-hint">※ 対応エリア: 札幌市、江別市、北広島市、石狩市</p>
-          </div>
-          
-          <div class="form-group">
-            <label for="address-detail">詳細住所 <span class="required">必須</span></label>
-            <input type="text" id="address-detail" name="address-detail" class="form-input" placeholder="例: 中央区南1条西1丁目1-1" required />
-          </div>
-          
-          <div class="form-group">
-            <label for="address-building">建物名・部屋番号</label>
-            <input type="text" id="address-building" name="address-building" class="form-input" placeholder="例: サンプルマンション 101号室" />
-          </div>
-          
-          <button type="button" class="btn btn-outline btn-small">現在地から自動入力</button>
-        </div>
-      </div>
 
-      <!-- ステップ3: 依頼内容 -->
-      <div class="form-section">
-        <h2 class="form-section-title">
-          <span class="step-number">3</span>
-          依頼内容を選択
-        </h2>
-        <div class="form-card">
+          <!-- 依頼内容 -->
           <div class="form-group">
             <label>依頼内容 <span class="required">必須</span></label>
             <div class="checkbox-grid">
@@ -193,13 +177,46 @@
             <label for="service-detail">詳細な依頼内容</label>
             <textarea id="service-detail" name="service-detail" class="form-textarea" rows="5" placeholder="具体的な作業内容や希望することを記入してください"></textarea>
           </div>
-        </div>
-      </div>
 
-      <!-- ステップ4: オプション -->
-      <div class="form-section">
+          <!-- 住所 -->
+          <div class="form-group">
+            <label for="address-pref">都道府県 <span class="required">必須</span></label>
+            <select id="address-pref" name="pref" class="form-select" required>
+              <option value="">選択してください</option>
+              <option value="hokkaido" selected>北海道</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="address-city">市区町村 <span class="required">必須</span></label>
+            <select id="address-city" name="city" class="form-select" required>
+              <option value="">選択してください</option>
+              <option value="sapporo">札幌市</option>
+              <option value="ebetsu">江別市</option>
+              <option value="kitahiroshima">北広島市</option>
+              <option value="ishikari">石狩市</option>
+            </select>
+            <p class="form-hint">※ 対応エリア: 札幌市、江別市、北広島市、石狩市</p>
+          </div>
+          
+          <div class="form-group">
+            <label for="address-detail">詳細住所 <span class="required">必須</span></label>
+            <input type="text" id="address-detail" name="address-detail" class="form-input" placeholder="例: 中央区南1条西1丁目1-1" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="address-building">建物名・部屋番号</label>
+            <input type="text" id="address-building" name="address-building" class="form-input" placeholder="例: サンプルマンション 101号室" />
+          </div>
+          
+          <button type="button" class="btn btn-outline btn-small">現在地から自動入力</button>
+        </div>
+      </section>
+
+      <!-- ステップ3: オプション・確認（1/3） -->
+      <section class="form-section wizard-step" data-step="3">
         <h2 class="form-section-title">
-          <span class="step-number">4</span>
+          <span class="step-number">3</span>
           オプション
         </h2>
         <div class="form-card">
@@ -211,17 +228,17 @@
             <p class="form-hint">※ 買い物代行を選択した場合、ワーカーが商品を購入し、後日精算いたします</p>
           </div>
           
-          <div class="form-group" id="shopping-detail" style="display: none;">
+          <div class="form-group is-hidden" id="shopping-detail">
             <label for="shopping-list">買い物リスト</label>
             <textarea id="shopping-list" name="shopping-list" class="form-textarea" rows="4" placeholder="購入希望の商品を記入してください"></textarea>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- ステップ5: 注意事項 -->
-      <div class="form-section">
+      <!-- ステップ3: オプション・確認（2/3） -->
+      <section class="form-section wizard-step" data-step="3">
         <h2 class="form-section-title">
-          <span class="step-number">5</span>
+          <span class="step-number">3</span>
           注意事項・特記事項
         </h2>
         <div class="form-card">
@@ -241,12 +258,14 @@
             </ul>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- 送信ボタン -->
-      <div class="form-actions">
-        <button type="button" class="btn btn-outline" onclick="history.back()">戻る</button>
-        <button type="submit" class="btn btn-primary btn-large">ワーカーを探す</button>
+      <!-- ウィザード操作 -->
+      <div class="wizard-actions">
+        <button type="button" class="btn btn-outline" id="btn-prev" disabled>戻る</button>
+        <div class="wizard-actions__spacer"></div>
+        <button type="button" class="btn btn-primary" id="btn-next">次へ</button>
+        <button type="submit" class="btn btn-primary btn-action is-hidden" id="btn-submit">ワーカーを探す</button>
       </div>
 
     </form>
@@ -290,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // 買い物オプションの表示/非表示
 document.getElementById('shopping-option').addEventListener('change', function() {
   const detail = document.getElementById('shopping-detail');
-  detail.style.display = this.checked ? 'block' : 'none';
+  detail.classList.toggle('is-hidden', !this.checked);
   
   // 買い物オプションが選択された場合、リストのバリデーションを追加
   if (this.checked) {
@@ -309,6 +328,14 @@ document.addEventListener('DOMContentLoaded', async function() {
   // URLパラメータから予約IDを取得（更新の場合）
   const urlParams = new URLSearchParams(window.location.search);
   const bookingId = urlParams.get('id');
+  const workerId = urlParams.get('workerId');
+
+  // お気に入り導線: workerId付きで来た場合はクイック予約モード
+  if (workerId) {
+    preferredWorkerId = workerId;
+    isQuickBookingMode = true;
+    await setupQuickBookingMode(workerId);
+  }
   
   if (bookingId) {
     // 予約更新モード：既存の予約データを読み込む
@@ -375,7 +402,7 @@ async function loadBookingForEdit(bookingId) {
 }
 
 // フォーム送信時のバリデーションとAPI連携
-document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+document.getElementById('booking-wizard').addEventListener('submit', async function(e) {
   e.preventDefault();
   
   const validations = {
@@ -466,7 +493,14 @@ document.getElementById('bookingForm').addEventListener('submit', async function
     } else {
       // 予約作成
       response = await api.createBooking(bookingData);
-      showSuccess('予約を作成しました');
+
+      // お気に入り導線: workerId指定がある場合はワーカー選択をスキップして即確定
+      if (isQuickBookingMode && preferredWorkerId && response.data && response.data.id) {
+        await api.updateBooking(response.data.id, { workerId: preferredWorkerId });
+        showSuccess('予約を作成してワーカーを確定しました');
+      } else {
+        showSuccess('予約を作成しました');
+      }
     }
     
     // ワーカー選択ページまたは予約詳細ページに遷移
@@ -475,8 +509,12 @@ document.getElementById('bookingForm').addEventListener('submit', async function
         // 更新の場合は予約詳細ページに遷移
         window.location.href = `booking-detail.html?id=${bookingId}`;
       } else if (response.data && response.data.id) {
-        // 新規作成の場合はワーカー選択ページに遷移
-        window.location.href = `select-worker.html?bookingId=${response.data.id}`;
+        // 新規作成: クイック予約時は詳細、通常はワーカー選択へ
+        if (isQuickBookingMode && preferredWorkerId) {
+          window.location.href = `booking-detail.html?id=${response.data.id}`;
+        } else {
+          window.location.href = `select-worker.html?bookingId=${response.data.id}`;
+        }
       } else {
         // フォールバック：予約一覧に遷移
         window.location.href = 'bookings.html';
@@ -489,6 +527,214 @@ document.getElementById('bookingForm').addEventListener('submit', async function
     submitButton.textContent = originalButtonText;
   }
 });
+
+// ===== ウィザード制御 =====
+let currentStep = 1;
+const maxStep = 3;
+let preferredWorkerId = null;
+let isQuickBookingMode = false;
+let quickDefaultData = { address: '', services: [] };
+
+function updateStepView() {
+  // ステップ本体
+  document.querySelectorAll('.wizard-step').forEach(section => {
+    const step = Number(section.getAttribute('data-step'));
+    if (step === currentStep) {
+      section.classList.add('active');
+    } else {
+      section.classList.remove('active');
+    }
+  });
+
+  // ステップインジケーター
+  document.querySelectorAll('.step-indicator__item').forEach(ind => {
+    const step = Number(ind.getAttribute('data-step'));
+    if (step <= currentStep) {
+      ind.classList.add('is-active');
+    } else {
+      ind.classList.remove('is-active');
+    }
+  });
+
+  // ボタン制御
+  const prevBtn = document.getElementById('btn-prev');
+  const nextBtn = document.getElementById('btn-next');
+  const submitBtn = document.getElementById('btn-submit');
+
+  prevBtn.disabled = currentStep === 1;
+  if (currentStep < maxStep) {
+    nextBtn.classList.remove('is-hidden');
+    submitBtn.classList.add('is-hidden');
+  } else {
+    nextBtn.classList.add('is-hidden');
+    submitBtn.classList.remove('is-hidden');
+  }
+}
+
+function validateCurrentStep() {
+  const form = document.getElementById('booking-wizard');
+  const validationsStep1 = {
+    'booking-date': (value) => Validators.dateRange(value, 3),
+    'start-time': Validators.required,
+    'duration': Validators.required
+  };
+  const validationsStep2 = {
+    'address-pref': Validators.required,
+    'address-city': Validators.required,
+    'address-detail': Validators.required
+  };
+  if (currentStep === 1) {
+    return validateForm(form, validationsStep1);
+  }
+  if (currentStep === 2) {
+    // 依頼内容は少なくとも1つ
+    const serviceChecked = document.querySelectorAll('input[name="service"]:checked').length > 0;
+    const addrOk = validateForm(form, validationsStep2);
+    if (!serviceChecked) {
+      showError('依頼内容を1つ以上選択してください');
+      return false;
+    }
+    return addrOk;
+  }
+  if (currentStep === 3) {
+    // オプションが有効な場合、買い物リストを必須に
+    if (document.getElementById('shopping-option').checked) {
+      const list = document.getElementById('shopping-list');
+      if (!Validators.required(list.value)) {
+        showError('買い物リストを入力してください');
+        list.focus();
+        return false;
+      }
+    }
+    return true;
+  }
+  return true;
+}
+
+function nextStep() {
+  if (!validateCurrentStep()) return;
+  if (currentStep < maxStep) {
+    currentStep += 1;
+    updateStepView();
+  }
+}
+function prevStep() {
+  if (currentStep > 1) {
+    currentStep -= 1;
+    updateStepView();
+  }
+}
+
+document.getElementById('btn-next').addEventListener('click', nextStep);
+document.getElementById('btn-prev').addEventListener('click', prevStep);
+
+// 初期表示
+updateStepView();
+
+// ===== お気に入り導線: クイック予約モード =====
+async function setupQuickBookingMode(workerId) {
+  try {
+    const workerResponse = await api.getWorkerById(workerId);
+    const worker = workerResponse.data;
+
+    const header = document.querySelector('.booking-header p');
+    if (header && worker) {
+      header.textContent = `${worker.name || '選択済みワーカー'}さんを指名して最短で予約できます`;
+    }
+
+    // 送信ボタン文言を調整
+    const submitBtn = document.getElementById('btn-submit');
+    if (submitBtn) {
+      submitBtn.textContent = '予約を確定する';
+    }
+
+    // 住所の自動補完（ユーザープロフィールから）
+    await loadQuickDefaultData();
+    renderQuickShortcutCard();
+  } catch (error) {
+    console.error('クイック予約モード初期化エラー:', error);
+  }
+}
+
+async function loadQuickDefaultData() {
+  try {
+    const profile = await api.getMe();
+    const user = profile.data || {};
+
+    quickDefaultData.address = user.address || '';
+
+    // 最新予約からサービス内容を推測
+    try {
+      const recent = await api.getBookings({ page: 1, limit: 1 });
+      const recentBooking = recent.data?.bookings?.[0] || recent.data?.[0] || null;
+      if (recentBooking && recentBooking.serviceType) {
+        quickDefaultData.services = mapServiceTypeToValues(recentBooking.serviceType);
+      }
+    } catch (error) {
+      console.warn('最新予約の取得に失敗:', error);
+    }
+  } catch (error) {
+    console.error('住所自動補完エラー:', error);
+  }
+}
+
+function renderQuickShortcutCard() {
+  const card = document.getElementById('quickShortcutCard');
+  const addressSummary = document.getElementById('quickAddressSummary');
+  const serviceSummary = document.getElementById('quickServiceSummary');
+  const quickBtn = document.getElementById('quickNextBtn');
+  if (!card || !addressSummary || !serviceSummary || !quickBtn || !isQuickBookingMode) return;
+
+  const serviceLabels = {
+    cleaning: '掃除',
+    cooking: '料理',
+    tidying: '片付け',
+    laundry: '洗濯',
+    shopping: '買い物代行',
+    other: 'その他'
+  };
+
+  addressSummary.textContent = quickDefaultData.address || '未登録';
+  serviceSummary.textContent = quickDefaultData.services.length
+    ? quickDefaultData.services.map(v => serviceLabels[v] || v).join('、')
+    : '未登録';
+
+  card.classList.remove('is-hidden');
+  quickBtn.addEventListener('click', () => {
+    applyQuickDefaultsToStep2();
+    if (validateCurrentStep()) {
+      nextStep();
+    }
+  });
+}
+
+function applyQuickDefaultsToStep2() {
+  const addressInput = document.getElementById('address-detail');
+  if (addressInput && !addressInput.value && quickDefaultData.address) {
+    addressInput.value = quickDefaultData.address;
+  }
+
+  // 既存選択が無いときのみサービスを反映
+  const checked = document.querySelectorAll('input[name="service"]:checked');
+  if (checked.length === 0 && quickDefaultData.services.length > 0) {
+    quickDefaultData.services.forEach(value => {
+      const checkbox = document.querySelector(`input[name="service"][value="${value}"]`);
+      if (checkbox) checkbox.checked = true;
+    });
+  }
+}
+
+function mapServiceTypeToValues(serviceType) {
+  const text = String(serviceType || '');
+  const values = [];
+  if (text.includes('掃除')) values.push('cleaning');
+  if (text.includes('料理')) values.push('cooking');
+  if (text.includes('片付け')) values.push('tidying');
+  if (text.includes('洗濯')) values.push('laundry');
+  if (text.includes('買い物')) values.push('shopping');
+  if (values.length === 0) values.push('other');
+  return Array.from(new Set(values));
+}
 </script>
 
 </body>

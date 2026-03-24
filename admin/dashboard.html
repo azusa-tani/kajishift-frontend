@@ -12,7 +12,7 @@
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
 </head>
-<body class="page">
+<body class="admin-page admin-dashboard-page">
 <script>
 // 認証チェック
 if (typeof checkAuth === 'function') {
@@ -27,10 +27,10 @@ if (typeof checkAuth === 'function') {
 }
 </script>
 
-<header class="header" role="banner">
-  <div class="header-inner">
-    <div class="logo">KAJISHIFT 管理画面</div>
-    <nav class="nav" role="navigation" aria-label="管理画面ナビゲーション">
+<header class="admin-header" role="banner">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav" role="navigation" aria-label="管理画面ナビゲーション">
       <a href="dashboard.html" class="active" aria-current="page">ダッシュボード</a>
       <a href="users.html">利用者管理</a>
       <a href="workers.html">ワーカー管理</a>
@@ -39,66 +39,66 @@ if (typeof checkAuth === 'function') {
       <a href="support.html">問い合わせ</a>
       <a href="settings.html">設定</a>
     </nav>
-    <div class="user-info">
-      <span class="role" aria-label="ロール">システム管理者</span>
-      <span class="name" aria-label="ユーザー名">管理者 太郎</span>
+    <div class="admin-user-info">
+      <span class="admin-role" aria-label="ロール">システム管理者</span>
+      <span class="admin-name" aria-label="ユーザー名">管理者 太郎</span>
       <button class="btn-icon" onclick="logout()" aria-label="ログアウト">ログアウト</button>
     </div>
   </div>
 </header>
 
-<main class="main" id="main-content" role="main">
-  <div class="container">
+<main class="admin-main" id="main-content" role="main">
+  <div class="admin-container">
     
-    <section class="page-header">
+    <section class="admin-dashboard-hero">
       <h1>ダッシュボード</h1>
       <p id="todayDate">今日: 読み込み中...</p>
     </section>
 
     <!-- KPIサマリー -->
-    <section class="kpi-summary">
-      <div class="kpi-card">
+    <section class="kpi-summary admin-stats-overlap">
+      <div class="kpi-card admin-stat-card card-standard">
         <div class="kpi-icon">👥</div>
         <div class="kpi-content">
           <div class="kpi-label">アクティブ利用者</div>
-          <div class="kpi-value" id="activeCustomers">-</div>
+          <div class="kpi-value admin-stat-val" id="activeCustomers">-</div>
           <div class="kpi-change" id="customerChange">-</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card admin-stat-card card-standard">
         <div class="kpi-icon">👷</div>
         <div class="kpi-content">
           <div class="kpi-label">アクティブワーカー</div>
-          <div class="kpi-value" id="activeWorkers">-</div>
+          <div class="kpi-value admin-stat-val" id="activeWorkers">-</div>
           <div class="kpi-change" id="workerChange">-</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card admin-stat-card card-standard">
         <div class="kpi-icon">📅</div>
         <div class="kpi-content">
           <div class="kpi-label">今日の予約</div>
-          <div class="kpi-value" id="todayBookings">-</div>
+          <div class="kpi-value admin-stat-val" id="todayBookings">-</div>
           <div class="kpi-change">予定</div>
         </div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card admin-stat-card card-standard">
         <div class="kpi-icon">💰</div>
         <div class="kpi-content">
           <div class="kpi-label">今月の売上</div>
-          <div class="kpi-value" id="monthlyRevenue">-</div>
+          <div class="kpi-value admin-stat-val" id="monthlyRevenue">-</div>
           <div class="kpi-change" id="revenueChange">-</div>
         </div>
       </div>
     </section>
 
     <!-- 今日の予約 -->
-    <section class="section">
+    <section class="section admin-section admin-card section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">今日の予約</h2>
         <a href="bookings.html" class="link-more">すべて見る →</a>
       </div>
-      <div class="table-container">
-        <table class="table">
+      <div class="admin-table-container">
+        <table class="admin-table admin-dashboard-table">
           <thead>
             <tr>
               <th>時間</th>
@@ -120,7 +120,7 @@ if (typeof checkAuth === 'function') {
     </section>
 
     <!-- 未対応の問い合わせ -->
-    <section class="section">
+    <section class="section admin-section admin-card section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">未対応の問い合わせ</h2>
         <a href="support.html" class="link-more">すべて見る →</a>
@@ -131,24 +131,24 @@ if (typeof checkAuth === 'function') {
     </section>
 
     <!-- 売上グラフ -->
-    <section class="section">
+    <section class="section admin-section admin-card admin-chart-card section-block card-standard">
       <h2 class="section-title">売上推移（今月）</h2>
-      <div class="chart-container">
-        <div class="chart-placeholder">
+      <div class="chart-container admin-chart-wrap">
+        <div class="chart-placeholder admin-chart-area">
           <p>📊 売上グラフ表示エリア</p>
-          <p class="chart-note">日別売上推移グラフ（実装時はChart.js等を使用）</p>
+          <p class="chart-note text-muted">日別売上推移グラフ（実装時はChart.js等を使用）</p>
         </div>
       </div>
     </section>
 
     <!-- ワーカー審査待ち -->
-    <section class="section">
+    <section class="section admin-section admin-card section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">ワーカー審査待ち</h2>
         <a href="workers.html?status=pending" class="link-more">すべて見る →</a>
       </div>
-      <div class="table-container">
-        <table class="table">
+      <div class="admin-table-container">
+        <table class="admin-table admin-dashboard-table">
           <thead>
             <tr>
               <th>申請日</th>
@@ -287,7 +287,7 @@ function displayTodayBookings(response) {
         <td>${serviceType}</td>
         <td>${address}</td>
         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-        <td><a href="booking-detail.html?id=${booking.id}" class="btn-link">詳細</a></td>
+        <td><a href="booking-detail.html?id=${booking.id}" class="btn-link btn-action-link">詳細</a></td>
       </tr>
     `;
     tbody.insertAdjacentHTML('beforeend', row);
@@ -314,7 +314,7 @@ function displayPendingWorkers(response) {
         <td>${worker.name || '-'}</td>
         <td>${worker.email || '-'}</td>
         <td><span class="status-badge ${worker.idDocumentUrl ? 'active' : 'pending'}">${idDocumentStatus}</span></td>
-        <td><a href="worker-detail.html?id=${worker.id}" class="btn-link">審査</a></td>
+        <td><a href="worker-detail.html?id=${worker.id}" class="btn-link btn-action-link">審査</a></td>
       </tr>
     `;
     tbody.insertAdjacentHTML('beforeend', row);
@@ -349,7 +349,7 @@ function displayPendingInquiries(response) {
           <p>利用者: ${ticket.user?.name || '不明'} / ID: ${ticket.id}</p>
         </div>
         <div class="inquiry-actions">
-          <a href="support.html?id=${ticket.id}" class="btn btn-primary btn-small">対応する</a>
+          <a href="support.html?id=${ticket.id}" class="btn btn-primary btn-small btn-action">対応する</a>
         </div>
       </div>
     `;

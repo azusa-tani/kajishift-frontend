@@ -24,7 +24,7 @@
     </nav>
     <div class="header-actions">
       <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
-        <span class="notification-badge" style="display: none;">0</span>
+        <span class="notification-badge is-hidden">0</span>
         🔔
       </a>
       <a href="customer-profile.html" class="avatar">👤</a>
@@ -71,7 +71,7 @@
       </div>
 
       <!-- ページネーション -->
-      <div class="pagination" id="pagination" style="display: none;">
+      <div class="pagination is-hidden" id="pagination">
         <button class="btn btn-outline" id="prevBtn" onclick="changePage(-1)">前へ</button>
         <span class="page-info" id="pageInfo">1 / 1</span>
         <button class="btn btn-outline" id="nextBtn" onclick="changePage(1)">次へ</button>
@@ -141,9 +141,9 @@ async function updateUnreadCount() {
     if (notificationBadge) {
       if (response.count > 0) {
         notificationBadge.textContent = response.count;
-        notificationBadge.style.display = 'block';
+        notificationBadge.classList.remove('is-hidden');
       } else {
-        notificationBadge.style.display = 'none';
+        notificationBadge.classList.add('is-hidden');
       }
     }
   } catch (error) {
@@ -259,11 +259,11 @@ function updatePagination(pagination) {
   const nextBtn = document.getElementById('nextBtn');
 
   if (totalPages <= 1) {
-    paginationElement.style.display = 'none';
+    paginationElement.classList.add('is-hidden');
     return;
   }
 
-  paginationElement.style.display = 'flex';
+  paginationElement.classList.remove('is-hidden');
   pageInfo.textContent = `${currentPage} / ${totalPages}`;
   prevBtn.disabled = currentPage <= 1;
   nextBtn.disabled = currentPage >= totalPages;
@@ -397,9 +397,9 @@ function updateNotificationBadge(count) {
   if (notificationBadge) {
     if (count > 0) {
       notificationBadge.textContent = count;
-      notificationBadge.style.display = 'block';
+      notificationBadge.classList.remove('is-hidden');
     } else {
-      notificationBadge.style.display = 'none';
+      notificationBadge.classList.add('is-hidden');
     }
   }
 }

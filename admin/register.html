@@ -137,7 +137,8 @@
       const errorElement = document.querySelector('.error-message');
       if (errorElement) {
         errorElement.textContent = message;
-        errorElement.style.display = 'block';
+        errorElement.classList.remove('is-hidden');
+        errorElement.classList.remove('auth-message-success');
         errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
@@ -147,10 +148,8 @@
       const errorElement = document.querySelector('.error-message');
       if (errorElement) {
         errorElement.textContent = message;
-        errorElement.style.display = 'block';
-        errorElement.style.color = '#28a745';
-        errorElement.style.backgroundColor = '#d4edda';
-        errorElement.style.borderColor = '#c3e6cb';
+        errorElement.classList.remove('is-hidden');
+        errorElement.classList.add('auth-message-success');
       }
     }
 
@@ -159,7 +158,8 @@
       const errorElement = document.querySelector('.error-message');
       if (errorElement) {
         errorElement.textContent = '';
-        errorElement.style.display = 'none';
+        errorElement.classList.add('is-hidden');
+        errorElement.classList.remove('auth-message-success');
       }
     }
 

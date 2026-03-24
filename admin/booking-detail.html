@@ -48,24 +48,24 @@ if (typeof checkAuth === 'function') {
   <div class="admin-container">
     
     <section class="admin-page-header">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="flex justify-between items-center">
         <div>
           <h1>予約詳細</h1>
-          <a href="bookings.html" class="btn-link" style="margin-top: 0.5rem; display: inline-block;">← 予約一覧に戻る</a>
+          <a href="bookings.html" class="btn-action-link mt-sm inline-block">← 予約一覧に戻る</a>
         </div>
-        <div id="actionButtons" style="display: flex; gap: 0.5rem;">
+        <div id="actionButtons" class="flex gap-2">
           <!-- 動的にボタンを追加 -->
         </div>
       </div>
     </section>
 
     <!-- ローディング表示 -->
-    <div id="loadingMessage" class="loading-message" style="text-align: center; padding: 2rem;">
+    <div id="loadingMessage" class="loading-message text-center p-8">
       予約情報を読み込み中...
     </div>
 
     <!-- 予約詳細情報 -->
-    <div id="bookingContent" style="display: none;">
+    <div id="bookingContent" class="is-hidden">
       
       <!-- 予約基本情報 -->
       <section class="admin-section">
@@ -136,7 +136,7 @@ if (typeof checkAuth === 'function') {
       </section>
 
       <!-- ワーカー情報 -->
-      <section class="admin-section" id="workerSection" style="display: none;">
+      <section class="admin-section is-hidden" id="workerSection">
         <h2 class="section-title">ワーカー情報</h2>
         <div class="admin-card">
           <div class="info-grid">
@@ -166,12 +166,12 @@ if (typeof checkAuth === 'function') {
       <section class="admin-section">
         <h2 class="section-title">依頼内容</h2>
         <div class="admin-card">
-          <div id="bookingNotes" style="white-space: pre-wrap;">-</div>
+          <div id="bookingNotes" class="whitespace-pre-wrap">-</div>
         </div>
       </section>
 
       <!-- 決済情報 -->
-      <section class="admin-section" id="paymentSection" style="display: none;">
+      <section class="admin-section is-hidden" id="paymentSection">
         <h2 class="section-title">決済情報</h2>
         <div class="admin-card">
           <div class="info-grid">
@@ -202,7 +202,7 @@ if (typeof checkAuth === 'function') {
 
 <!-- ステータス変更モーダル -->
 <div class="modal" id="statusModal">
-  <div class="modal-content">
+  <div class="modal-content card-standard">
     <h2>予約ステータスを変更</h2>
     <div class="form-group">
       <label>新しいステータス <span class="required">*</span></label>
@@ -215,30 +215,30 @@ if (typeof checkAuth === 'function') {
       </select>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('statusModal')">キャンセル</button>
-      <button class="btn btn-primary" onclick="confirmStatusChange()">変更する</button>
+      <button class="btn btn--outline btn-action" onclick="closeModal('statusModal')">キャンセル</button>
+      <button class="btn btn-primary btn-action" onclick="confirmStatusChange()">変更する</button>
     </div>
   </div>
 </div>
 
 <!-- キャンセルモーダル -->
 <div class="modal" id="cancelModal">
-  <div class="modal-content">
+  <div class="modal-content card-standard">
     <h2>予約をキャンセル</h2>
     <p>この予約をキャンセルしますか？</p>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('cancelModal')">戻る</button>
-      <button class="btn btn-primary danger" onclick="confirmCancel()">キャンセル確定</button>
+      <button class="btn btn--outline btn-action" onclick="closeModal('cancelModal')">戻る</button>
+      <button class="btn btn-danger" onclick="confirmCancel()">キャンセル確定</button>
     </div>
   </div>
 </div>
 
 <!-- チャット履歴モーダル -->
 <div class="modal" id="chatHistoryModal">
-  <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+  <div class="modal-content card-standard modal-content--wide">
+    <div class="modal-inline-header">
       <h2>チャット履歴</h2>
-      <button class="btn-icon" onclick="closeModal('chatHistoryModal')" style="font-size: 1.5rem;">×</button>
+      <button class="btn-icon modal-close-lg" onclick="closeModal('chatHistoryModal')">×</button>
     </div>
     <div id="chatHistoryContent">
       <div class="loading-message">読み込み中...</div>
@@ -289,8 +289,8 @@ async function loadBookingDetail() {
 
 function displayBookingDetail(booking) {
   // ローディングを非表示
-  document.getElementById('loadingMessage').style.display = 'none';
-  document.getElementById('bookingContent').style.display = 'block';
+  document.getElementById('loadingMessage').classList.add('is-hidden');
+  document.getElementById('bookingContent').classList.remove('is-hidden');
 
   // 予約基本情報
   document.getElementById('bookingId').textContent = `#${booking.id.substring(0, 8)}`;
@@ -350,13 +350,13 @@ function displayBookingDetail(booking) {
 
   // ワーカー情報
   if (booking.worker) {
-    document.getElementById('workerSection').style.display = 'block';
+    document.getElementById('workerSection').classList.remove('is-hidden');
     document.getElementById('workerName').textContent = booking.worker.name || '-';
     document.getElementById('workerEmail').textContent = booking.worker.email || '-';
     document.getElementById('workerRating').textContent = booking.worker.rating ? `⭐ ${booking.worker.rating.toFixed(1)}` : '-';
     document.getElementById('workerDetailLink').href = `worker-detail.html?id=${booking.worker.id}`;
   } else {
-    document.getElementById('workerSection').style.display = 'none';
+    document.getElementById('workerSection').classList.add('is-hidden');
   }
 
   // 依頼内容
@@ -364,7 +364,7 @@ function displayBookingDetail(booking) {
 
   // 決済情報
   if (booking.payment) {
-    document.getElementById('paymentSection').style.display = 'block';
+    document.getElementById('paymentSection').classList.remove('is-hidden');
     document.getElementById('paymentId').textContent = `#${booking.payment.id.substring(0, 8)}`;
     document.getElementById('paymentMethod').textContent = getPaymentMethodText(booking.payment.paymentMethod);
     
@@ -384,7 +384,7 @@ function displayBookingDetail(booking) {
       });
     }
   } else {
-    document.getElementById('paymentSection').style.display = 'none';
+    document.getElementById('paymentSection').classList.add('is-hidden');
   }
 
   // アクションボタン
@@ -399,17 +399,17 @@ function displayActionButtons(booking) {
 
   // ステータス変更ボタン（完了・キャンセル以外の場合）
   if (booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED') {
-    buttons.push(`<button class="btn btn-primary" onclick="openStatusModal()">ステータス変更</button>`);
+    buttons.push(`<button class="btn btn-primary btn-action" onclick="openStatusModal()">ステータス変更</button>`);
   }
 
   // キャンセルボタン（完了・キャンセル以外の場合）
   if (booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED') {
-    buttons.push(`<button class="btn btn-outline danger" onclick="openCancelModal()">キャンセル</button>`);
+    buttons.push(`<button class="btn btn-danger" onclick="openCancelModal()">キャンセル</button>`);
   }
 
   // チャット履歴へのリンク（ワーカーが割り当てられている場合）
   if (booking.worker) {
-    buttons.push(`<button class="btn btn-outline" onclick="viewChat()">チャット履歴</button>`);
+    buttons.push(`<button class="btn btn--outline btn-action" onclick="viewChat()">チャット履歴</button>`);
   }
 
   actionButtons.innerHTML = buttons.join('');
@@ -422,11 +422,11 @@ function openStatusModal() {
   const statusSelect = document.getElementById('newStatus');
   statusSelect.value = bookingData.status;
   
-  document.getElementById('statusModal').style.display = 'flex';
+  document.getElementById('statusModal').classList.add('is-open');
 }
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = 'none';
+  document.getElementById(modalId).classList.remove('is-open');
 }
 
 async function confirmStatusChange() {
@@ -455,7 +455,7 @@ async function confirmStatusChange() {
 }
 
 function openCancelModal() {
-  document.getElementById('cancelModal').style.display = 'flex';
+  document.getElementById('cancelModal').classList.add('is-open');
 }
 
 async function confirmCancel() {
@@ -479,7 +479,7 @@ async function viewChat() {
   
   try {
     document.getElementById('chatHistoryContent').innerHTML = '<div class="loading-message">読み込み中...</div>';
-    document.getElementById('chatHistoryModal').style.display = 'flex';
+    document.getElementById('chatHistoryModal').classList.add('is-open');
     
     const response = await api.getMessages(bookingId, { limit: 100 });
     const messages = response.data?.messages || [];
@@ -504,9 +504,9 @@ async function viewChat() {
         const senderName = message.sender?.name || (isFromCustomer ? bookingData.customer?.name : bookingData.worker?.name) || '不明';
         
         messagesHtml += `
-          <div style="margin-bottom: 1rem; ${isFromCustomer ? 'text-align: right;' : ''}">
-            <div style="display: inline-block; max-width: 70%; padding: 0.75rem; background: ${isFromCustomer ? '#5B7FA6; color: white;' : '#f5f5f5;'}; border-radius: 8px;">
-              <div style="font-size: 0.875rem; margin-bottom: 0.25rem; opacity: 0.8;">
+          <div class="mb-md ${isFromCustomer ? 'text-right' : ''}">
+            <div class="inline-block max-w-70 p-3 rounded-md ${isFromCustomer ? 'bg-primary text-white' : 'bg-light'}">
+              <div class="text-sm mb-xs opacity-80">
                 ${senderName} - ${dateStr} ${timeStr}
               </div>
               <div>${message.content || ''}</div>
@@ -517,7 +517,7 @@ async function viewChat() {
     }
 
     const content = `
-      <div style="max-height: 60vh; overflow-y: auto; padding: 1rem; background: #f9f9f9; border-radius: 8px;">
+      <div class="max-h-60vh overflow-y-auto p-4 bg-light rounded-md">
         ${messagesHtml}
       </div>
     `;
@@ -598,7 +598,7 @@ function logout() {
 
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
+    event.target.classList.remove('is-open');
   }
 }
 </script>

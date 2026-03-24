@@ -17,16 +17,17 @@
       <div class="auth-header">
         <a href="../index.html" class="auth-logo">KAJISHIFT</a>
         <h1>ワーカー登録</h1>
-        <p>家事スキルを活かして働きませんか？</p>
+        <p class="text-muted">家事スキルを活かして働きませんか？</p>
       </div>
 
-      <div class="error-message" id="errorMessage" style="display: none;"></div>
-      <div class="success-message" id="successMessage" style="display: none;"></div>
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage"></div>
 
       <form class="auth-form" id="registerForm">
         <!-- 基本情報 -->
-        <div class="form-section">
+        <div class="form-section section-block card-standard">
           <h2 class="form-section__title">基本情報</h2>
+          <p class="text-muted form-step-note">まずはアカウント作成に必要な情報を入力してください。</p>
           
           <div class="form-group">
             <label for="name" class="form-label">氏名 <span class="required">必須</span></label>
@@ -46,7 +47,7 @@
           <div class="form-group">
             <label for="password" class="form-label">パスワード <span class="required">必須</span></label>
             <input type="password" id="password" name="password" class="form-input" required minlength="8" />
-            <p class="form-hint">8文字以上、英数字を含むパスワードを設定してください</p>
+            <p class="form-hint text-muted">8文字以上、英数字を含むパスワードを設定してください</p>
             <div class="password-strength">
               <div class="password-strength-bar"></div>
             </div>
@@ -60,8 +61,9 @@
         </div>
 
         <!-- 住所情報 -->
-        <div class="form-section">
+        <div class="form-section section-block card-standard">
           <h2 class="form-section__title">住所情報</h2>
+          <p class="text-muted form-step-note">対応エリアの判定に使われるため、正確に入力してください。</p>
           
           <div class="form-group">
             <label for="address-pref" class="form-label">都道府県 <span class="required">必須</span></label>
@@ -89,8 +91,9 @@
         </div>
 
         <!-- ワーカー情報 -->
-        <div class="form-section">
+        <div class="form-section section-block card-standard">
           <h2 class="form-section__title">ワーカー情報</h2>
+          <p class="text-muted form-step-note">依頼者に伝わるプロフィールを設定しましょう。</p>
           
           <div class="form-group">
             <label for="bio" class="form-label">自己紹介</label>
@@ -100,7 +103,7 @@
               class="form-input" 
               rows="4" 
               placeholder="家事代行の経験や得意分野を教えてください（例: 家事代行歴5年。掃除と料理が得意です。）"></textarea>
-            <p class="form-hint">自己紹介を入力すると、依頼者にあなたのことを知ってもらいやすくなります</p>
+            <p class="form-hint text-muted">自己紹介を入力すると、依頼者にあなたのことを知ってもらいやすくなります</p>
           </div>
 
           <div class="form-group">
@@ -113,14 +116,14 @@
               min="0" 
               step="100" 
               placeholder="例: 2500" />
-            <p class="form-hint">希望する時給を入力してください（後から変更可能です）</p>
+            <p class="form-hint text-muted">希望する時給を入力してください（後から変更可能です）</p>
           </div>
         </div>
 
         <!-- 口座情報 -->
-        <div class="form-section">
+        <div class="form-section section-block card-standard">
           <h2 class="form-section__title">口座情報</h2>
-          <p class="form-note">報酬の振込先を登録してください</p>
+          <p class="form-note text-muted">報酬の振込先を登録してください</p>
           
           <div class="form-group">
             <label for="bank-name" class="form-label">銀行名 <span class="required">必須</span></label>
@@ -153,40 +156,40 @@
         </div>
 
         <!-- 本人確認書類 -->
-        <div class="form-section">
+        <div class="form-section section-block card-standard">
           <h2 class="form-section__title">本人確認書類</h2>
-          <p class="form-note">運転免許証またはマイナンバーカードの画像をアップロードしてください</p>
+          <p class="form-note text-muted">運転免許証またはマイナンバーカードの画像をアップロードしてください</p>
           
           <div class="form-group">
             <label for="id-document" class="form-label">本人確認書類 <span class="required">必須</span></label>
             <input type="file" id="id-document" name="id-document" class="form-input" accept="image/*,.pdf" required />
-            <p class="form-hint">表面・裏面の両方をアップロードしてください（JPEG、PNG、PDF形式、10MB以下）</p>
+            <p class="form-hint text-muted">表面・裏面の両方をアップロードしてください（JPEG、PNG、PDF形式、10MB以下）</p>
             
             <!-- ファイルプレビュー -->
-            <div id="file-preview" class="file-preview" style="display: none;">
-              <div class="file-preview-item">
-                <img id="preview-image" src="" alt="プレビュー" style="max-width: 300px; max-height: 200px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px;" />
+            <div id="file-preview" class="file-preview is-hidden">
+              <div class="file-preview-item card-standard">
+                <img id="preview-image" class="preview-image" src="" alt="プレビュー" />
                 <p id="preview-filename" class="file-preview-name"></p>
-                <button type="button" class="btn btn-outline btn-small" onclick="removeFile()" style="margin-top: 5px;">削除</button>
+                <button type="button" class="btn btn--outline btn-small btn-action" onclick="removeFile()">削除</button>
               </div>
             </div>
             
             <!-- アップロード状態 -->
-            <div id="upload-status" class="upload-status" style="display: none;">
-              <p class="upload-status-text">アップロード中...</p>
+            <div id="upload-status" class="upload-status is-hidden">
+              <p class="upload-status-text text-muted">アップロード中...</p>
             </div>
           </div>
         </div>
 
         <!-- 利用規約同意 -->
-        <div class="form-group">
+        <div class="form-section section-block card-standard terms-card">
           <label class="checkbox-label">
             <input type="checkbox" id="agree-terms" name="agree-terms" required />
             <span><a href="../terms.html" target="_blank" aria-label="利用規約を新しいタブで開く">利用規約</a>と<a href="../privacy.html" target="_blank" aria-label="プライバシーポリシーを新しいタブで開く">プライバシーポリシー</a>に同意します <span class="required">必須</span></span>
           </label>
         </div>
 
-        <button type="submit" class="btn btn--primary btn--block">登録する</button>
+        <button type="submit" class="btn btn--primary btn--block btn-action register-submit-btn">登録する</button>
 
         <p class="auth-footer">
           すでにアカウントをお持ちですか？ <a href="login.html">ログイン</a>
@@ -391,20 +394,20 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           previewImage.src = e.target.result;
-          previewImage.style.display = 'block';
-          previewDiv.style.display = 'block';
+          previewImage.classList.remove('is-hidden');
+          previewDiv.classList.remove('is-hidden');
         };
         reader.readAsDataURL(file);
       } else {
         // PDFファイルの場合は画像を非表示
-        previewImage.style.display = 'none';
-        previewDiv.style.display = 'block';
+        previewImage.classList.add('is-hidden');
+        previewDiv.classList.remove('is-hidden');
       }
     }
 
     // ファイルプレビューを非表示
     function hideFilePreview() {
-      document.getElementById('file-preview').style.display = 'none';
+      document.getElementById('file-preview').classList.add('is-hidden');
       document.getElementById('preview-image').src = '';
       document.getElementById('preview-filename').textContent = '';
     }
@@ -415,7 +418,7 @@
       hideFilePreview();
       idDocumentUrl = null;
       const uploadStatus = document.getElementById('upload-status');
-      uploadStatus.style.display = 'none';
+      uploadStatus.classList.add('is-hidden');
     }
 
     // 本人確認書類をアップロード（プレビューのみ、実際のアップロードは登録時）
@@ -426,12 +429,12 @@
       const successMessage = document.getElementById('successMessage');
       
       // アップロード状態を表示
-      uploadStatus.style.display = 'block';
+      uploadStatus.classList.remove('is-hidden');
       uploadStatusText.textContent = 'ファイルが選択されました（登録時にアップロードされます）';
       uploadStatusText.style.color = '#28a745';
       
       // エラーメッセージをクリア
-      errorMessage.style.display = 'none';
+      errorMessage.classList.add('is-hidden');
       showSuccess('本人確認書類を選択しました', successMessage);
       
       // ファイルが選択されたことを記録（登録時にFormDataに含める）

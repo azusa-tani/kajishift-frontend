@@ -35,25 +35,17 @@
     
     <section class="bookings-header">
       <h1>予約一覧</h1>
-      <div class="tab-nav">
-        <button class="tab-btn active" data-tab="upcoming">今後の予約</button>
-        <button class="tab-btn" data-tab="past">過去の予約</button>
-      </div>
+      <nav class="tab-nav" aria-label="予約タブ">
+        <button class="tab-btn active" data-tab="upcoming" aria-selected="true">今後の予約</button>
+        <button class="tab-btn" data-tab="past" aria-selected="false">過去の予約</button>
+      </nav>
     </section>
 
-    <!-- 今後の予約 -->
-    <div class="tab-content active" id="upcoming-tab">
-      <div class="bookings-list" id="upcoming-bookings-list">
+    <section class="bookings-shell is-visible" id="bookings-shell">
+      <div id="bookings-list" class="bookings-list" aria-live="polite">
         <div class="loading-message">読み込み中...</div>
       </div>
-    </div>
-
-    <!-- 過去の予約 -->
-    <div class="tab-content" id="past-tab">
-      <div class="bookings-list" id="past-bookings-list">
-        <div class="loading-message">読み込み中...</div>
-      </div>
-    </div>
+    </section>
 
   </div>
 </main>
@@ -112,16 +104,23 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
   
   // 予約一覧を読み込む
-  await loadBookings();
+  await loadBookings(activeTab);
   
   // タブ切り替え
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+    btn.addEventListener('click', async function() {
       const tab = this.dataset.tab;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      if (tab === activeTab) return;
+
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
       this.classList.add('active');
-      document.getElementById(tab + '-tab').classList.add('active');
+      this.setAttribute('aria-selected', 'true');
+
+      activeTab = tab;
+      await loadBookings(activeTab);
     });
   });
   
@@ -152,48 +151,43 @@ function setupChangeBookingButton() {
 }
 
 // 予約一覧を読み込む
-async function loadBookings() {
+let activeTab = 'upcoming';
+
+async function loadBookings(tabName) {
+  const list = document.getElementById('bookings-list');
+  const shell = document.getElementById('bookings-shell');
+  list.innerHTML = '<div class="loading-message">読み込み中...</div>';
+
+  shell.classList.remove('is-visible');
+
+  // フェード切り替え演出
+  requestAnimationFrame(() => {
+    shell.classList.add('is-visible');
+  });
+
   try {
-    // 今後の予約を取得（PENDING, CONFIRMED, IN_PROGRESS）
-    const upcomingResponse = await api.getBookings({
-      status: 'PENDING,CONFIRMED,IN_PROGRESS',
+    const statusByTab = {
+      upcoming: 'PENDING,CONFIRMED,IN_PROGRESS',
+      past: 'COMPLETED,CANCELLED'
+    };
+
+    const response = await api.getBookings({
+      status: statusByTab[tabName] || statusByTab.upcoming,
       page: 1,
       limit: 100
     });
     
-    // 過去の予約を取得（COMPLETED, CANCELLED）
-    const pastResponse = await api.getBookings({
-      status: 'COMPLETED,CANCELLED',
-      page: 1,
-      limit: 100
-    });
-    
-    // レスポンス形式を確認: { data: { bookings: [...], pagination: {...} } }
-    const upcomingBookings = upcomingResponse.data?.bookings || upcomingResponse.data || [];
-    const pastBookings = pastResponse.data?.bookings || pastResponse.data || [];
-    
-    // 今後の予約を表示
-    if (upcomingBookings.length > 0) {
-      displayBookings(upcomingBookings, 'upcoming-bookings-list');
+    const bookings = response.data?.bookings || response.data || [];
+
+    if (bookings.length > 0) {
+      displayBookings(bookings, 'bookings-list');
     } else {
-      document.getElementById('upcoming-bookings-list').innerHTML = 
-        '<p class="no-data">今後の予約はありません</p>';
-    }
-    
-    // 過去の予約を表示
-    if (pastBookings.length > 0) {
-      displayBookings(pastBookings, 'past-bookings-list');
-    } else {
-      document.getElementById('past-bookings-list').innerHTML = 
-        '<p class="no-data">過去の予約はありません</p>';
+      list.innerHTML = '<p class="no-data">予約が見つかりませんでした</p>';
     }
   } catch (error) {
     console.error('予約一覧の取得エラー:', error);
     showError(error.message || '予約一覧の取得に失敗しました。');
-    document.getElementById('upcoming-bookings-list').innerHTML = 
-      '<p class="error-message">データの読み込みに失敗しました</p>';
-    document.getElementById('past-bookings-list').innerHTML = 
-      '<p class="error-message">データの読み込みに失敗しました</p>';
+    list.innerHTML = '<p class="error-message">データの読み込みに失敗しました</p>';
   }
 }
 
@@ -213,45 +207,34 @@ function createBookingCard(booking) {
   const card = document.createElement('div');
   card.className = `booking-card-large ${booking.status === 'COMPLETED' || booking.status === 'CANCELLED' ? 'completed' : ''}`;
   
-  // 日付と時刻の処理（scheduledDateとstartTime/endTimeまたはdurationを使用）
-  const scheduledDate = booking.scheduledDate ? new Date(booking.scheduledDate) : null;
-  const startTime = booking.startTime || '';
-  const endTime = booking.endTime || '';
-  const duration = booking.duration || 2; // デフォルト2時間
-  
-  let dateStr = '';
-  let timeStr = '';
+  const startDate = booking.startTime ? new Date(booking.startTime) : (booking.scheduledDate ? new Date(booking.scheduledDate) : null);
+  const endDate = booking.endTime ? new Date(booking.endTime) : null;
+  const duration = booking.duration || 2;
+
+  const dateFormatter = new Intl.DateTimeFormat('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short'
+  });
+  const timeFormatter = new Intl.DateTimeFormat('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  let dateStr = '日付未設定';
+  let timeStr = '時間未設定';
   let hours = duration;
-  
-  if (scheduledDate) {
-    dateStr = scheduledDate.toLocaleDateString('ja-JP', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      weekday: 'short'
-    });
-    
-    if (startTime && endTime) {
-      timeStr = `${startTime} - ${endTime}`;
-      // 時間差を計算
-      const [startHour, startMin] = startTime.split(':').map(Number);
-      const [endHour, endMin] = endTime.split(':').map(Number);
-      const startMinutes = startHour * 60 + startMin;
-      const endMinutes = endHour * 60 + endMin;
-      hours = (endMinutes - startMinutes) / 60;
-    } else if (startTime) {
-      // startTimeのみの場合、durationから終了時刻を計算
-      const [startHour, startMin] = startTime.split(':').map(Number);
-      const endMinutes = startHour * 60 + startMin + (duration * 60);
-      const endHour = Math.floor(endMinutes / 60);
-      const endMin = endMinutes % 60;
-      timeStr = `${startTime} - ${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+
+  if (startDate && !Number.isNaN(startDate.getTime())) {
+    dateStr = dateFormatter.format(startDate);
+    if (endDate && !Number.isNaN(endDate.getTime())) {
+      timeStr = `${timeFormatter.format(startDate)} - ${timeFormatter.format(endDate)}`;
+      hours = Math.max(1, Math.round((endDate - startDate) / (1000 * 60 * 60)));
     } else {
-      timeStr = '時間未設定';
+      const estimatedEnd = new Date(startDate.getTime() + duration * 60 * 60 * 1000);
+      timeStr = `${timeFormatter.format(startDate)} - ${timeFormatter.format(estimatedEnd)}`;
     }
-  } else {
-    dateStr = '日付未設定';
-    timeStr = '時間未設定';
   }
   
   const statusText = {
@@ -299,9 +282,12 @@ function createBookingCard(booking) {
   
   card.innerHTML = `
     <div class="booking-card-header">
-      <div class="booking-date-time-large">
-        <div class="date-large">${dateStr}</div>
-        <div class="time-large">${timeStr}（${hours}時間）</div>
+      <div class="booking-date-spot">
+        <div class="booking-date-icon" aria-hidden="true">📅</div>
+        <div class="booking-date-time-large">
+          <div class="date-large">${dateStr}</div>
+          <div class="time-large">${timeStr}（${hours}時間）</div>
+        </div>
       </div>
       <span class="booking-status ${statusClass}">${statusText}</span>
     </div>
@@ -381,7 +367,7 @@ function openChangeModal(id) {
   console.log('currentChangeBookingId set to:', currentChangeBookingId);
   const modal = document.getElementById('changeModal');
   if (modal) {
-    modal.style.display = 'flex';
+    modal.classList.add('is-open');
     // モーダルが表示された後にイベントリスナーを再設定
     setTimeout(() => {
       setupChangeBookingButton();
@@ -410,7 +396,7 @@ window.openChangeModal = openChangeModal;
 
 function openCancelModal(id) {
   currentCancelBookingId = id;
-  document.getElementById('cancelModal').style.display = 'flex';
+  document.getElementById('cancelModal').classList.add('is-open');
 }
 
 function openChat(id) {
@@ -422,7 +408,7 @@ function openReviewModal(id) {
 }
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = 'none';
+  document.getElementById(modalId).classList.remove('is-open');
   if (modalId === 'cancelModal') {
     currentCancelBookingId = null;
   } else if (modalId === 'changeModal') {
@@ -450,7 +436,7 @@ async function confirmCancel() {
 // モーダル外クリックで閉じる
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
+    event.target.classList.remove('is-open');
   }
 }
 </script>

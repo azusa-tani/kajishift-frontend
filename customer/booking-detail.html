@@ -37,61 +37,72 @@
       <a href="bookings.html">← 予約一覧に戻る</a>
     </div>
 
-    <!-- 予約詳細カード -->
-    <section class="booking-detail-card" id="booking-detail-card">
+    <article class="booking-detail">
+      <!-- ヘッダー（サービス名＋ステータス＋ステップインジケーター） -->
+      <header class="booking-detail__header" id="bookingDetailHeader">
+        <!-- JSでレンダリング -->
+      </header>
+
+      <!-- メイン情報カード -->
+      <section class="booking-info-card" id="booking-info-card">
       <div class="loading-message">読み込み中...</div>
-    </section>
+      </section>
 
-    <!-- ワーカー情報 -->
-    <section class="worker-info-card" id="worker-info-card" style="display: none;">
-      <h2>ワーカー情報</h2>
-      <div class="worker-details" id="worker-details">
-      </div>
-    </section>
+      <!-- ワーカー情報 -->
+      <section class="worker-display-card is-hidden" id="worker-info-card">
+        <div class="worker-details" id="worker-details"></div>
+      </section>
 
-    <!-- キャンセルポリシー -->
-    <section class="cancellation-policy">
-      <h2>キャンセルポリシー</h2>
-      <div class="policy-card">
-        <div class="policy-item">
-          <span class="policy-time">48時間前まで</span>
-          <span class="policy-fee">無料</span>
+      <!-- キャンセルポリシー -->
+      <section class="cancellation-policy soft">
+        <h2>キャンセルポリシー</h2>
+        <div class="policy-card">
+          <div class="policy-item">
+            <span class="policy-time">48時間前まで</span>
+            <span class="policy-fee">無料</span>
+          </div>
+          <div class="policy-item">
+            <span class="policy-time">48-24時間前</span>
+            <span class="policy-fee">料金の50%</span>
+          </div>
+          <div class="policy-item">
+            <span class="policy-time">24時間以内</span>
+            <span class="policy-fee">料金の100%</span>
+          </div>
         </div>
-        <div class="policy-item">
-          <span class="policy-time">48-24時間前</span>
-          <span class="policy-fee">料金の50%</span>
-        </div>
-        <div class="policy-item">
-          <span class="policy-time">24時間以内</span>
-          <span class="policy-fee">料金の100%</span>
-        </div>
-      </div>
-      <p class="policy-note">※ 現在の予約は48時間以上前のため、キャンセル料はかかりません</p>
-    </section>
+        <p class="policy-note">※ 現在の予約は48時間以上前のため、キャンセル料はかかりません</p>
+      </section>
 
-    <!-- 地図 -->
-    <section class="map-section" id="map-section" style="display: none;">
-      <h2>アクセス</h2>
-      <div class="map-placeholder">
-        <p>📍 地図表示エリア</p>
-        <p class="map-address" id="map-address"></p>
-      </div>
-    </section>
+      <!-- 地図 -->
+      <section class="map-section is-hidden" id="map-section">
+        <h2>アクセス</h2>
+        <div class="map-placeholder modern">
+          <div class="map-surface">
+            <div class="map-grid"></div>
+          </div>
+          <div class="map-caption">
+            <p>📍 地図表示エリア</p>
+            <p class="map-address" id="map-address"></p>
+          </div>
+        </div>
+      </section>
 
-    <!-- レビューセクション -->
-    <section class="review-section" id="review-section" style="display: none;">
-      <h2>レビュー</h2>
-      <div id="review-content">
-        <!-- レビュー投稿フォームまたは既存レビューが表示される -->
-      </div>
-    </section>
+      <!-- レビューセクション -->
+      <section class="review-section is-hidden" id="review-section">
+        <h2>レビュー</h2>
+        <div id="review-content"></div>
+      </section>
+
+      <!-- モバイル固定アクション（任意） -->
+      <div class="action-bar--fixed is-hidden" id="fixedActionBar"></div>
+    </article>
 
   </div>
 </main>
 
 <!-- キャンセルモーダル -->
 <div class="modal" id="cancelModal">
-  <div class="modal-content">
+  <div class="modal-content card-standard">
     <h2>予約をキャンセル</h2>
     <div class="cancellation-fee-info">
       <p><strong>キャンセル料について:</strong></p>
@@ -103,15 +114,15 @@
       <p class="fee-amount">今回のキャンセル料: <strong>¥0</strong>（48時間以上前のため）</p>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('cancelModal')">戻る</button>
-      <button class="btn btn-primary danger" onclick="confirmCancel()">キャンセル確定</button>
+      <button class="btn btn--outline btn-action" onclick="closeModal('cancelModal')">戻る</button>
+      <button class="btn btn-danger" onclick="confirmCancel()">キャンセル確定</button>
     </div>
   </div>
 </div>
 
 <!-- レビュー投稿モーダル -->
 <div class="modal" id="reviewModal">
-  <div class="modal-content">
+  <div class="modal-content card-standard">
     <h2>レビューを投稿</h2>
     <form id="reviewForm">
       <div class="form-group">
@@ -135,8 +146,8 @@
         <textarea class="form-textarea" id="reviewComment" rows="5" placeholder="レビューコメントを入力してください（任意）"></textarea>
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn btn-outline" onclick="closeModal('reviewModal')">キャンセル</button>
-        <button type="submit" class="btn btn-primary">投稿する</button>
+        <button type="button" class="btn btn--outline btn-action" onclick="closeModal('reviewModal')">キャンセル</button>
+        <button type="submit" class="btn btn-primary btn-action">投稿する</button>
       </div>
     </form>
   </div>
@@ -183,12 +194,12 @@ document.addEventListener('DOMContentLoaded', async function() {
       <div class="error-message">
         <p><strong>無効な予約ID</strong></p>
         <p>予約IDはUUID形式である必要があります。</p>
-        <p style="margin-top: 1rem; font-size: 0.875rem; color: #666;">
+        <p class="text-muted mt-md text-sm">
           予約ID: ${bookingId}<br>
           予約一覧から正しい予約を選択してください。
         </p>
-        <div style="margin-top: 1rem;">
-          <a href="bookings.html" class="btn btn-outline">予約一覧に戻る</a>
+        <div class="mt-md">
+          <a href="bookings.html" class="btn btn--outline btn-action">予約一覧に戻る</a>
         </div>
       </div>
     `;
@@ -233,7 +244,7 @@ async function loadBookingDetail(bookingId) {
     // 地図セクションを表示
     if (currentBooking.address) {
       document.getElementById('map-address').textContent = currentBooking.address;
-      document.getElementById('map-section').style.display = 'block';
+      document.getElementById('map-section').classList.remove('is-hidden');
     }
 
     // レビューセクションを表示（完了済みの予約の場合）
@@ -255,12 +266,12 @@ async function loadBookingDetail(bookingId) {
       <div class="error-message">
         <p><strong>データの読み込みに失敗しました</strong></p>
         <p>${errorMessage}</p>
-        <p style="margin-top: 1rem; font-size: 0.875rem; color: #666;">
+        <p class="text-muted mt-md text-sm">
           予約ID: ${bookingId || '未指定'}<br>
           ブラウザのコンソール（F12）で詳細なエラー情報を確認できます。
         </p>
-        <div style="margin-top: 1rem;">
-          <a href="bookings.html" class="btn btn-outline">予約一覧に戻る</a>
+        <div class="mt-md">
+          <a href="bookings.html" class="btn btn--outline btn-action">予約一覧に戻る</a>
         </div>
       </div>
     `;
@@ -269,7 +280,8 @@ async function loadBookingDetail(bookingId) {
 
 // 予約詳細を表示
 function displayBookingDetail(booking) {
-  const card = document.getElementById('booking-detail-card');
+  const headerEl = document.getElementById('bookingDetailHeader');
+  const infoCard = document.getElementById('booking-info-card');
   
   const scheduledDate = new Date(booking.scheduledDate);
   const dateStr = scheduledDate.toLocaleDateString('ja-JP', { 
@@ -313,58 +325,83 @@ function displayBookingDetail(booking) {
   if (booking.status === 'COMPLETED' || booking.status === 'CANCELLED') {
     // 過去の予約
     actionsHtml = `
-      <a href="bookings.html" class="btn btn-outline">予約一覧に戻る</a>
+      <a href="bookings.html" class="btn btn--outline btn-action">予約一覧に戻る</a>
     `;
   } else {
     // 今後の予約
     actionsHtml = `
-      ${booking.worker ? `<button class="btn btn-outline" onclick="window.location.href='chat.html?booking=${booking.id}'">チャット</button>` : ''}
-      <button class="btn btn-outline" onclick="window.location.href='booking.html?id=${booking.id}'">予約変更</button>
-      <button class="btn btn-outline danger" onclick="openCancelModal()">キャンセル</button>
+      ${booking.worker ? `<button class="btn btn--outline btn-action" onclick="window.location.href='chat.html?booking=${booking.id}'">チャット</button>` : ''}
+      <button class="btn btn--outline btn-action" onclick="window.location.href='booking.html?id=${booking.id}'">予約変更</button>
+      <button class="btn btn-danger" onclick="openCancelModal()">キャンセル</button>
     `;
   }
   
-  card.innerHTML = `
-    <div class="booking-detail-header">
-      <div>
-        <span class="booking-status ${statusClass}">${statusText}</span>
-        <h1>${booking.serviceType || 'サービス'}</h1>
-      </div>
+  // ヘッダー（サービス名＋ステータス＋ステップ）
+  headerEl.innerHTML = `
+    <div class="header-main">
+      <h1 class="service-title">${booking.serviceType || 'サービス'}</h1>
+      <span class="booking-status ${statusClass}">${statusText}</span>
       <div class="booking-price-large">${priceDisplay}</div>
     </div>
+    <ol class="status-steps">
+      <li class="step ${['CONFIRMED','PENDING','IN_PROGRESS','COMPLETED'].includes(booking.status) ? 'is-active' : ''}">
+        <span class="step-dot"></span><span class="step-label">予約確定</span>
+      </li>
+      <li class="step ${['IN_PROGRESS','COMPLETED'].includes(booking.status) ? 'is-active' : ''}">
+        <span class="step-dot"></span><span class="step-label">作業中</span>
+      </li>
+      <li class="step ${['COMPLETED'].includes(booking.status) ? 'is-active' : ''}">
+        <span class="step-dot"></span><span class="step-label">完了</span>
+      </li>
+    </ol>
+  `;
 
-    <div class="booking-detail-info">
-      <div class="info-row">
-        <span class="info-label">📅 日時</span>
-        <span class="info-value">${dateStr} ${timeStr}</span>
+  // メイン情報カード
+  infoCard.innerHTML = `
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-icon">📅</div>
+        <div class="info-text">
+          <div class="info-title">日時</div>
+          <div class="info-value">${dateStr} ${timeStr}</div>
+        </div>
       </div>
-      <div class="info-row">
-        <span class="info-label">📍 場所</span>
-        <span class="info-value">${booking.address || '住所未設定'}</span>
+      <div class="info-item">
+        <div class="info-icon">📍</div>
+        <div class="info-text">
+          <div class="info-title">場所</div>
+          <div class="info-value">${booking.address || '住所未設定'}</div>
+        </div>
       </div>
-      ${booking.worker ? `
-      <div class="info-row">
-        <span class="info-label">👤 ワーカー</span>
-        <span class="info-value">${workerName}${workerRating ? ` ⭐ ${workerRating}` : ''}</span>
+      <div class="info-item">
+        <div class="info-icon">💳</div>
+        <div class="info-text">
+          <div class="info-title">料金</div>
+          <div class="info-value">${priceDisplay}</div>
+        </div>
       </div>
-      ` : ''}
-      ${booking.payment ? `
-      <div class="info-row">
-        <span class="info-label">💳 支払い方法</span>
-        <span class="info-value">${booking.payment.paymentMethod === 'credit_card' ? 'クレジットカード' : booking.payment.paymentMethod}</span>
-      </div>
-      ` : ''}
     </div>
 
-    <div class="booking-detail-content">
+    <section class="booking-notes">
       <h2>依頼内容</h2>
       <p>${booking.notes || '特記事項なし'}</p>
-    </div>
+    </section>
 
     <div class="booking-detail-actions">
       ${actionsHtml}
     </div>
   `;
+
+  // モバイル固定アクション（チャット優先）
+  const fixedBar = document.getElementById('fixedActionBar');
+  if (booking.worker && booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED') {
+    fixedBar.classList.remove('is-hidden');
+    fixedBar.innerHTML = `
+      <button class="btn btn-primary btn-action" onclick="window.location.href='chat.html?booking=${booking.id}'">チャットで連絡</button>
+    `;
+  } else {
+    fixedBar.classList.add('is-hidden');
+  }
 }
 
 // ワーカー情報を表示
@@ -398,15 +435,15 @@ function displayWorkerInfo(worker) {
     </div>
   `;
   
-  workerCard.style.display = 'block';
+  workerCard.classList.remove('is-hidden');
   
   // ワーカーのアクションボタン
   const workerActions = document.createElement('div');
   workerActions.className = 'worker-actions';
   workerActions.innerHTML = `
-    <button class="btn btn-outline" onclick="window.location.href='select-worker.html?id=${worker.id}'">プロフィールを見る</button>
+    <button class="btn btn--outline btn-action" onclick="window.location.href='select-worker.html?id=${worker.id}'">プロフィールを見る</button>
     ${currentBooking && currentBooking.status !== 'COMPLETED' && currentBooking.status !== 'CANCELLED' ? `
-    <button class="btn btn-primary" onclick="window.location.href='chat.html?booking=${currentBooking.id}'">チャットで連絡</button>
+    <button class="btn btn-primary btn-action" onclick="window.location.href='chat.html?booking=${currentBooking.id}'">チャットで連絡</button>
     ` : ''}
   `;
   workerCard.appendChild(workerActions);
@@ -450,11 +487,11 @@ function openCancelModal() {
     feeAmountElement.innerHTML = `今回のキャンセル料: <strong>${feeText}</strong>`;
   }
   
-  document.getElementById('cancelModal').style.display = 'flex';
+  document.getElementById('cancelModal').classList.add('is-open');
 }
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = 'none';
+  document.getElementById(modalId).classList.remove('is-open');
   currentCancelBookingId = null;
 }
 
@@ -482,7 +519,7 @@ async function loadReviewSection(booking) {
   const reviewSection = document.getElementById('review-section');
   const reviewContent = document.getElementById('review-content');
   
-  reviewSection.style.display = 'block';
+  reviewSection.classList.remove('is-hidden');
 
   // 予約にレビューが既に存在するかチェック
   if (booking.review) {
@@ -531,7 +568,7 @@ function displayReviewForm(booking) {
   reviewContent.innerHTML = `
     <div class="review-form-card">
       <p>この予約についてレビューを投稿してください。</p>
-      <button class="btn btn-primary" onclick="openReviewModal('${booking.id}')">レビューを投稿する</button>
+      <button class="btn btn-primary btn-action" onclick="openReviewModal('${booking.id}')">レビューを投稿する</button>
     </div>
   `;
 }
@@ -540,7 +577,7 @@ function displayReviewForm(booking) {
 function openReviewModal(bookingId) {
   currentReviewBookingId = bookingId;
   document.getElementById('reviewForm').reset();
-  document.getElementById('reviewModal').style.display = 'flex';
+  document.getElementById('reviewModal').classList.add('is-open');
 }
 
 let currentReviewBookingId = null;
@@ -582,7 +619,7 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
 
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
-    event.target.style.display = 'none';
+    event.target.classList.remove('is-open');
   }
 }
 </script>

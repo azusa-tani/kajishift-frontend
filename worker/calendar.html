@@ -34,28 +34,28 @@
 <main class="worker-main">
   <div class="container">
     
-    <section class="calendar-header">
+    <section class="calendar-header section-block card-standard">
       <div class="calendar-controls">
         <button class="btn-icon" id="prevMonth">←</button>
         <h1 id="calendarTitle">2024年3月</h1>
         <button class="btn-icon" id="nextMonth">→</button>
       </div>
       <div class="view-toggle">
-        <button class="btn btn-outline active" id="viewMonth">月</button>
-        <button class="btn btn-outline" id="viewWeek">週</button>
-        <button class="btn btn-outline" id="viewDay">日</button>
+        <button class="btn btn--outline btn-action active" id="viewMonth">月</button>
+        <button class="btn btn--outline btn-action" id="viewWeek">週</button>
+        <button class="btn btn--outline btn-action" id="viewDay">日</button>
       </div>
     </section>
 
     <!-- 月表示カレンダー -->
-    <section class="calendar-month-view">
+    <section class="calendar-month-view section-block card-standard">
       <div class="calendar-grid" id="calendarGrid">
         <div class="loading-message">カレンダーを読み込み中...</div>
       </div>
     </section>
 
     <!-- 今週の予定 -->
-    <section class="weekly-schedule">
+    <section class="weekly-schedule section-block card-standard">
       <h2 class="section-title">今週の予定</h2>
       <div class="schedule-list" id="scheduleList">
         <div class="loading-message">予定を読み込み中...</div>
@@ -63,23 +63,23 @@
     </section>
 
     <!-- ブロック設定 -->
-    <section class="block-settings">
+    <section class="block-settings section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">利用不可時間の設定</h2>
-        <button class="btn btn-primary btn-small">新規追加</button>
+        <button class="btn btn-primary btn-small btn-action">新規追加</button>
       </div>
       <div class="block-list">
-        <div class="block-item">
+        <div class="block-item card-standard">
           <div class="block-info">
             <h4>毎週月曜日 9:00-12:00</h4>
-            <p>定期ブロック</p>
+            <p class="text-muted">定期ブロック</p>
           </div>
           <button class="btn-icon">✕</button>
         </div>
-        <div class="block-item">
+        <div class="block-item card-standard">
           <div class="block-info">
             <h4>2024年3月25日 全日</h4>
-            <p>単発ブロック</p>
+            <p class="text-muted">単発ブロック</p>
           </div>
           <button class="btn-icon">✕</button>
         </div>
@@ -300,7 +300,7 @@ function displayWeeklySchedule(bookings) {
           </div>
         </div>
         <div class="schedule-actions">
-          <a href="job-detail.html?id=${booking.id}" class="btn btn-small btn-outline">詳細</a>
+          <a href="job-detail.html?id=${booking.id}" class="btn btn-small btn--outline btn-action">詳細</a>
         </div>
       </div>
     `;

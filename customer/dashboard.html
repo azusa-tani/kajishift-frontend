@@ -86,25 +86,31 @@ function updateNotificationBadge(count) {
   if (notificationBadge) {
     if (count > 0) {
       notificationBadge.textContent = count;
-      notificationBadge.style.display = 'block';
+      notificationBadge.classList.remove('is-hidden');
     } else {
-      notificationBadge.style.display = 'none';
+      notificationBadge.classList.add('is-hidden');
     }
   }
 }
 
 // 予約一覧を更新
 function updateUpcomingBookings(bookings) {
-  const bookingList = document.querySelector('.booking-list');
-  if (!bookingList) return;
-  
-  bookingList.innerHTML = '';
-  
+  const timelineList = document.querySelector('.timeline-list');
+  if (!timelineList) return;
+
+  timelineList.innerHTML = '';
+
   bookings.forEach(booking => {
-    const bookingCard = document.createElement('div');
-    bookingCard.className = 'booking-card';
-    
-    const statusClass = booking.status.toLowerCase().replace('_', '-');
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+
+    const statusToClass = {
+      'PENDING': 'confirmed', // 仮: UI的には「予約確定」に含める
+      'CONFIRMED': 'confirmed',
+      'IN_PROGRESS': 'in-progress',
+      'COMPLETED': 'completed',
+      'CANCELLED': 'cancelled'
+    };
     const statusText = {
       'PENDING': '予約確定',
       'CONFIRMED': '予約確定',
@@ -112,7 +118,7 @@ function updateUpcomingBookings(bookings) {
       'COMPLETED': '完了',
       'CANCELLED': 'キャンセル'
     }[booking.status] || booking.status;
-    
+
     const date = new Date(booking.startTime);
     const endDate = new Date(booking.endTime);
     const dateStr = date.toLocaleDateString('ja-JP', { 
@@ -122,33 +128,33 @@ function updateUpcomingBookings(bookings) {
       weekday: 'short'
     });
     const timeStr = `${date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
-    
-    bookingCard.innerHTML = `
-      <div class="booking-header">
-        <div class="booking-date-time">
-          <span class="booking-date">${dateStr}</span>
-          <span class="booking-time">${timeStr}</span>
+
+    item.innerHTML = `
+      <span class="timeline-dot" aria-hidden="true"></span>
+      <div class="timeline-card" role="group" aria-label="${dateStr}の${booking.serviceType || 'サービス'}">
+        <div class="timeline-header">
+          <span class="timeline-date">${dateStr}｜${timeStr}</span>
+          <span class="timeline-status ${statusToClass[booking.status] || ''}">${statusText}</span>
         </div>
-        <span class="booking-status ${statusClass}">${statusText}</span>
-      </div>
-      <div class="booking-content">
-        <h3>${booking.serviceType || 'サービス'}</h3>
-        <div class="booking-info">
-          ${booking.worker ? `<span class="booking-worker">👤 ${booking.worker.name}さん</span>` : ''}
-          ${booking.worker && booking.worker.rating ? `<span class="booking-rating">⭐ ${booking.worker.rating.toFixed(1)}</span>` : ''}
+        <div class="timeline-body">
+          <h3>${booking.serviceType || 'サービス'}</h3>
+          <div class="timeline-meta">
+            ${booking.worker ? `<span class="timeline-worker">👤 ${booking.worker.name}さん</span>` : ''}
+            ${booking.worker && booking.worker.rating ? `<span class="timeline-rating">⭐ ${booking.worker.rating.toFixed(1)}</span>` : ''}
+          </div>
+          ${booking.address ? `<p class="timeline-address">📍 ${booking.address}</p>` : ''}
         </div>
-        ${booking.address ? `<p class="booking-address">📍 ${booking.address}</p>` : ''}
-      </div>
-      <div class="booking-actions">
-        <a href="booking-detail.html?id=${booking.id}" class="btn btn--outline">詳細を見る</a>
+        <div class="timeline-actions">
+          <a href="booking-detail.html?id=${booking.id}" class="btn btn--outline">詳細を見る</a>
+        </div>
       </div>
     `;
-    
-    bookingList.appendChild(bookingCard);
+
+    timelineList.appendChild(item);
   });
-  
+
   if (bookings.length === 0) {
-    bookingList.innerHTML = '<p class="no-data">今後の予約はありません</p>';
+    timelineList.innerHTML = '<p class="no-data">今後の予約はありません</p>';
   }
 }
 
@@ -171,7 +177,7 @@ window.logout = function() {
     </nav>
     <div class="header-actions">
       <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
-        <span class="notification-badge" aria-hidden="true" style="display: none;">0</span>
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
         <span aria-hidden="true">🔔</span>
       </a>
       <a href="customer-profile.html" class="avatar">👤</a>
@@ -222,79 +228,95 @@ window.logout = function() {
     </section>
 
     <!-- 今後の予約 -->
-    <section class="upcoming-bookings">
+    <section class="upcoming-bookings section-block">
       <div class="section-header">
         <h2 class="section-title">今後の予約</h2>
         <a href="bookings.html" class="link-more">すべて見る →</a>
       </div>
-      <div class="booking-list">
-        <!-- 予約カードはJavaScriptで動的に生成されます -->
+      <div class="timeline">
+        <div class="timeline-list">
+          <!-- タイムライン項目はJavaScriptで動的に生成されます -->
+        </div>
       </div>
     </section>
 
     <!-- 過去の利用履歴 -->
-    <section class="past-bookings">
+    <section class="past-bookings section-block">
       <div class="section-header">
         <h2 class="section-title">最近の利用履歴</h2>
         <a href="payment.html" class="link-more">すべて見る →</a>
       </div>
-      <div class="history-list">
-        <div class="history-item">
-          <div class="history-date">2024年3月10日</div>
-          <div class="history-content">
-            <h4>掃除・片付け</h4>
-            <p>田中 花子さん</p>
-          </div>
-          <div class="history-amount">¥5,000</div>
-          <div class="history-action">
-            <button class="btn btn-small btn-outline">レビュー</button>
-          </div>
-        </div>
-        <div class="history-item">
-          <div class="history-date">2024年3月3日</div>
-          <div class="history-content">
-            <h4>料理・買い物</h4>
-            <p>鈴木 一郎さん</p>
-          </div>
-          <div class="history-amount">¥6,000</div>
-          <div class="history-action">
-            <button class="btn btn-small btn-outline">レビュー</button>
-          </div>
-        </div>
-        <div class="history-item">
-          <div class="history-date">2024年2月25日</div>
-          <div class="history-content">
-            <h4>洗濯</h4>
-            <p>佐藤 美咲さん</p>
-          </div>
-          <div class="history-amount">¥4,000</div>
-          <div class="history-action">
-            <span class="reviewed-badge">レビュー済み</span>
-          </div>
+      <div class="history-scroll" aria-label="最近の利用履歴の横スクロール一覧">
+        <div class="history-cards">
+          <article class="history-card">
+            <div class="history-card__header">
+              <span class="history-card__date">2024年3月10日</span>
+              <span class="history-card__amount">¥5,000</span>
+            </div>
+            <div class="history-card__body">
+              <h4 class="history-card__title">掃除・片付け</h4>
+              <p class="history-card__meta">👤 田中 花子さん</p>
+            </div>
+            <div class="history-card__footer">
+              <button class="btn btn-small btn--outline">レビュー</button>
+            </div>
+          </article>
+          <article class="history-card">
+            <div class="history-card__header">
+              <span class="history-card__date">2024年3月3日</span>
+              <span class="history-card__amount">¥6,000</span>
+            </div>
+            <div class="history-card__body">
+              <h4 class="history-card__title">料理・買い物</h4>
+              <p class="history-card__meta">👤 鈴木 一郎さん</p>
+            </div>
+            <div class="history-card__footer">
+              <button class="btn btn-small btn--outline">レビュー</button>
+            </div>
+          </article>
+          <article class="history-card">
+            <div class="history-card__header">
+              <span class="history-card__date">2024年2月25日</span>
+              <span class="history-card__amount">¥4,000</span>
+            </div>
+            <div class="history-card__body">
+              <h4 class="history-card__title">洗濯</h4>
+              <p class="history-card__meta">👤 佐藤 美咲さん</p>
+            </div>
+            <div class="history-card__footer">
+              <span class="reviewed-badge">レビュー済み</span>
+            </div>
+          </article>
         </div>
       </div>
     </section>
 
     <!-- お知らせ -->
-    <section class="notifications-section">
+    <section class="notifications-section section-block">
       <h2 class="section-title">お知らせ</h2>
-      <div class="notification-list">
-        <div class="notification-item">
-          <div class="notification-icon">📢</div>
-          <div class="notification-content">
-            <h4>次回予約のリマインダー</h4>
-            <p>2024年3月17日の予約まであと2日です</p>
-            <span class="notification-time">2時間前</span>
+      <div class="notice-list">
+        <article class="notice-item">
+          <div class="notice-icon" aria-hidden="true">📢</div>
+          <div class="notice-content">
+            <div class="notice-title-row">
+              <h4 class="notice-title">次回予約のリマインダー</h4>
+              <span class="notice-badge notice-badge--important">重要</span>
+            </div>
+            <p class="notice-text">2024年3月17日の予約まであと2日です</p>
+            <time class="notice-time" datetime="2024-03-15T10:00:00">2時間前</time>
           </div>
-        </div>
-        <div class="notification-item">
-          <div class="notification-icon">💬</div>
-          <div class="notification-content">
-            <h4>新しいメッセージ</h4>
-            <p>田中 花子さんからメッセージが届きました</p>
-            <span class="notification-time">1日前</span>
+        </article>
+        <article class="notice-item">
+          <div class="notice-icon" aria-hidden="true">💬</div>
+          <div class="notice-content">
+            <div class="notice-title-row">
+              <h4 class="notice-title">新しいメッセージ</h4>
+              <span class="notice-badge notice-badge--message">メッセージ</span>
+            </div>
+            <p class="notice-text">田中 花子さんからメッセージが届きました</p>
+            <time class="notice-time" datetime="2024-03-14T10:00:00">1日前</time>
           </div>
-        </div>
+        </article>
       </div>
     </section>
 
