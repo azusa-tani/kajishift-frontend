@@ -144,9 +144,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // URLパラメータから予約IDを取得
   const urlParams = new URLSearchParams(window.location.search);
-  const bookingId = urlParams.get('bookingId');
+  const bookingId = urlParams.get('id') || urlParams.get('bookingId');
 
-  if (!bookingId) {
+  if (!bookingId || bookingId === 'undefined') {
     alert('予約IDが指定されていません');
     window.location.href = 'booking.html';
     return;
