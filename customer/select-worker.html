@@ -165,6 +165,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 // 予約情報を読み込む
 async function loadBooking(bookingId) {
   try {
+    console.log('Fetching Booking ID:', bookingId);
     const response = await api.getBookingById(bookingId);
     currentBooking = response.data;
 
@@ -176,6 +177,7 @@ async function loadBooking(bookingId) {
     displayBookingSummary(currentBooking);
   } catch (error) {
     console.error('予約情報の読み込みエラー:', error);
+    console.dir(error);
     alert('予約情報の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
     window.location.href = 'bookings.html';
   }
