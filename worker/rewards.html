@@ -41,7 +41,7 @@
 
     <!-- 今月のサマリー -->
     <section class="rewards-summary-section section-block card-standard">
-      <h2 class="section-title" id="summaryTitle">2024年3月の報酬</h2>
+      <h2 class="section-title" id="summaryTitle">今月の報酬</h2>
       <div class="rewards-summary-card reward-summary-card premium-summary-card" id="summaryCard">
         <div class="loading-message">読み込み中...</div>
       </div>
@@ -117,6 +117,7 @@
 // グローバル変数
 let selectedMonth = new Date();
 let completedBookings = [];
+let payments = [];
 
 // ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
@@ -162,37 +163,25 @@ async function loadRewards() {
     // サマリータイトルを更新
     document.getElementById('summaryTitle').textContent = `${year}年${month + 1}月の報酬`;
 
-    // 完了した予約を取得
-    const bookingsResponse = await api.getBookings({
-      status: 'COMPLETED',
-      startDate: firstDay.toISOString().split('T')[0],
-      endDate: lastDay.toISOString().split('T')[0],
-      limit: 100
-    });
+    const [bookingsResponse, paymentsResponse] = await Promise.all([
+      api.getBookings({
+        status: 'COMPLETED',
+        startDate: firstDay.toISOString().split('T')[0],
+        endDate: lastDay.toISOString().split('T')[0],
+        limit: 100
+      }),
+      api.getPayments({ limit: 100 })
+    ]);
 
-    if (bookingsResponse.data && bookingsResponse.data.bookings) {
-      completedBookings = bookingsResponse.data.bookings;
-      
-      // サマリーを表示
-      displaySummary(completedBookings, year, month);
-      
-      // 仕事詳細を表示
-      displayRewardsTable(completedBookings);
-    }
+    completedBookings = bookingsResponse.data?.bookings || [];
+    payments = paymentsResponse.data?.payments || [];
 
-    // 決済履歴を取得
-    try {
-      const paymentsResponse = await api.getPayments({
-        limit: 10
-      });
-      
-      if (paymentsResponse.data && paymentsResponse.data.payments) {
-        displayPaymentHistory(paymentsResponse.data.payments);
-      }
-    } catch (error) {
-      console.warn('決済履歴の取得に失敗:', error);
-      document.getElementById('paymentList').innerHTML = '<div class="empty-message">決済履歴がありません</div>';
-    }
+    // サマリーは決済データベースで集計
+    displaySummary(payments, year, month);
+    // 仕事詳細は完了予約データで表示
+    displayRewardsTable(completedBookings);
+    // 決済履歴は全期間の最新を表示
+    displayPaymentHistory(payments);
   } catch (error) {
     console.error('報酬情報の読み込みエラー:', error);
     showError('報酬情報の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
@@ -200,10 +189,18 @@ async function loadRewards() {
 }
 
 // サマリーを表示
-function displaySummary(bookings, year, month) {
-  const totalAmount = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
-  const totalHours = bookings.reduce((sum, booking) => sum + (booking.duration || 0), 0);
-  const avgHourlyRate = totalHours > 0 ? Math.round(totalAmount / totalHours) : 0;
+function displaySummary(allPayments, year, month) {
+  const monthlyPayments = allPayments.filter(payment => {
+    if (!payment?.createdAt) return false;
+    const paidAt = new Date(payment.createdAt);
+    return paidAt.getFullYear() === year && paidAt.getMonth() === month;
+  });
+  const paidPayments = monthlyPayments.filter(payment => payment.status === 'COMPLETED');
+  const unpaidPayments = monthlyPayments.filter(payment => payment.status !== 'COMPLETED');
+
+  const totalAmount = monthlyPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  const paidAmount = paidPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  const unpaidAmount = unpaidPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
   
   // 次回支払日（来月5日）
   const nextPaymentDate = new Date(year, month + 1, 5);
@@ -220,12 +217,12 @@ function displaySummary(bookings, year, month) {
         <div class="summary-amount">¥${totalAmount.toLocaleString()}</div>
       </div>
       <div class="summary-item">
-        <div class="summary-label">完了した仕事</div>
-        <div class="summary-count">${bookings.length}件</div>
+        <div class="summary-label">未振込金額</div>
+        <div class="summary-amount">¥${unpaidAmount.toLocaleString()}</div>
       </div>
       <div class="summary-item">
-        <div class="summary-label">平均時給</div>
-        <div class="summary-amount">¥${avgHourlyRate.toLocaleString()}</div>
+        <div class="summary-label">振込済み件数</div>
+        <div class="summary-count">${paidPayments.length}件</div>
       </div>
       <div class="summary-item">
         <div class="summary-label">次回支払日</div>

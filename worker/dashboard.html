@@ -49,8 +49,8 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
     
     <!-- ウェルカムセクション -->
     <section class="welcome-section">
-      <h1>おかえりなさい、田中さん</h1>
-      <p class="text-muted">今日もお疲れ様です。新しい仕事の依頼が3件あります。</p>
+      <h1 id="welcomeName">読み込み中...</h1>
+      <p class="text-muted" id="welcomeMessage">今日もお疲れ様です。データを読み込み中です。</p>
     </section>
 
     <!-- クイックアクション -->
@@ -86,69 +86,8 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
         <h2 class="section-title">新しい仕事の依頼</h2>
         <a href="jobs.html" class="link-more">すべて見る →</a>
       </div>
-      <div class="job-request-list">
-        <article class="job-request-card">
-          <div class="job-request-badges">
-            <span class="status-badge badge-new">新着</span>
-            <span class="status-badge job-reward-badge">報酬 ¥5,000</span>
-          </div>
-          <div class="job-request-head">
-            <span class="job-request-time">2024年3月15日（金）10:00-12:00</span>
-          </div>
-          <h3 class="job-request-title">掃除・片付け</h3>
-          <div class="job-request-meta">
-            <span class="job-request-meta-item">⏱ 2時間</span>
-            <span class="job-request-meta-item">📍 札幌市中央区</span>
-            <span class="job-request-meta-item job-request-fee">💰 5,000円</span>
-          </div>
-          <p class="job-request-description">2時間の掃除と片付けをお願いします。特にリビングとキッチンを重点的に...</p>
-          <div class="job-actions">
-            <a href="job-detail.html?id=1" class="btn btn--outline btn-action">詳細を見る</a>
-            <button class="btn btn-primary btn-action">承諾する</button>
-          </div>
-        </article>
-
-        <article class="job-request-card">
-          <div class="job-request-badges">
-            <span class="status-badge badge-new">新着</span>
-            <span class="status-badge job-reward-badge">報酬 ¥4,000</span>
-          </div>
-          <div class="job-request-head">
-            <span class="job-request-time">2024年3月16日（土）14:00-16:00</span>
-          </div>
-          <h3 class="job-request-title">洗濯</h3>
-          <div class="job-request-meta">
-            <span class="job-request-meta-item">⏱ 2時間</span>
-            <span class="job-request-meta-item">📍 江別市</span>
-            <span class="job-request-meta-item job-request-fee">💰 4,000円</span>
-          </div>
-          <p class="job-request-description">洗濯物の取り込みとアイロンがけをお願いします...</p>
-          <div class="job-actions">
-            <a href="job-detail.html?id=2" class="btn btn--outline btn-action">詳細を見る</a>
-            <button class="btn btn-primary btn-action">承諾する</button>
-          </div>
-        </article>
-
-        <article class="job-request-card">
-          <div class="job-request-badges">
-            <span class="status-badge badge-new">新着</span>
-            <span class="status-badge job-reward-badge">報酬 ¥6,000</span>
-          </div>
-          <div class="job-request-head">
-            <span class="job-request-time">2024年3月17日（日）9:00-11:00</span>
-          </div>
-          <h3 class="job-request-title">料理・買い物</h3>
-          <div class="job-request-meta">
-            <span class="job-request-meta-item">⏱ 2時間</span>
-            <span class="job-request-meta-item">📍 北広島市</span>
-            <span class="job-request-meta-item job-request-fee">💰 6,000円</span>
-          </div>
-          <p class="job-request-description">食材の買い出しと夕食の準備をお願いします...</p>
-          <div class="job-actions">
-            <a href="job-detail.html?id=3" class="btn btn--outline btn-action">詳細を見る</a>
-            <button class="btn btn-primary btn-action">承諾する</button>
-          </div>
-        </article>
+      <div class="job-request-list" id="jobRequestList">
+        <div class="loading-message">依頼を読み込み中...</div>
       </div>
     </section>
 
@@ -220,15 +159,15 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
       <div class="reward-card reward-summary-card">
         <div class="reward-hero">
           <span class="reward-hero__label">今月の合計</span>
-          <span class="reward-hero__amount">¥45,000</span>
+          <span class="reward-hero__amount" id="rewardTotalAmount">¥0</span>
         </div>
         <div class="reward-item">
           <span class="reward-label">完了した仕事</span>
-          <span class="reward-count">12件</span>
+          <span class="reward-count" id="rewardCompletedCount">0件</span>
         </div>
         <div class="reward-item">
           <span class="reward-label">次回支払日</span>
-          <span class="reward-date">2024年4月5日</span>
+          <span class="reward-date" id="rewardNextPaymentDate">-</span>
         </div>
         <a href="rewards.html" class="btn btn--outline btn-action">詳細を見る</a>
       </div>
@@ -251,6 +190,158 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
 </footer>
 
 <script>
+document.addEventListener('DOMContentLoaded', async function() {
+  if (typeof checkAuth === 'function' && !checkAuth('worker')) {
+    return;
+  }
+  await loadDashboardData();
+});
+
+async function loadDashboardData() {
+  try {
+    const [meResponse, bookingResponse, paymentResponse] = await Promise.all([
+      api.getMe(),
+      api.getBookings({ status: 'PENDING', available: true, limit: 6 }),
+      api.getPayments({ limit: 100 })
+    ]);
+
+    const user = meResponse.data || {};
+    const pendingBookings = bookingResponse.data?.bookings || [];
+    const payments = paymentResponse.data?.payments || [];
+
+    renderWelcome(user, pendingBookings.length);
+    renderPendingJobs(pendingBookings);
+    renderRewardSummary(payments);
+
+    // 支払い情報だけでは完了件数が不足する場合にフォールバック（権限がある環境のみ）
+    if (getCompletedCountFromPayments(payments) === 0) {
+      await fillCompletedCountFromReport(user.id);
+    }
+  } catch (error) {
+    console.error('ダッシュボードデータの読み込みエラー:', error);
+    document.getElementById('welcomeName').textContent = 'おかえりなさい';
+    document.getElementById('welcomeMessage').textContent = 'データの読み込みに失敗しました。時間をおいて再度お試しください。';
+    document.getElementById('jobRequestList').innerHTML = '<div class="error-message">仕事依頼の読み込みに失敗しました</div>';
+  }
+}
+
+function renderWelcome(user, pendingCount) {
+  const name = user.name || 'ワーカーさん';
+  document.getElementById('welcomeName').textContent = `おかえりなさい、${name}`;
+  document.getElementById('welcomeMessage').textContent = `今日もお疲れ様です。新しい仕事の依頼が${pendingCount}件あります。`;
+}
+
+function renderPendingJobs(bookings) {
+  const container = document.getElementById('jobRequestList');
+  if (!bookings.length) {
+    container.innerHTML = '<div class="empty-message">現在、受注可能な新着依頼はありません</div>';
+    return;
+  }
+
+  container.innerHTML = bookings.map((booking) => {
+    const scheduledDate = new Date(booking.scheduledDate);
+    const startTime = booking.startTime || '00:00';
+    const duration = booking.duration || 0;
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endTime = new Date(scheduledDate);
+    endTime.setHours(hours + duration, minutes, 0, 0);
+    const dateStr = scheduledDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short'
+    });
+    const timeStr = `${startTime}-${endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+    const priceValue = booking.totalAmount || 0;
+    const price = priceValue > 0 ? `¥${priceValue.toLocaleString()}` : '未確定';
+
+    return `
+      <article class="job-request-card">
+        <div class="job-request-badges">
+          <span class="status-badge badge-new">新着</span>
+          <span class="status-badge job-reward-badge">報酬 ${price}</span>
+        </div>
+        <div class="job-request-head">
+          <span class="job-request-time">${dateStr} ${timeStr}</span>
+        </div>
+        <h3 class="job-request-title">${escapeHtml(booking.serviceType || '依頼内容未設定')}</h3>
+        <div class="job-request-meta">
+          <span class="job-request-meta-item">⏱ ${duration}時間</span>
+          <span class="job-request-meta-item">📍 ${escapeHtml(booking.address || '-')}</span>
+          <span class="job-request-meta-item job-request-fee">💰 ${price}</span>
+        </div>
+        <p class="job-request-description">${escapeHtml(booking.notes || '特記事項なし')}</p>
+        <div class="job-actions">
+          <a href="job-detail.html?id=${booking.id}" class="btn btn--outline btn-action">詳細を見る</a>
+          <button class="btn btn-primary btn-action" onclick="acceptJob('${booking.id}')">承諾する</button>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function renderRewardSummary(payments) {
+  const now = new Date();
+  const monthPayments = payments.filter((payment) => {
+    if (!payment || !payment.createdAt) return false;
+    const createdAt = new Date(payment.createdAt);
+    return createdAt.getFullYear() === now.getFullYear() && createdAt.getMonth() === now.getMonth();
+  });
+
+  const monthlyTotal = monthPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  const completedCount = getCompletedCountFromPayments(monthPayments);
+  const nextPaymentDate = getNextPaymentDate();
+
+  document.getElementById('rewardTotalAmount').textContent = `¥${monthlyTotal.toLocaleString()}`;
+  document.getElementById('rewardCompletedCount').textContent = `${completedCount}件`;
+  document.getElementById('rewardNextPaymentDate').textContent = nextPaymentDate;
+}
+
+function getCompletedCountFromPayments(payments) {
+  return payments.filter((payment) => payment.status === 'COMPLETED').length;
+}
+
+async function fillCompletedCountFromReport(workerId) {
+  try {
+    const report = await api.getAdminWorkerReport();
+    const workers = report.data?.workers || [];
+    const me = workers.find((worker) => worker.id === workerId);
+    const completedBookings = me?.completedBookings || 0;
+    if (completedBookings > 0) {
+      document.getElementById('rewardCompletedCount').textContent = `${completedBookings}件`;
+    }
+  } catch (error) {
+    console.warn('ワーカー統計レポートの取得をスキップしました:', error?.message || error);
+  }
+}
+
+function getNextPaymentDate() {
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth() + 1, 5);
+  return target.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function acceptJob(bookingId) {
+  if (!confirm('この仕事を承諾しますか？')) {
+    return;
+  }
+  try {
+    await api.acceptBooking(bookingId);
+    alert('仕事を承諾しました');
+    await loadDashboardData();
+  } catch (error) {
+    console.error('仕事承諾エラー:', error);
+    alert('仕事の承諾に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
 function logout() {
   if (confirm('ログアウトしますか？')) {
     // sessionStorageとlocalStorageの両方をクリア
