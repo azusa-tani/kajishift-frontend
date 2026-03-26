@@ -3328,6 +3328,24 @@ footer a:hover {
   font-size: 16px;
   font-weight: 700;
   color: var(--color-primary);
+  white-space: nowrap;
+}
+
+/* Worker profile modal stats: keep horizontal card layout even on small screens */
+.worker-stats.worker-profile-stats {
+  justify-content: space-between;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.worker-stats.worker-profile-stats .stat-item {
+  flex: 1 1 120px;
+  align-items: center;
+  text-align: center;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
 }
 
 .worker-skills {
@@ -4843,6 +4861,11 @@ footer a:hover {
   .worker-stats {
     flex-direction: column;
     gap: 12px;
+  }
+
+  .worker-stats.worker-profile-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 
   .booking-card-actions {

@@ -478,18 +478,18 @@ async function viewWorkerProfile(workerId) {
           </div>
         </div>
         
-        <div class="info-grid mb-lg">
-          <div class="info-item">
-            <label>時給</label>
-            <div>¥${hourlyRate.toLocaleString()}/時間</div>
+        <div class="worker-stats worker-profile-stats mb-lg">
+          <div class="stat-item">
+            <span class="stat-label">時給</span>
+            <span class="stat-value no-wrap">¥${hourlyRate.toLocaleString()}/時間</span>
           </div>
-          <div class="info-item">
-            <label>実績</label>
-            <div>${reviewCount}件</div>
+          <div class="stat-item">
+            <span class="stat-label">実績</span>
+            <span class="stat-value no-wrap">${reviewCount}件</span>
           </div>
-          <div class="info-item">
-            <label>完了予約数</label>
-            <div>${worker.completedBookings || 0}件</div>
+          <div class="stat-item">
+            <span class="stat-label">完了予約数</span>
+            <span class="stat-value no-wrap">${worker.completedBookings || 0}件</span>
           </div>
         </div>
         

@@ -186,6 +186,8 @@ window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app'
   - APIベースURLをRailwayエンドポイントへ更新: `https://kajishift-backend-production.up.railway.app/api`
   - WebSocketサーバーURLをRailwayエンドポイントへ更新: `https://kajishift-backend-production.up.railway.app`
   - READMEおよび連携ドキュメント内の本番バックエンドURL表記をRailwayへ更新
+  - `customer/select-worker.html` の予約ID取得ロジックを修正（`id` / `bookingId` 両対応、文字列 `"undefined"` を無効として扱うガードを追加）
+  - 同ページの `loadBooking` にデバッグ出力を追加（`console.log('Fetching Booking ID:', ...)` と `console.dir(error)`）
 
 ### 2026年3月2日の更新内容
 

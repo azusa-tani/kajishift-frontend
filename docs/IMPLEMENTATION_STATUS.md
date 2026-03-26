@@ -983,3 +983,10 @@
 影響範囲:
 - 依頼者向け: `payment.html`, `favorites.html`, `booking.html`, `booking-detail.html`, `css/style.css`
 - 既存APIの利用方法は不変（`api.js` の `getFavorites`, `getBookings`, `getBookingById`, `updateBooking`, `getMe`, `getWorkers` など）
+
+— 追加対応（2026-03-23 追記） —
+- ✅ 予約フローの安定化
+  - `customer/select-worker.html` の予約ID取得ロジックを修正（`?id=` と `?bookingId=` の両方に対応、文字列 `"undefined"` を無効として扱う）
+  - `loadBooking` にデバッグログ追加（`console.log('Fetching Booking ID:', ...)`、`console.dir(error)`）
+- ✅ 本番接続先の確定（Railway）
+  - `js/config.js` の `API_BASE_URL` / `SOCKET_SERVER_URL` を Railway (`https://kajishift-backend-production.up.railway.app`) に統一
