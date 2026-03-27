@@ -98,58 +98,8 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
         <h2 class="section-title">今日の予定</h2>
       </div>
       <div class="timeline">
-        <div class="timeline-list">
-          <div class="timeline-item is-before">
-            <span class="timeline-dot" aria-hidden="true"></span>
-            <div class="timeline-card">
-              <div class="timeline-header">
-                <span class="timeline-date">10:00 - 12:00</span>
-                <span class="timeline-status confirmed">作業前</span>
-              </div>
-              <div class="timeline-body">
-                <h3>掃除・片付け</h3>
-                <div class="timeline-meta">
-                  <span>📍 札幌市中央区</span>
-                </div>
-              </div>
-              <div class="timeline-actions">
-                <button class="btn btn-small btn-primary btn-action">作業開始</button>
-              </div>
-            </div>
-          </div>
-          <div class="timeline-item is-progress">
-            <span class="timeline-dot" aria-hidden="true"></span>
-            <div class="timeline-card">
-              <div class="timeline-header">
-                <span class="timeline-date">14:00 - 16:00</span>
-                <span class="timeline-status in-progress">作業中</span>
-              </div>
-              <div class="timeline-body">
-                <h3>洗濯</h3>
-                <div class="timeline-meta">
-                  <span>📍 江別市</span>
-                </div>
-              </div>
-              <div class="timeline-actions">
-                <button class="btn btn-small btn--outline btn-action">詳細</button>
-              </div>
-            </div>
-          </div>
-          <div class="timeline-item is-complete">
-            <span class="timeline-dot" aria-hidden="true"></span>
-            <div class="timeline-card">
-              <div class="timeline-header">
-                <span class="timeline-date">08:00 - 09:00</span>
-                <span class="timeline-status completed">完了</span>
-              </div>
-              <div class="timeline-body">
-                <h3>買い物代行</h3>
-                <div class="timeline-meta">
-                  <span>📍 札幌市北区</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="timeline-list" id="todayTimelineList">
+          <div class="loading-message">本日の予定を読み込み中...</div>
         </div>
       </div>
     </section>
@@ -200,23 +150,27 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function loadDashboardData() {
   try {
-    const [meResponse, bookingResponse] = await Promise.all([
+    const [meResponse, bookingResponse, todayBookingResponse] = await Promise.all([
       api.getMe(),
-      api.getBookings({ status: 'PENDING', available: true, limit: 6 })
+      api.getBookings({ status: 'PENDING', available: true, limit: 6 }),
+      api.getBookings({ status: 'CONFIRMED,IN_PROGRESS,COMPLETED', limit: 20 })
     ]);
 
     const user = meResponse.data || {};
     const pendingBookings = bookingResponse.data?.bookings || [];
+    const todayBookings = todayBookingResponse.data?.bookings || [];
     const payments = [];
 
     renderWelcome(user, pendingBookings.length);
     renderPendingJobs(pendingBookings);
+    renderTodaySchedule(todayBookings);
     renderRewardSummary(payments);
   } catch (error) {
     console.error('ダッシュボードデータの読み込みエラー:', error);
     document.getElementById('welcomeName').textContent = 'おかえりなさい';
     document.getElementById('welcomeMessage').textContent = 'データの読み込みに失敗しました。時間をおいて再度お試しください。';
     document.getElementById('jobRequestList').innerHTML = '<div class="error-message">仕事依頼の読み込みに失敗しました</div>';
+    document.getElementById('todayTimelineList').innerHTML = '<div class="error-message">本日の予定の読み込みに失敗しました</div>';
   }
 }
 
@@ -271,6 +225,77 @@ function renderPendingJobs(bookings) {
           <button class="btn btn-primary btn-action" onclick="acceptJob('${booking.id}')">承諾する</button>
         </div>
       </article>
+    `;
+  }).join('');
+}
+
+function renderTodaySchedule(bookings) {
+  const container = document.getElementById('todayTimelineList');
+  const now = new Date();
+  const allowedStatuses = ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'];
+  const todayBookings = bookings
+    .filter((booking) => {
+      if (!booking || !booking.scheduledDate) return false;
+      const scheduledDate = new Date(booking.scheduledDate);
+      return scheduledDate.toDateString() === now.toDateString() && allowedStatuses.includes(booking.status);
+    })
+    .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
+
+  if (!todayBookings.length) {
+    container.innerHTML = '<div class="empty-message">本日の予定はありません</div>';
+    return;
+  }
+
+  container.innerHTML = todayBookings.map((booking) => {
+    const scheduledDate = new Date(booking.scheduledDate);
+    const startTime = booking.startTime || '00:00';
+    const duration = booking.duration || 0;
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startAt = new Date(scheduledDate);
+    startAt.setHours(hours, minutes, 0, 0);
+    const endAt = new Date(startAt);
+    endAt.setHours(startAt.getHours() + duration);
+    const endTime = endAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    const timeStr = `${startTime} - ${endTime}`;
+
+    let timelineClass = 'is-before';
+    let statusClass = 'confirmed';
+    let statusLabel = '作業前';
+
+    if (booking.status === 'COMPLETED') {
+      timelineClass = 'is-complete';
+      statusClass = 'completed';
+      statusLabel = '完了';
+    } else if (booking.status === 'IN_PROGRESS') {
+      timelineClass = 'is-progress';
+      statusClass = 'in-progress';
+      statusLabel = '作業中';
+    } else if (booking.status === 'CONFIRMED') {
+      // 既存スタイルの作業前表示を利用
+      timelineClass = now >= startAt && now < endAt ? 'is-progress' : 'is-before';
+      statusClass = 'confirmed';
+      statusLabel = '作業前';
+    }
+
+    return `
+      <div class="timeline-item ${timelineClass}">
+        <span class="timeline-dot" aria-hidden="true"></span>
+        <div class="timeline-card">
+          <div class="timeline-header">
+            <span class="timeline-date">${timeStr}</span>
+            <span class="timeline-status ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="timeline-body">
+            <h3>${escapeHtml(booking.serviceType || '依頼内容未設定')}</h3>
+            <div class="timeline-meta">
+              <span>📍 ${escapeHtml(booking.address || '-')}</span>
+            </div>
+          </div>
+          <div class="timeline-actions">
+            <a href="job-detail.html?id=${booking.id}" class="btn btn-small btn--outline btn-action">詳細</a>
+          </div>
+        </div>
+      </div>
     `;
   }).join('');
 }
