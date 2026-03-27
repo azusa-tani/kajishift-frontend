@@ -200,24 +200,18 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function loadDashboardData() {
   try {
-    const [meResponse, bookingResponse, paymentResponse] = await Promise.all([
+    const [meResponse, bookingResponse] = await Promise.all([
       api.getMe(),
-      api.getBookings({ status: 'PENDING', available: true, limit: 6 }),
-      api.getPayments({ limit: 100 })
+      api.getBookings({ status: 'PENDING', available: true, limit: 6 })
     ]);
 
     const user = meResponse.data || {};
     const pendingBookings = bookingResponse.data?.bookings || [];
-    const payments = paymentResponse.data?.payments || [];
+    const payments = [];
 
     renderWelcome(user, pendingBookings.length);
     renderPendingJobs(pendingBookings);
     renderRewardSummary(payments);
-
-    // 支払い情報だけでは完了件数が不足する場合にフォールバック（権限がある環境のみ）
-    if (getCompletedCountFromPayments(payments) === 0) {
-      await fillCompletedCountFromReport(user.id);
-    }
   } catch (error) {
     console.error('ダッシュボードデータの読み込みエラー:', error);
     document.getElementById('welcomeName').textContent = 'おかえりなさい';
