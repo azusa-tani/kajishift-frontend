@@ -152,7 +152,7 @@ async function loadDashboardData() {
   try {
     const [meResponse, bookingResponse, todayBookingResponse] = await Promise.all([
       api.getMe(),
-      api.getBookings({ status: 'PENDING', available: true, limit: 6 }),
+      api.getBookings({ status: 'CREATED,PENDING', available: true, limit: 6 }),
       api.getBookings({ status: 'CONFIRMED,IN_PROGRESS,COMPLETED', limit: 20 })
     ]);
 
