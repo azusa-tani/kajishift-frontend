@@ -990,3 +990,15 @@
   - `loadBooking` にデバッグログ追加（`console.log('Fetching Booking ID:', ...)`、`console.dir(error)`）
 - ✅ 本番接続先の確定（Railway）
   - `js/config.js` の `API_BASE_URL` / `SOCKET_SERVER_URL` を Railway (`https://kajishift-backend-production.up.railway.app`) に統一
+
+### 2026年3月27日の更新内容
+
+- ✅ Workerダッシュボード（`worker/dashboard.html`）の安定化・機能改善
+  - 権限不一致エラー回避のため、ワーカー権限で取得できないAPI呼び出しを排除
+    - `api.getPayments({ limit: 100 })` の取得を削除し、報酬サマリーは空配列でも安全に描画
+    - 管理者レポート取得（`getAdminWorkerReport`）を用いた完了件数フォールバックを削除
+  - 今日の予定（today-schedule）を動的化
+    - `api.getBookings({ status: 'CONFIRMED,IN_PROGRESS,COMPLETED', limit: 20 })` を追加
+    - 当日分のみを時間昇順で描画し、ステータス別バッジ（confirmed/in-progress/completed）を確実に表示
+    - 予定なし時は「本日の予定はありません」を表示
+  - 新しい仕事の依頼の取得条件を一時的に `CREATED,PENDING` へ拡張後、Prismaの`BookingStatus`に`CREATED`が存在しないため500エラー回避の目的で `PENDING` のみに戻して安定化

@@ -172,6 +172,17 @@ window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app'
 
 ### 2026年3月の更新内容
 
+### 2026年3月27日の更新内容
+
+- ✅ Workerダッシュボード（`worker/dashboard.html`）の安定化・動的化
+  - 決済一覧APIの呼び出しを除去（`api.getPayments` を削除、`payments` は空配列で処理継続）
+  - 管理者専用レポートのフォールバック呼び出しを除去（`getAdminWorkerReport` 経由の完了件数補完を停止）
+  - 今日の予定（today-schedule）を動的レンダリングに変更
+    - `api.getBookings({ status: 'CONFIRMED,IN_PROGRESS,COMPLETED', limit: 20 })` を追加して当日分を描画
+    - タイムラインを時間昇順で表示、ステータスに応じたバッジ（作業前/作業中/完了）を確実に反映
+    - 予定がない場合は「本日の予定はありません」を表示
+  - 新しい仕事の依頼の取得条件を一時的に `CREATED,PENDING` へ拡張後、バックエンドSchema不整合により `PENDING` のみに戻して500エラーを解消
+
 - ✅ フロントエンド本番公開完了
   - NetlifyからVercelへ移行（クレジット問題回避）
   - 公開URL: https://kajishift-frontend.vercel.app

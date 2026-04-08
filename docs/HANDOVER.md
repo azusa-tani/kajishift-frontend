@@ -339,5 +339,20 @@ kajishift-frontend/
 
 ---
 
-**最終更新**: 2024年（サイトツリー整理完了時点）
+## 📅 更新履歴（2026年3月27日）
+
+- ✅ `worker/dashboard.html` の安定化対応
+  - ワーカー権限で失敗する API 呼び出しを整理
+    - `api.getPayments({ limit: 100 })` を削除
+    - 管理者用レポート（`getAdminWorkerReport`）フォールバック呼び出しを削除
+  - 報酬サマリーは `payments = []` でも安全に描画されるように維持
+- ✅ 「今日の予定（today-schedule）」を動的レンダリングへ変更
+  - `api.getBookings({ status: 'CONFIRMED,IN_PROGRESS,COMPLETED', limit: 20 })` で取得
+  - 当日分のみ抽出し、時間昇順でタイムライン表示
+  - ステータスバッジを `CONFIRMED/IN_PROGRESS/COMPLETED` に対応（作業前/作業中/完了）
+  - 予定なし時に「本日の予定はありません」を表示
+- ✅ 「新しい仕事の依頼」の取得条件を調整
+  - 一時的に `CREATED,PENDING` を試験した後、バックエンド `BookingStatus` 非対応により `PENDING` のみに戻して 500 エラーを解消
+
+**最終更新**: 2026年3月27日
 **作成者**: AI Assistant (Cursor)

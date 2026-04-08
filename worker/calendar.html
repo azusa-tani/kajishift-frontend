@@ -108,6 +108,17 @@
 let currentDate = new Date();
 let bookings = [];
 
+/**
+ * Date をブラウザのローカルタイムゾーンの暦日で YYYY-MM-DD に整形する。
+ * toISOString() は UTC 基準のため、JST などではカレンダーセルと予約日がズレるのを防ぐ。
+ */
+function formatLocalYMD(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 // ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
   // 認証チェック
@@ -145,8 +156,8 @@ async function loadCalendar() {
     // APIパラメータを構築
     const params = {
       status: 'CONFIRMED,IN_PROGRESS', // 確定済みと進行中の予約
-      startDate: firstDay.toISOString().split('T')[0],
-      endDate: lastDay.toISOString().split('T')[0],
+      startDate: formatLocalYMD(firstDay),
+      endDate: formatLocalYMD(lastDay),
       limit: 100 // 月の予約をすべて取得
     };
 
@@ -201,12 +212,13 @@ function displayCalendar(year, month, bookings) {
   // 日付セルを生成
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatLocalYMD(date);
     
-    // その日の予約を取得
+    // その日の予約を取得（scheduledDate は ISO 文字列想定。ローカル暦日でセルと照合）
     const dayBookings = bookings.filter(booking => {
-      const bookingDate = new Date(booking.scheduledDate);
-      return bookingDate.toISOString().split('T')[0] === dateStr;
+      const raw = booking.scheduledDate || booking.date;
+      if (!raw) return false;
+      return formatLocalYMD(new Date(raw)) === dateStr;
     });
     
     const hasJob = dayBookings.length > 0;
