@@ -9,6 +9,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
+  <script src="../js/worker-notification-badge.js" defer></script>
 </head>
 <body class="worker-page">
 
@@ -23,10 +24,10 @@
       <a href="profile.html">プロフィール</a>
     </nav>
     <div class="header-actions">
-      <button class="btn-icon" id="notificationBtn" aria-label="通知">
-        <span class="notification-badge">3</span>
-        🔔
-      </button>
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
+        <span aria-hidden="true">🔔</span>
+      </a>
       <a href="profile.html" class="avatar">👤</a>
     </div>
   </div>

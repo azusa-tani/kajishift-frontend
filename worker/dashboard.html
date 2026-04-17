@@ -12,6 +12,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
+  <script src="../js/worker-notification-badge.js" defer></script>
 </head>
 <body class="worker-page worker-dashboard-page">
 <script>
@@ -33,10 +34,10 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
       <a href="profile.html">プロフィール</a>
     </nav>
     <div class="header-actions">
-      <button class="btn-icon" id="notificationBtn" aria-label="通知（3件の未読があります）">
-        <span class="notification-badge" aria-hidden="true">3</span>
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
         <span aria-hidden="true">🔔</span>
-      </button>
+      </a>
       <a href="profile.html" class="avatar" aria-label="プロフィールページへ移動">👤</a>
       <button class="btn-icon" onclick="logout()" aria-label="ログアウト" title="ログアウト">
         <span aria-hidden="true">🚪</span>

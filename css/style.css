@@ -506,6 +506,24 @@ footer a:hover {
   background: #f0f0f0;
 }
 
+a.btn-icon {
+  text-decoration: none;
+  color: inherit;
+}
+
+.profile-freeform-text {
+  margin: 0;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.profile-availability-read {
+  margin: 0;
+}
+
 .notification-badge {
   position: absolute;
   top: 0;

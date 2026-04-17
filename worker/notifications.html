@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>通知一覧｜KAJISHIFT（ワーカー）</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/worker-notification-badge.js" defer></script>
+</head>
+<body class="worker-page">
+
+<header class="worker-header" role="banner">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav" role="navigation" aria-label="メインナビゲーション">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
+        <span aria-hidden="true">🔔</span>
+      </a>
+      <a href="profile.html" class="avatar" aria-label="プロフィールページへ移動">👤</a>
+      <button class="btn-icon" type="button" onclick="logout()" aria-label="ログアウト" title="ログアウト">
+        <span aria-hidden="true">🚪</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main" role="main">
+  <div class="container">
+
+    <section class="page-header">
+      <h1>通知一覧</h1>
+      <div class="header-actions">
+        <button type="button" class="btn btn-outline btn-small" onclick="markAllAsRead()">すべて既読にする</button>
+      </div>
+    </section>
+
+    <section class="filter-section">
+      <div class="filter-row">
+        <select class="form-select" id="filterStatus" onchange="loadNotifications()">
+          <option value="">すべて</option>
+          <option value="false">未読のみ</option>
+          <option value="true">既読のみ</option>
+        </select>
+        <select class="form-select" id="filterType" onchange="loadNotifications()">
+          <option value="">すべての種類</option>
+          <option value="MESSAGE">メッセージ</option>
+          <option value="BOOKING_UPDATE">予約更新</option>
+          <option value="BOOKING_CREATED">予約作成</option>
+          <option value="BOOKING_CANCELLED">予約キャンセル</option>
+          <option value="REVIEW">レビュー</option>
+          <option value="PAYMENT">決済</option>
+          <option value="PAYMENT_FAILED">決済失敗</option>
+          <option value="SYSTEM">システム</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="notifications-section">
+      <div id="notifications-list" class="notifications-list">
+        <div class="loading-message">読み込み中...</div>
+      </div>
+
+      <div class="pagination is-hidden" id="pagination">
+        <button type="button" class="btn btn-outline" id="prevBtn" onclick="changePage(-1)">前へ</button>
+        <span class="page-info" id="pageInfo">1 / 1</span>
+        <button type="button" class="btn btn-outline" id="nextBtn" onclick="changePage(1)">次へ</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="../terms.html">利用規約</a>
+      <a href="../privacy.html">プライバシーポリシー</a>
+      <a href="../legal.html">特定商取引法に基づく表記</a>
+      <a href="#">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+let currentPage = 1;
+let totalPages = 1;
+let currentFilters = {};
+
+document.addEventListener('DOMContentLoaded', async function () {
+  if (!checkAuth('worker')) return;
+  await updateUnreadCount();
+  await loadNotifications();
+});
+
+async function updateUnreadCount() {
+  try {
+    const response = await api.getUnreadNotificationCount();
+    const count =
+      response.data && typeof response.data.count === 'number'
+        ? response.data.count
+        : typeof response.count === 'number'
+          ? response.count
+          : 0;
+    const notificationBadge = document.querySelector('.notification-badge');
+    const btn = document.getElementById('notificationBtn');
+    if (notificationBadge) {
+      if (count > 0) {
+        notificationBadge.textContent = String(count);
+        notificationBadge.classList.remove('is-hidden');
+      } else {
+        notificationBadge.classList.add('is-hidden');
+      }
+    }
+    if (btn) {
+      btn.setAttribute('aria-label', count > 0 ? '通知（' + count + '件の未読）' : '通知');
+    }
+  } catch (error) {
+    console.error('未読通知数取得エラー:', error);
+  }
+}
+
+async function loadNotifications(page) {
+  try {
+    currentPage = typeof page === 'number' ? page : 1;
+
+    const isRead = document.getElementById('filterStatus').value;
+    const type = document.getElementById('filterType').value;
+
+    currentFilters = {};
+    if (isRead !== '') currentFilters.isRead = isRead === 'true';
+    if (type !== '') currentFilters.type = type;
+    currentFilters.page = currentPage;
+    currentFilters.limit = 20;
+
+    const response = await api.getNotifications(currentFilters);
+    const payload = response.data || {};
+    const notifications = payload.notifications || [];
+    const pagination = payload.pagination || { page: 1, totalPages: 1 };
+
+    displayNotifications(notifications);
+    updatePagination(pagination);
+    await updateUnreadCount();
+  } catch (error) {
+    console.error('通知一覧取得エラー:', error);
+    showError('通知一覧の取得に失敗しました: ' + (error.message || 'エラーが発生しました'));
+    document.getElementById('notifications-list').innerHTML =
+      '<div class="error-message">通知一覧の取得に失敗しました</div>';
+  }
+}
+
+function displayNotifications(notifications) {
+  const listElement = document.getElementById('notifications-list');
+
+  if (!notifications.length) {
+    listElement.innerHTML = '<div class="empty-message">通知がありません</div>';
+    return;
+  }
+
+  listElement.innerHTML = notifications
+    .map(function (notification) {
+      const date = new Date(notification.createdAt);
+      const dateStr = date.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      const typeLabels = {
+        MESSAGE: 'メッセージ',
+        BOOKING_UPDATE: '予約更新',
+        BOOKING_CREATED: '予約作成',
+        BOOKING_CANCELLED: '予約キャンセル',
+        REVIEW: 'レビュー',
+        PAYMENT: '決済',
+        PAYMENT_FAILED: '決済失敗',
+        SYSTEM: 'システム',
+        WORKER_APPROVED: 'ワーカー承認',
+        WORKER_REJECTED: 'ワーカー却下',
+      };
+
+      const typeLabel = typeLabels[notification.type] || notification.type;
+      const isReadClass = notification.isRead ? 'read' : 'unread';
+      const readIcon = notification.isRead ? '' : '<span class="unread-indicator">●</span>';
+
+      let actionButton = '';
+      if (notification.relatedType === 'BOOKING' && notification.relatedId) {
+        actionButton =
+          '<a href="job-detail.html?id=' +
+          notification.relatedId +
+          '" class="btn btn-outline btn-small">仕事詳細を見る</a>';
+      }
+
+      return (
+        '<div class="notification-item ' +
+        isReadClass +
+        '" data-id="' +
+        notification.id +
+        '">' +
+        '<div class="notification-header">' +
+        '<div class="notification-type">' +
+        typeLabel +
+        '</div>' +
+        '<div class="notification-date">' +
+        dateStr +
+        '</div></div>' +
+        '<div class="notification-content">' +
+        '<h3 class="notification-title">' +
+        readIcon +
+        ' ' +
+        escapeHtml(notification.title) +
+        '</h3>' +
+        '<p class="notification-text">' +
+        escapeHtml(notification.content) +
+        '</p></div>' +
+        '<div class="notification-actions">' +
+        actionButton +
+        (!notification.isRead
+          ? '<button type="button" class="btn-link" onclick="markAsRead(\'' + notification.id + '\')">既読にする</button>'
+          : '') +
+        '</div></div>'
+      );
+    })
+    .join('');
+}
+
+function updatePagination(pagination) {
+  currentPage = pagination.page || 1;
+  totalPages = pagination.totalPages || 1;
+
+  const paginationElement = document.getElementById('pagination');
+  const pageInfo = document.getElementById('pageInfo');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  if (totalPages <= 1) {
+    paginationElement.classList.add('is-hidden');
+    return;
+  }
+
+  paginationElement.classList.remove('is-hidden');
+  pageInfo.textContent = currentPage + ' / ' + totalPages;
+  prevBtn.disabled = currentPage <= 1;
+  nextBtn.disabled = currentPage >= totalPages;
+}
+
+function changePage(delta) {
+  const newPage = currentPage + delta;
+  if (newPage >= 1 && newPage <= totalPages) {
+    loadNotifications(newPage);
+  }
+}
+
+async function markAsRead(notificationId) {
+  try {
+    await api.markNotificationAsRead(notificationId);
+
+    const notificationItem = document.querySelector('.notification-item[data-id="' + notificationId + '"]');
+    if (notificationItem) {
+      notificationItem.classList.remove('unread');
+      notificationItem.classList.add('read');
+      const actionsElement = notificationItem.querySelector('.notification-actions');
+      if (actionsElement) {
+        const readButton = actionsElement.querySelector('button.btn-link');
+        if (readButton) readButton.remove();
+      }
+      const unreadIndicator = notificationItem.querySelector('.unread-indicator');
+      if (unreadIndicator) unreadIndicator.remove();
+    }
+
+    await updateUnreadCount();
+  } catch (error) {
+    console.error('既読処理エラー:', error);
+    showError('既読処理に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+async function markAllAsRead() {
+  if (!confirm('すべての通知を既読にしますか？')) return;
+
+  try {
+    await api.markAllNotificationsAsRead();
+    showSuccess('すべての通知を既読にしました');
+    await loadNotifications(currentPage);
+    await updateUnreadCount();
+  } catch (error) {
+    console.error('すべて既読処理エラー:', error);
+    showError('すべて既読処理に失敗しました: ' + (error.message || 'エラーが発生しました'));
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text == null ? '' : String(text);
+  return div.innerHTML;
+}
+</script>
+
+</body>
+</html>

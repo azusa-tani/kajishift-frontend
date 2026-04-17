@@ -9,6 +9,7 @@
   <script src="../js/config.js"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
+  <script src="../js/worker-notification-badge.js" defer></script>
 </head>
 <body class="worker-page">
 
@@ -23,10 +24,10 @@
       <a href="profile.html" class="active">プロフィール</a>
     </nav>
     <div class="header-actions">
-      <button class="btn-icon" id="notificationBtn" aria-label="通知">
-        <span class="notification-badge">3</span>
-        🔔
-      </button>
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
+        <span aria-hidden="true">🔔</span>
+      </a>
       <a href="profile.html" class="avatar">👤</a>
     </div>
   </div>
@@ -43,7 +44,7 @@
     <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">基本情報</h2>
-        <button class="btn btn--outline btn-small btn-action-link" onclick="editBasicInfo()">編集</button>
+        <button type="button" class="btn btn--outline btn-small btn-action-link" onclick="editBasicInfo()">編集</button>
       </div>
       <div class="profile-card card-standard" id="basicInfoCard">
         <div class="loading-message">読み込み中...</div>
@@ -54,7 +55,7 @@
     <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">自己紹介・時給</h2>
-        <button class="btn btn--outline btn-small btn-action-link" onclick="editProfile()">編集</button>
+        <button type="button" class="btn btn--outline btn-small btn-action-link" onclick="editProfile()">編集</button>
       </div>
       <div class="profile-card card-standard" id="profileInfoCard">
         <div class="loading-message">読み込み中...</div>
@@ -65,27 +66,10 @@
     <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">対応エリア</h2>
-        <button class="btn btn--outline btn-small btn-action-link">編集</button>
+        <button type="button" class="btn btn--outline btn-small btn-action-link" onclick="editServiceAreas()">編集</button>
       </div>
       <div class="profile-card card-standard">
-        <div class="area-list">
-          <div class="area-item">
-            <span class="area-name">札幌市</span>
-            <span class="area-detail">中央区、南区、西区</span>
-          </div>
-          <div class="area-item">
-            <span class="area-name">江別市</span>
-            <span class="area-detail">全域</span>
-          </div>
-          <div class="area-item">
-            <span class="area-name">北広島市</span>
-            <span class="area-detail">全域</span>
-          </div>
-          <div class="area-item">
-            <span class="area-name">石狩市</span>
-            <span class="area-detail">一部エリア</span>
-          </div>
-        </div>
+        <div id="serviceAreaCard"><div class="loading-message">読み込み中...</div></div>
       </div>
     </section>
 
@@ -93,49 +77,10 @@
     <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">利用可能時間</h2>
-        <button class="btn btn--outline btn-small btn-action-link">編集</button>
+        <button type="button" class="btn btn--outline btn-small btn-action-link" onclick="editAvailability()">編集</button>
       </div>
       <div class="profile-card card-standard">
-        <div class="availability-table">
-          <table>
-            <thead>
-              <tr>
-                <th>曜日</th>
-                <th>利用可能時間</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>月曜日</td>
-                <td>13:00 - 17:00</td>
-              </tr>
-              <tr>
-                <td>火曜日</td>
-                <td>10:00 - 17:00</td>
-              </tr>
-              <tr>
-                <td>水曜日</td>
-                <td>10:00 - 17:00</td>
-              </tr>
-              <tr>
-                <td>木曜日</td>
-                <td>10:00 - 17:00</td>
-              </tr>
-              <tr>
-                <td>金曜日</td>
-                <td>10:00 - 17:00</td>
-              </tr>
-              <tr>
-                <td>土曜日</td>
-                <td>9:00 - 18:00</td>
-              </tr>
-              <tr>
-                <td>日曜日</td>
-                <td>9:00 - 18:00</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <div id="availabilityCard"><div class="loading-message">読み込み中...</div></div>
       </div>
     </section>
 
@@ -202,29 +147,10 @@
     <section class="profile-section section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">口座情報</h2>
-        <button class="btn btn--outline btn-small btn-action-link">編集</button>
+        <button type="button" class="btn btn--outline btn-small btn-action-link" onclick="editBankInfo()">編集</button>
       </div>
       <div class="profile-card card-standard">
-        <div class="info-row">
-          <span class="info-label">銀行名</span>
-          <span class="info-value">北海道銀行</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">支店名</span>
-          <span class="info-value">中央支店</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">口座種別</span>
-          <span class="info-value">普通</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">口座番号</span>
-          <span class="info-value">****1234</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">口座名義</span>
-          <span class="info-value">タナカ ハナコ</span>
-        </div>
+        <div id="bankInfoCard"><div class="loading-message">読み込み中...</div></div>
       </div>
     </section>
 
@@ -294,6 +220,78 @@
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn--outline btn-action" onclick="closeModal('editBasicInfoModal')">キャンセル</button>
+        <button type="submit" class="btn btn-primary btn-action">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 対応エリア編集モーダル -->
+<div class="modal" id="editServiceAreaModal">
+  <div class="modal-content modal-content--wide card-standard">
+    <h2>対応エリアを編集</h2>
+    <p class="text-muted" style="margin-bottom: 12px;">1行に1エリアを入力できます。詳細を分けたい場合は「市区町村 | 対応範囲」のように区切ってください。</p>
+    <form id="editServiceAreaForm">
+      <div class="form-group">
+        <label for="editServiceAreaText">対応エリア</label>
+        <textarea class="form-input" id="editServiceAreaText" rows="10" placeholder="例：&#10;札幌市 | 中央区、南区、西区&#10;江別市 | 全域"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn--outline btn-action" onclick="closeModal('editServiceAreaModal')">キャンセル</button>
+        <button type="submit" class="btn btn-primary btn-action">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 利用可能時間編集モーダル -->
+<div class="modal" id="editAvailabilityModal">
+  <div class="modal-content modal-content--wide card-standard">
+    <h2>利用可能時間を編集</h2>
+    <p class="text-muted" style="margin-bottom: 12px;">曜日ごとの目安を自由形式で入力できます（例：月曜日 13:00〜17:00）。</p>
+    <form id="editAvailabilityForm">
+      <div class="form-group">
+        <label for="editAvailabilityText">利用可能時間</label>
+        <textarea class="form-input" id="editAvailabilityText" rows="12" placeholder="例：&#10;月曜日 13:00 - 17:00&#10;火曜日 10:00 - 17:00"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn--outline btn-action" onclick="closeModal('editAvailabilityModal')">キャンセル</button>
+        <button type="submit" class="btn btn-primary btn-action">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 口座情報編集モーダル -->
+<div class="modal" id="editBankModal">
+  <div class="modal-content card-standard">
+    <h2>口座情報を編集</h2>
+    <form id="editBankForm">
+      <div class="form-group">
+        <label for="editBankName">銀行名</label>
+        <input type="text" class="form-input" id="editBankName" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label for="editBranchName">支店名</label>
+        <input type="text" class="form-input" id="editBranchName" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label for="editAccountType">口座種別</label>
+        <select class="form-input" id="editAccountType">
+          <option value="ordinary">普通</option>
+          <option value="checking">当座</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="editAccountNumber">口座番号（数字のみ）</label>
+        <input type="text" class="form-input" id="editAccountNumber" inputmode="numeric" pattern="[0-9]*" maxlength="16" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label for="editAccountName">口座名義（カナ推奨）</label>
+        <input type="text" class="form-input" id="editAccountName" autocomplete="off" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn--outline btn-action" onclick="closeModal('editBankModal')">キャンセル</button>
         <button type="submit" class="btn btn-primary btn-action">保存</button>
       </div>
     </form>
@@ -407,6 +405,119 @@ function displayProfile(user) {
       <span class="info-value summary-amount">${user.hourlyRate ? `¥${user.hourlyRate.toLocaleString()}` : '未設定'}</span>
     </div>
   `;
+
+  renderServiceAreaDisplay(user);
+  renderAvailabilityDisplay(user);
+  renderBankInfoDisplay(user);
+}
+
+function renderServiceAreaDisplay(user) {
+  const el = document.getElementById('serviceAreaCard');
+  if (!el) return;
+  const text = (user.serviceAreaText || '').trim();
+  if (!text) {
+    el.innerHTML = '<div class="empty-message">未設定（「編集」から入力できます）</div>';
+    return;
+  }
+  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  el.innerHTML =
+    '<div class="area-list">' +
+    lines
+      .map((line) => {
+        const parts = line.split('|').map((x) => x.trim());
+        const name = parts[0] || line;
+        const detail = parts.slice(1).join(' | ') || '';
+        return (
+          '<div class="area-item">' +
+          '<span class="area-name">' +
+          escapeHtml(name) +
+          '</span>' +
+          (detail ? '<span class="area-detail">' + escapeHtml(detail) + '</span>' : '') +
+          '</div>'
+        );
+      })
+      .join('') +
+    '</div>';
+}
+
+function renderAvailabilityDisplay(user) {
+  const el = document.getElementById('availabilityCard');
+  if (!el) return;
+  const text = (user.availabilityText || '').trim();
+  if (!text) {
+    el.innerHTML = '<div class="empty-message">未設定（「編集」から入力できます）</div>';
+    return;
+  }
+  el.innerHTML =
+    '<div class="availability-table profile-availability-read"><pre class="profile-freeform-text">' +
+    escapeHtml(text) +
+    '</pre></div>';
+}
+
+function formatAccountTypeLabel(t) {
+  if (t === 'checking') return '当座';
+  if (t === 'ordinary') return '普通';
+  return t || '-';
+}
+
+function maskAccountNumber(num) {
+  if (num == null || num === '') return '-';
+  const s = String(num).replace(/\s/g, '');
+  if (s.length <= 4) return '****';
+  return '****' + s.slice(-4);
+}
+
+function renderBankInfoDisplay(user) {
+  const el = document.getElementById('bankInfoCard');
+  if (!el) return;
+  const rows = [
+    ['銀行名', user.bankName || '-'],
+    ['支店名', user.branchName || '-'],
+    ['口座種別', formatAccountTypeLabel(user.accountType)],
+    ['口座番号', maskAccountNumber(user.accountNumber)],
+    ['口座名義', user.accountName || '-'],
+  ];
+  el.innerHTML = rows
+    .map(
+      ([label, val]) =>
+        `<div class="info-row"><span class="info-label">${label}</span><span class="info-value">${escapeHtml(
+          String(val)
+        )}</span></div>`
+    )
+    .join('');
+}
+
+function editServiceAreas() {
+  if (!currentUser) {
+    alert('ユーザー情報が読み込まれていません');
+    return;
+  }
+  document.getElementById('editServiceAreaText').value = currentUser.serviceAreaText || '';
+  document.getElementById('editServiceAreaModal').classList.add('is-open');
+}
+
+function editAvailability() {
+  if (!currentUser) {
+    alert('ユーザー情報が読み込まれていません');
+    return;
+  }
+  document.getElementById('editAvailabilityText').value = currentUser.availabilityText || '';
+  document.getElementById('editAvailabilityModal').classList.add('is-open');
+}
+
+function editBankInfo() {
+  if (!currentUser) {
+    alert('ユーザー情報が読み込まれていません');
+    return;
+  }
+  document.getElementById('editBankName').value = currentUser.bankName || '';
+  document.getElementById('editBranchName').value = currentUser.branchName || '';
+  const at = currentUser.accountType;
+  document.getElementById('editAccountType').value =
+    at === 'checking' ? 'checking' : 'ordinary';
+  document.getElementById('editAccountNumber').value = currentUser.accountNumber || '';
+  document.getElementById('editAccountName').value = currentUser.accountName || '';
+  document.getElementById('editBankModal').classList.add('is-open');
 }
 
 // 基本情報を編集
@@ -457,6 +568,69 @@ document.addEventListener('DOMContentLoaded', function() {
       } catch (error) {
         console.error('基本情報更新エラー:', error);
         showError('基本情報の更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
+      }
+    });
+  }
+
+  const editServiceAreaForm = document.getElementById('editServiceAreaForm');
+  if (editServiceAreaForm) {
+    editServiceAreaForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      try {
+        await api.updateWorkerProfile({
+          serviceAreaText: document.getElementById('editServiceAreaText').value.trim() || null,
+        });
+        showSuccess('対応エリアを保存しました');
+        closeModal('editServiceAreaModal');
+        await loadProfile();
+      } catch (error) {
+        console.error(error);
+        showError('保存に失敗しました: ' + (error.message || 'エラーが発生しました'));
+      }
+    });
+  }
+
+  const editAvailabilityForm = document.getElementById('editAvailabilityForm');
+  if (editAvailabilityForm) {
+    editAvailabilityForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      try {
+        await api.updateWorkerProfile({
+          availabilityText: document.getElementById('editAvailabilityText').value.trim() || null,
+        });
+        showSuccess('利用可能時間を保存しました');
+        closeModal('editAvailabilityModal');
+        await loadProfile();
+      } catch (error) {
+        console.error(error);
+        showError('保存に失敗しました: ' + (error.message || 'エラーが発生しました'));
+      }
+    });
+  }
+
+  const editBankForm = document.getElementById('editBankForm');
+  if (editBankForm) {
+    editBankForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const accountNumber = document.getElementById('editAccountNumber').value.replace(/\s/g, '');
+      if (accountNumber && !/^\d{1,16}$/.test(accountNumber)) {
+        alert('口座番号は数字のみで入力してください');
+        return;
+      }
+      try {
+        await api.updateWorkerProfile({
+          bankName: document.getElementById('editBankName').value.trim() || null,
+          branchName: document.getElementById('editBranchName').value.trim() || null,
+          accountType: document.getElementById('editAccountType').value,
+          accountNumber: accountNumber || null,
+          accountName: document.getElementById('editAccountName').value.trim() || null,
+        });
+        showSuccess('口座情報を保存しました');
+        closeModal('editBankModal');
+        await loadProfile();
+      } catch (error) {
+        console.error(error);
+        showError('保存に失敗しました: ' + (error.message || 'エラーが発生しました'));
       }
     });
   }
