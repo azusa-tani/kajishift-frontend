@@ -56,7 +56,7 @@
         </div>
       </div>
       <div id="calendarPanelWeek" class="calendar-view-panel is-hidden">
-        <p class="week-view-hint">各マス（30分単位）をクリックすると、その時間帯の「利用不可」を切り替えられます。予約が入っている時間は変更できません。</p>
+        <p class="week-view-hint">各マス（30分単位）をクリックすると、その時間帯の「利用不可」をサーバーに保存して切り替えられます。予約が入っている時間は変更できません。</p>
         <div class="week-view-scroll">
           <div id="weekViewContainer"></div>
         </div>
@@ -115,6 +115,7 @@
 </footer>
 
 <script>
+/** 旧 localStorage からの移行用（移行後は削除される） */
 const UNAVAILABLE_STORAGE_KEY = 'kajishift_worker_calendar_unavailable_slots';
 const WEEK_BODY_PX = 960;
 const SLOTS_PER_DAY = 48;
@@ -122,6 +123,8 @@ const SLOTS_PER_DAY = 48;
 let currentDate = new Date();
 let bookings = [];
 let calendarView = 'month';
+/** サーバー由来の利用不可キー一覧（"YYYY-MM-DD|slotIndex"） */
+let unavailableSlotKeys = [];
 
 function formatLocalYMD(date) {
   const y = date.getFullYear();
@@ -144,32 +147,60 @@ function getMonday(d) {
   return x;
 }
 
-function loadUnavailableKeys() {
-  try {
-    const raw = localStorage.getItem(UNAVAILABLE_STORAGE_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveUnavailableKeys(keys) {
-  localStorage.setItem(UNAVAILABLE_STORAGE_KEY, JSON.stringify(keys));
-}
-
 function unavailableKey(dateStr, slot) {
   return `${dateStr}|${slot}`;
 }
 
-function toggleUnavailableSlot(dateStr, slot) {
+async function refreshUnavailableSlots(startDate, endDate) {
+  const res = await api.getWorkerUnavailableSlots({ startDate, endDate });
+  const slots = (res.data && res.data.slots) || [];
+  unavailableSlotKeys = slots.map((s) => s.slotKey || `${s.date}|${s.slotIndex}`);
+}
+
+/**
+ * 以前の localStorage 形式をバックエンドへ送り、キーを削除する
+ */
+async function migrateLocalStorageUnavailableIfNeeded() {
+  let arr;
+  try {
+    const raw = localStorage.getItem(UNAVAILABLE_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return;
+    arr = parsed;
+  } catch {
+    return;
+  }
+  try {
+    await api.createWorkerUnavailableSlot({
+      items: arr,
+      continueOnError: true,
+    });
+  } catch (e) {
+    console.warn('利用不可（localStorage）の移行に失敗:', e);
+    return;
+  }
+  localStorage.removeItem(UNAVAILABLE_STORAGE_KEY);
+}
+
+async function toggleUnavailableSlotApi(dateStr, slot) {
   const key = unavailableKey(dateStr, slot);
-  const keys = loadUnavailableKeys();
-  const i = keys.indexOf(key);
-  if (i >= 0) keys.splice(i, 1);
-  else keys.push(key);
-  saveUnavailableKeys(keys);
+  const exists = unavailableSlotKeys.includes(key);
+  if (exists) {
+    await api.deleteWorkerUnavailableSlotByQuery({
+      date: dateStr,
+      slotIndex: String(slot),
+    });
+    unavailableSlotKeys = unavailableSlotKeys.filter((k) => k !== key);
+  } else {
+    const res = await api.createWorkerUnavailableSlot({
+      date: dateStr,
+      slotIndex: slot,
+    });
+    const slotObj = res.data && res.data.slot;
+    const newKey = (slotObj && slotObj.slotKey) || key;
+    if (!unavailableSlotKeys.includes(newKey)) unavailableSlotKeys.push(newKey);
+  }
 }
 
 function bookingDateStr(booking) {
@@ -303,14 +334,19 @@ document.addEventListener('DOMContentLoaded', async function () {
     loadCalendar();
   });
 
-  document.getElementById('calendarPanelWeek').addEventListener('click', (e) => {
+  document.getElementById('calendarPanelWeek').addEventListener('click', async (e) => {
     const slotEl = e.target.closest('.week-slot[data-slot]');
     if (!slotEl || slotEl.classList.contains('is-booking')) return;
     const dateStr = slotEl.getAttribute('data-date');
     const slot = Number(slotEl.getAttribute('data-slot'));
     if (!dateStr || Number.isNaN(slot)) return;
-    toggleUnavailableSlot(dateStr, slot);
-    renderWeekView();
+    try {
+      await toggleUnavailableSlotApi(dateStr, slot);
+      renderWeekView();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || '利用不可の更新に失敗しました');
+    }
   });
 
   setViewToggleActive();
@@ -320,6 +356,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 async function loadCalendar() {
   const grid = document.getElementById('calendarGrid');
+  const weekEl = document.getElementById('weekViewContainer');
+  const dayEl = document.getElementById('dayViewContainer');
   const range = getFetchRange();
   updateTitle();
 
@@ -334,6 +372,20 @@ async function loadCalendar() {
 
     if (response.data && response.data.bookings) {
       bookings = response.data.bookings;
+
+      if (calendarView === 'week') {
+        try {
+          await refreshUnavailableSlots(range.startDate, range.endDate);
+          await migrateLocalStorageUnavailableIfNeeded();
+          await refreshUnavailableSlots(range.startDate, range.endDate);
+        } catch (slotErr) {
+          console.error('利用不可スロットの取得エラー:', slotErr);
+          unavailableSlotKeys = [];
+        }
+      } else {
+        unavailableSlotKeys = [];
+      }
+
       renderCurrentCalendar();
       if (calendarView === 'month') displayWeeklySchedule(bookings);
     } else {
@@ -341,7 +393,11 @@ async function loadCalendar() {
     }
   } catch (error) {
     console.error('カレンダーの読み込みエラー:', error);
-    grid.innerHTML = `<div class="error-message">カレンダーの読み込みに失敗しました: ${error.message || 'エラーが発生しました'}</div>`;
+    const msg = error.message || 'エラーが発生しました';
+    const html = `<div class="error-message">カレンダーの読み込みに失敗しました: ${msg}</div>`;
+    if (calendarView === 'month') grid.innerHTML = html;
+    else if (calendarView === 'week' && weekEl) weekEl.innerHTML = html;
+    else if (calendarView === 'day' && dayEl) dayEl.innerHTML = html;
   }
 }
 
@@ -405,7 +461,7 @@ function renderWeekView() {
   const container = document.getElementById('weekViewContainer');
   const mon = getMonday(currentDate);
   const weekdayLabels = ['月', '火', '水', '木', '金', '土', '日'];
-  const keys = loadUnavailableKeys();
+  const keys = unavailableSlotKeys;
 
   let rail = '<div class="week-time-rail">';
   for (let slot = 0; slot < SLOTS_PER_DAY; slot++) {

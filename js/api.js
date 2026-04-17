@@ -121,7 +121,7 @@ class ApiClient {
           }
         }
 
-        const error = new Error(data.message || 'エラーが発生しました');
+        const error = new Error(data.message || data.error || 'エラーが発生しました');
         error.status = response.status;
         error.data = data;
         throw error;
@@ -386,6 +386,55 @@ class ApiClient {
     return this.request('/workers/me', {
       method: 'PUT',
       body: data,
+    });
+  }
+
+  /**
+   * ワーカー本人の利用不可スロット一覧（GET /workers/me/unavailable-slots）
+   * @param {{ startDate: string, endDate: string }} params YYYY-MM-DD（必須）
+   */
+  async getWorkerUnavailableSlots(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/workers/me/unavailable-slots${queryString ? `?${queryString}` : ''}`;
+    return this.request(endpoint);
+  }
+
+  /**
+   * 利用不可スロットの作成（単一: { date, slotIndex } / 複数: { items, continueOnError? }）
+   */
+  async createWorkerUnavailableSlot(body) {
+    return this.request('/workers/me/unavailable-slots', {
+      method: 'POST',
+      body,
+    });
+  }
+
+  /**
+   * 期間内の利用不可を一括同期（PUT /workers/me/unavailable-slots/sync）
+   */
+  async syncWorkerUnavailableSlots(body) {
+    return this.request('/workers/me/unavailable-slots/sync', {
+      method: 'PUT',
+      body,
+    });
+  }
+
+  /**
+   * クエリで削除（DELETE /workers/me/unavailable-slots?date=&slotIndex=）
+   */
+  async deleteWorkerUnavailableSlotByQuery(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/workers/me/unavailable-slots${queryString ? `?${queryString}` : ''}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * IDで削除（DELETE /workers/me/unavailable-slots/:id）
+   */
+  async deleteWorkerUnavailableSlotById(slotId) {
+    return this.request(`/workers/me/unavailable-slots/${encodeURIComponent(slotId)}`, {
+      method: 'DELETE',
     });
   }
 
