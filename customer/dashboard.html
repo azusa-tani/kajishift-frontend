@@ -143,14 +143,42 @@ function updateNotificationBadge(count) {
   }
 }
 
-function updateUpcomingBookings(bookings) {
-  const timelineList = document.querySelector('.timeline-list');
-  if (!timelineList) return;
+function shortenAddressForCard(addr, maxLen) {
+  const limit = maxLen == null ? 34 : maxLen;
+  if (!addr || typeof addr !== 'string') return '';
+  const s = addr.trim().replace(/\s+/g, ' ');
+  const parts = s.split(/[、,，]/);
+  if (parts.length >= 2) {
+    const short = `${parts[0].trim()}、${parts[1].trim()}`;
+    if (short.length <= limit) return short;
+  }
+  if (s.length <= limit) return s;
+  return s.slice(0, limit - 1) + '…';
+}
 
-  timelineList.innerHTML = '';
+function ratingStarsHtml(rating) {
+  const n = Number(rating);
+  if (Number.isNaN(n) || n < 0) return '';
+  const rounded = Math.min(5, Math.max(0, Math.round(n)));
+  const filled = '★'.repeat(rounded);
+  const empty = '☆'.repeat(5 - rounded);
+  return `<span class="customer-upcoming-stars" aria-hidden="true">${filled}${empty}</span>`;
+}
+
+function workerInitial(name) {
+  if (!name || typeof name !== 'string') return '?';
+  const t = name.trim();
+  return t ? t.charAt(0) : '?';
+}
+
+function updateUpcomingBookings(bookings) {
+  const track = document.getElementById('dashboardUpcomingBookings');
+  if (!track) return;
+
+  track.innerHTML = '';
 
   if (!bookings || bookings.length === 0) {
-    timelineList.innerHTML = '<p class="no-data">今後の予約はありません</p>';
+    track.innerHTML = '<p class="no-data customer-upcoming-empty">今後の予約はありません</p>';
     return;
   }
 
@@ -158,23 +186,15 @@ function updateUpcomingBookings(bookings) {
     hour: '2-digit',
     minute: '2-digit',
   });
-  const dateFormatter = new Intl.DateTimeFormat('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  });
+  const dowFmt = new Intl.DateTimeFormat('ja-JP', { weekday: 'short' });
 
   bookings.forEach((booking) => {
-    const item = document.createElement('div');
-    item.className = 'timeline-item';
-
-    const statusToClass = {
-      PENDING: 'confirmed',
-      CONFIRMED: 'confirmed',
-      IN_PROGRESS: 'in-progress',
-      COMPLETED: 'completed',
-      CANCELLED: 'cancelled',
+    const statusBadgeClass = {
+      PENDING: 'customer-upcoming-badge--confirmed',
+      CONFIRMED: 'customer-upcoming-badge--confirmed',
+      IN_PROGRESS: 'customer-upcoming-badge--progress',
+      COMPLETED: 'customer-upcoming-badge--done',
+      CANCELLED: 'customer-upcoming-badge--cancelled',
     };
     const statusText =
       {
@@ -193,47 +213,104 @@ function updateUpcomingBookings(bookings) {
     const endDate = booking.endTime ? new Date(booking.endTime) : null;
     const duration = booking.duration || 2;
 
-    let dateStr = '日付未設定';
-    let timeStr = '時間未設定';
-    if (startDate && !Number.isNaN(startDate.getTime())) {
-      dateStr = dateFormatter.format(startDate);
+    const hasValidStart = startDate && !Number.isNaN(startDate.getTime());
+
+    let timeLine = '';
+    if (hasValidStart) {
       if (endDate && !Number.isNaN(endDate.getTime())) {
-        timeStr = `${timeFormatter.format(startDate)} - ${timeFormatter.format(endDate)}`;
+        timeLine = `${timeFormatter.format(startDate)}〜${timeFormatter.format(endDate)}`;
       } else {
         const estimatedEnd = new Date(startDate.getTime() + duration * 60 * 60 * 1000);
-        timeStr = `${timeFormatter.format(startDate)} - ${timeFormatter.format(estimatedEnd)}`;
+        timeLine = `${timeFormatter.format(startDate)}〜${timeFormatter.format(estimatedEnd)}（目安）`;
       }
+    } else {
+      timeLine = '日時は調整中です。確定次第お知らせします。';
+    }
+
+    let dateboxHtml = '';
+    if (hasValidStart) {
+      const dayNum = startDate.getDate();
+      const dow = dowFmt.format(startDate);
+      const monthLabel = `${startDate.getMonth() + 1}月`;
+      dateboxHtml = `
+        <aside class="customer-upcoming-datebox" aria-label="予約日">
+          <span class="customer-upcoming-datebox__day">${dayNum}</span>
+          <span class="customer-upcoming-datebox__dow">${escapeHtml(dow)}</span>
+          <span class="customer-upcoming-datebox__month">${escapeHtml(monthLabel)}</span>
+        </aside>`;
+    } else {
+      dateboxHtml = `
+        <aside class="customer-upcoming-datebox customer-upcoming-datebox--pending" aria-label="日時未確定">
+          <span class="customer-upcoming-datebox__icon" aria-hidden="true">📅</span>
+          <span class="customer-upcoming-datebox__pending-label">調整中</span>
+        </aside>`;
     }
 
     const serviceLabel = escapeHtml(booking.serviceType || 'サービス');
-    const workerName = booking.worker ? escapeHtml(booking.worker.name) : '';
-    const rating =
-      booking.worker && booking.worker.rating != null
-        ? booking.worker.rating.toFixed(1)
+    const worker = booking.worker;
+    const workerName = worker ? escapeHtml(worker.name || '') : '';
+    const ratingNum =
+      worker && worker.rating != null && !Number.isNaN(Number(worker.rating))
+        ? Number(worker.rating).toFixed(1)
         : '';
+    const starsHtml = ratingNum ? ratingStarsHtml(worker.rating) : '';
+    const avatarLetter = escapeHtml(workerInitial(worker ? worker.name : ''));
+    const avatarImg =
+      worker && worker.profileImageUrl
+        ? `<img class="customer-upcoming-avatar__img" src="${escapeHtml(worker.profileImageUrl)}" alt="" width="40" height="40" loading="lazy" />`
+        : `<span class="customer-upcoming-avatar__fallback" aria-hidden="true">${avatarLetter}</span>`;
 
-    item.innerHTML = `
-      <span class="timeline-dot" aria-hidden="true"></span>
-      <div class="timeline-card" role="group" aria-label="${escapeHtml(dateStr)}の${serviceLabel}">
-        <div class="timeline-header">
-          <span class="timeline-date">${escapeHtml(dateStr)}｜${escapeHtml(timeStr)}</span>
-          <span class="timeline-status ${statusToClass[booking.status] || ''}">${escapeHtml(statusText)}</span>
-        </div>
-        <div class="timeline-body">
-          <h3>${serviceLabel}</h3>
-          <div class="timeline-meta">
-            ${workerName ? `<span class="timeline-worker">👤 ${workerName}さん</span>` : ''}
-            ${rating ? `<span class="timeline-rating">⭐ ${rating}</span>` : ''}
+    const addressShort = booking.address ? shortenAddressForCard(booking.address) : '';
+    const addressHtml = addressShort
+      ? `<p class="customer-upcoming-card__address" title="${escapeHtml(booking.address)}">📍 ${escapeHtml(addressShort)}</p>`
+      : '';
+
+    const workerRow =
+      workerName || starsHtml
+        ? `<div class="customer-upcoming-worker">
+            <div class="customer-upcoming-avatar">${avatarImg}</div>
+            <div class="customer-upcoming-worker__text">
+              <div class="customer-upcoming-worker__name-row">
+                <span class="customer-upcoming-worker__name">${workerName ? `${workerName}さん` : 'ワーカー未定'}</span>
+                ${
+                  ratingNum
+                    ? `<span class="customer-upcoming-worker__rating-wrap">${starsHtml}<span class="customer-upcoming-rating-num">${ratingNum}</span></span>`
+                    : ''
+                }
+              </div>
+            </div>
+          </div>`
+        : `<div class="customer-upcoming-worker">
+            <div class="customer-upcoming-avatar"><span class="customer-upcoming-avatar__fallback" aria-hidden="true">?</span></div>
+            <div class="customer-upcoming-worker__text"><span class="customer-upcoming-worker__name">ワーカー未定</span></div>
+          </div>`;
+
+    const badgeClass = statusBadgeClass[booking.status] || 'customer-upcoming-badge--confirmed';
+
+    const card = document.createElement('article');
+    card.className = 'customer-upcoming-card';
+    card.setAttribute('role', 'group');
+    const ariaSvc = String(booking.serviceType || '予約').replace(/["<>]/g, '');
+    card.setAttribute(
+      'aria-label',
+      `${hasValidStart ? `${startDate.getMonth() + 1}月${startDate.getDate()}日` : '日時調整中'}の${ariaSvc}`
+    );
+    card.innerHTML = `
+      <span class="customer-upcoming-badge ${badgeClass}">${escapeHtml(statusText)}</span>
+      <div class="customer-upcoming-card__inner">
+        ${dateboxHtml}
+        <div class="customer-upcoming-card__main">
+          <h3 class="customer-upcoming-card__title">${serviceLabel}</h3>
+          <p class="customer-upcoming-card__time">${escapeHtml(timeLine)}</p>
+          ${workerRow}
+          ${addressHtml}
+          <div class="customer-upcoming-card__actions">
+            <a href="booking-detail.html?id=${escapeHtml(booking.id)}" class="btn btn--outline btn-small customer-upcoming-card__btn">詳細を見る</a>
           </div>
-          ${booking.address ? `<p class="timeline-address">📍 ${escapeHtml(booking.address)}</p>` : ''}
-        </div>
-        <div class="timeline-actions">
-          <a href="booking-detail.html?id=${escapeHtml(booking.id)}" class="btn btn--outline">詳細を見る</a>
         </div>
       </div>
     `;
-
-    timelineList.appendChild(item);
+    track.appendChild(card);
   });
 }
 
@@ -458,16 +535,14 @@ window.logout = function () {
       </div>
     </section>
 
-    <!-- 今後の予約 -->
-    <section class="upcoming-bookings section-block">
+    <!-- 今後の予約（横スクロールのモダンカード） -->
+    <section class="upcoming-bookings section-block customer-dashboard-upcoming" aria-labelledby="upcoming-bookings-title">
       <div class="section-header">
-        <h2 class="section-title">今後の予約</h2>
+        <h2 class="section-title" id="upcoming-bookings-title">今後の予約</h2>
         <a href="bookings.html" class="link-more">すべて見る →</a>
       </div>
-      <div class="timeline">
-        <div class="timeline-list">
-          <!-- タイムライン項目はJavaScriptで動的に生成されます -->
-        </div>
+      <div class="customer-upcoming-scroll" role="region" aria-label="今後の予約一覧">
+        <div class="customer-upcoming-track" id="dashboardUpcomingBookings"></div>
       </div>
     </section>
 

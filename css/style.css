@@ -8087,3 +8087,280 @@ a.btn-icon {
     align-self: flex-end;
   }
 }
+
+/* ===== 依頼者ダッシュボード「今後の予約」モダンカード ===== */
+.customer-dashboard-upcoming .customer-upcoming-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 calc(-1 * var(--space-4));
+  padding: 4px var(--space-4) 12px;
+  scroll-snap-type: x proximity;
+}
+
+@media (min-width: 768px) {
+  .customer-dashboard-upcoming .customer-upcoming-scroll {
+    margin: 0;
+    padding: 4px 0 12px;
+  }
+}
+
+.customer-upcoming-track {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.customer-upcoming-empty {
+  flex: 1 1 100%;
+  text-align: center;
+  padding: var(--space-5);
+}
+
+.customer-upcoming-card {
+  position: relative;
+  flex: 0 0 min(300px, 86vw);
+  scroll-snap-align: start;
+  background: #fff;
+  border: 1px solid #e8eaed;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition:
+    box-shadow 0.22s ease,
+    transform 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.customer-upcoming-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+  border-color: #dce3ec;
+}
+
+.customer-upcoming-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  line-height: 1.2;
+  max-width: calc(100% - 88px);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.customer-upcoming-badge--confirmed {
+  background: #e8f4fc;
+  color: #1565a8;
+  border: 1px solid #c5dff3;
+}
+
+.customer-upcoming-badge--progress {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.customer-upcoming-badge--done {
+  background: #f1f8e9;
+  color: #558b2f;
+  border: 1px solid #dcedc8;
+}
+
+.customer-upcoming-badge--cancelled {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+.customer-upcoming-card__inner {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 14px;
+  padding: 14px 12px 14px 14px;
+  min-height: 148px;
+}
+
+.customer-upcoming-datebox {
+  flex-shrink: 0;
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #bbf7d0;
+  color: #065f46;
+  padding: 8px 4px;
+}
+
+.customer-upcoming-datebox__day {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.customer-upcoming-datebox__dow {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
+.customer-upcoming-datebox__month {
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 2px;
+  opacity: 0.75;
+}
+
+.customer-upcoming-datebox--pending {
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fde68a;
+  color: #92400e;
+  gap: 4px;
+}
+
+.customer-upcoming-datebox__icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.customer-upcoming-datebox__pending-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.customer-upcoming-card__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+  padding-top: 2px;
+}
+
+.customer-upcoming-card__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.35;
+  padding-right: 72px;
+}
+
+.customer-upcoming-card__time {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.customer-upcoming-worker {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.customer-upcoming-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.customer-upcoming-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.customer-upcoming-avatar__fallback {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.customer-upcoming-worker__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.customer-upcoming-worker__name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.customer-upcoming-worker__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.customer-upcoming-worker__rating-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.customer-upcoming-stars {
+  font-size: 12px;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: #fbbf24;
+  user-select: none;
+}
+
+.customer-upcoming-rating-num {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.customer-upcoming-card__address {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.customer-upcoming-card__actions {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.customer-upcoming-card__btn {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
