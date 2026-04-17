@@ -18,6 +18,8 @@ kajishift-frontend/
 │   ├── HANDOVER.md
 │   ├── IMPLEMENTATION_STATUS.md
 │   ├── INTEGRATION_STATUS.md
+│   ├── dfd-kajishift.md          # DFD（Mermaid・デマルコ式）
+│   ├── TASKS_REALTIME_PRODUCTION.md  # 本番リアルタイムUIギャップ・優先度
 │   └── ...
 ├── tests/                        # テストチェックリスト
 │   ├── admin/
@@ -339,6 +341,13 @@ kajishift-frontend/
 
 ---
 
+## 📅 更新履歴（2026年4月8日）
+
+- ✅ `worker/calendar.html` … カレンダー表示日のタイムゾーン修正（`formatLocalYMD`、API 月範囲もローカル日付で指定）
+- ✅ `docs/dfd-kajishift.md` … フロントエンド全体のデータフロー図（レベル0〜2、運営向け要約、実装対応）
+- ✅ `docs/TASKS_REALTIME_PRODUCTION.md` … 本番リアルタイム表示の未対応箇所と優先度（バックエンド Socket 前提）
+- ✅ `.gitignore` … `.vercel` を除外
+
 ## 📅 更新履歴（2026年3月27日）
 
 - ✅ `worker/dashboard.html` の安定化対応
@@ -354,5 +363,5 @@ kajishift-frontend/
 - ✅ 「新しい仕事の依頼」の取得条件を調整
   - 一時的に `CREATED,PENDING` を試験した後、バックエンド `BookingStatus` 非対応により `PENDING` のみに戻して 500 エラーを解消
 
-**最終更新**: 2026年3月27日
+**最終更新**: 2026年4月8日
 **作成者**: AI Assistant (Cursor)

@@ -1,8 +1,13 @@
 # フロントエンド・バックエンド連携状況
 
-最終更新日: 2026年3月23日（最新）
+最終更新日: 2026年4月8日（最新）
 
 ## 📋 更新履歴
+
+- **2026年4月8日**: カレンダーAPI連携の日付整合、設計ドキュメント・本番タスク整理
+  - ✅ `worker/calendar.html` … 予約取得の `startDate` / `endDate` とグリッドの `data-date` を**ローカル暦日**で統一（UTC ずれによる誤マッピングを解消）。詳細は `README.md` / `IMPLEMENTATION_STATUS.md` の同日記載
+  - ✅ `docs/dfd-kajishift.md` … フロント〜バックエンド間のデータフロー（DFD）を Mermaid で整理
+  - ✅ `docs/TASKS_REALTIME_PRODUCTION.md` … Socket.IO・未読通知・管理画面の**リアルタイムギャップ**と優先度。本番ではバックエンド `CORS_ORIGIN` に Vercel オリジンを含める必要あり（**最優先**タスクとして同文書に記載）
 
 - **2026年3月23日**: バックエンドをRenderからRailwayへ移行、フロントエンド接続先URLを更新
   - ✅ APIベースURLをRailwayへ変更（`https://kajishift-backend-production.up.railway.app/api`）

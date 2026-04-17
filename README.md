@@ -17,6 +17,8 @@ kajishift-frontend/
 │   ├── IMPLEMENTATION_STATUS.md
 │   ├── INTEGRATION_STATUS.md
 │   ├── INTEGRATION_COMPLETE.md
+│   ├── dfd-kajishift.md              # DFD（データフロー図・Mermaid）
+│   ├── TASKS_REALTIME_PRODUCTION.md  # 本番リアルタイム表示のギャップタスク
 │   ├── README_START.md
 │   └── README_SERVER.md
 ├── tests/              # テストチェックリスト
@@ -78,6 +80,8 @@ npx --yes http-server -p 5500
 - **[サーバー起動方法](docs/README_SERVER.md)** - サーバー起動の詳細手順
 - **[デプロイ前チェックリスト](docs/DEPLOYMENT_CHECKLIST.md)** - Webデプロイ前の確認・修正項目
 - **[Vercelデプロイ手順](docs/VERCEL_DEPLOY.md)** - Vercelへのデプロイ手順
+- **[データフロー図（DFD）](docs/dfd-kajishift.md)** - デマルコ式・Mermaid（レベル0〜2、運営向け説明用）
+- **[本番リアルタイム表示タスク](docs/TASKS_REALTIME_PRODUCTION.md)** - Socket/未読/UI のギャップと優先度（最優先〜低）
 
 ### テストチェックリスト
 
@@ -168,7 +172,19 @@ window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app'
 
 ---
 
-**最終更新**: 2026年3月
+**最終更新**: 2026年4月
+
+### 2026年4月8日の更新内容
+
+- ✅ **ワーカー カレンダー**（`worker/calendar.html`）の日付ずれ修正
+  - UTC の ISO 日付と `toISOString().split('T')[0]` によるズレを解消
+  - `formatLocalYMD()` でブラウザローカル暦日の `YYYY-MM-DD` に統一（セルの `data-date`・予約照合・API の月範囲 `startDate` / `endDate`）
+  - `scheduledDate` が無い場合のフォールバックとして `booking.date` を参照
+- ✅ **ドキュメント追加・再掲**
+  - `docs/dfd-kajishift.md` … フロントエンド DFD（コンテキスト〜レベル2、運営管理者向け要約図、実装対応表）
+  - `docs/TASKS_REALTIME_PRODUCTION.md` … 本番のリアルタイム表示ギャップと優先度（バックエンド Socket 前提の整理）
+- ✅ **リポジトリ運用**
+  - `.gitignore` に `.vercel` を追加（Vercel CLI リンク情報のコミット防止）
 
 ### 2026年3月の更新内容
 

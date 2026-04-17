@@ -48,15 +48,26 @@
       </div>
     </section>
 
-    <!-- 月表示カレンダー -->
+    <!-- 月／週／日表示 -->
     <section class="calendar-month-view section-block card-standard">
-      <div class="calendar-grid" id="calendarGrid">
-        <div class="loading-message">カレンダーを読み込み中...</div>
+      <div id="calendarPanelMonth" class="calendar-view-panel">
+        <div class="calendar-grid" id="calendarGrid">
+          <div class="loading-message">カレンダーを読み込み中...</div>
+        </div>
+      </div>
+      <div id="calendarPanelWeek" class="calendar-view-panel is-hidden">
+        <p class="week-view-hint">各マス（30分単位）をクリックすると、その時間帯の「利用不可」を切り替えられます。予約が入っている時間は変更できません。</p>
+        <div class="week-view-scroll">
+          <div id="weekViewContainer"></div>
+        </div>
+      </div>
+      <div id="calendarPanelDay" class="calendar-view-panel is-hidden">
+        <div id="dayViewContainer"></div>
       </div>
     </section>
 
     <!-- 今週の予定 -->
-    <section class="weekly-schedule section-block card-standard">
+    <section class="weekly-schedule section-block card-standard" id="weeklyScheduleSection">
       <h2 class="section-title">今週の予定</h2>
       <div class="schedule-list" id="scheduleList">
         <div class="loading-message">予定を読み込み中...</div>
@@ -104,14 +115,14 @@
 </footer>
 
 <script>
-// グローバル変数
+const UNAVAILABLE_STORAGE_KEY = 'kajishift_worker_calendar_unavailable_slots';
+const WEEK_BODY_PX = 960;
+const SLOTS_PER_DAY = 48;
+
 let currentDate = new Date();
 let bookings = [];
+let calendarView = 'month';
 
-/**
- * Date をブラウザのローカルタイムゾーンの暦日で YYYY-MM-DD に整形する。
- * toISOString() は UTC 基準のため、JST などではカレンダーセルと予約日がズレるのを防ぐ。
- */
 function formatLocalYMD(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -119,81 +130,237 @@ function formatLocalYMD(date) {
   return `${y}-${m}-${d}`;
 }
 
-// ページ読み込み時の処理
-document.addEventListener('DOMContentLoaded', async function() {
-  // 認証チェック
-  if (!checkAuth('worker')) {
+function parseLocalYMD(str) {
+  const [y, mo, d] = str.split('-').map(Number);
+  return new Date(y, mo - 1, d);
+}
+
+function getMonday(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = x.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  x.setDate(x.getDate() + diff);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function loadUnavailableKeys() {
+  try {
+    const raw = localStorage.getItem(UNAVAILABLE_STORAGE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveUnavailableKeys(keys) {
+  localStorage.setItem(UNAVAILABLE_STORAGE_KEY, JSON.stringify(keys));
+}
+
+function unavailableKey(dateStr, slot) {
+  return `${dateStr}|${slot}`;
+}
+
+function toggleUnavailableSlot(dateStr, slot) {
+  const key = unavailableKey(dateStr, slot);
+  const keys = loadUnavailableKeys();
+  const i = keys.indexOf(key);
+  if (i >= 0) keys.splice(i, 1);
+  else keys.push(key);
+  saveUnavailableKeys(keys);
+}
+
+function bookingDateStr(booking) {
+  const raw = booking.scheduledDate || booking.date;
+  if (!raw) return null;
+  return formatLocalYMD(new Date(raw));
+}
+
+function bookingToMinutes(booking) {
+  const st = booking.startTime || '00:00';
+  const parts = String(st).split(':');
+  const h = Number(parts[0]) || 0;
+  const mi = Number(parts[1]) || 0;
+  const durH = Number(booking.duration) || 0;
+  const startMin = h * 60 + mi;
+  let endMin = startMin + durH * 60;
+  const dayEnd = 24 * 60;
+  if (endMin > dayEnd) endMin = dayEnd;
+  return { startMin, endMin };
+}
+
+function slotRangeForIndex(slot) {
+  const startMin = slot * 30;
+  return { startMin, endMin: startMin + 30 };
+}
+
+function slotOverlapsBooking(slot, booking) {
+  const { startMin: s0, endMin: e0 } = slotRangeForIndex(slot);
+  const { startMin: s1, endMin: e1 } = bookingToMinutes(booking);
+  return s1 < e0 && e1 > s0;
+}
+
+function bookingsForDate(dateStr) {
+  return bookings.filter((b) => bookingDateStr(b) === dateStr);
+}
+
+function getFetchRange() {
+  if (calendarView === 'month') {
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
+    const firstDay = new Date(y, m, 1);
+    const lastDay = new Date(y, m + 1, 0);
+    return { startDate: formatLocalYMD(firstDay), endDate: formatLocalYMD(lastDay) };
+  }
+  if (calendarView === 'week') {
+    const mon = getMonday(currentDate);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return { startDate: formatLocalYMD(mon), endDate: formatLocalYMD(sun) };
+  }
+  const d = formatLocalYMD(currentDate);
+  return { startDate: d, endDate: d };
+}
+
+function updateTitle() {
+  const el = document.getElementById('calendarTitle');
+  if (calendarView === 'month') {
+    el.textContent = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月`;
     return;
   }
+  if (calendarView === 'week') {
+    const mon = getMonday(currentDate);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    el.textContent = `${mon.getFullYear()}年 ${mon.getMonth() + 1}/${mon.getDate()}〜${sun.getMonth() + 1}/${sun.getDate()}（月〜日）`;
+    return;
+  }
+  const w = ['日', '月', '火', '水', '木', '金', '土'][currentDate.getDay()];
+  el.textContent = `${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月${currentDate.getDate()}日（${w}）`;
+}
 
-  // カレンダーコントロールのイベントリスナー
+function setViewToggleActive() {
+  document.getElementById('viewMonth').classList.toggle('active', calendarView === 'month');
+  document.getElementById('viewWeek').classList.toggle('active', calendarView === 'week');
+  document.getElementById('viewDay').classList.toggle('active', calendarView === 'day');
+}
+
+function applyViewPanels() {
+  document.getElementById('calendarPanelMonth').classList.toggle('is-hidden', calendarView !== 'month');
+  document.getElementById('calendarPanelWeek').classList.toggle('is-hidden', calendarView !== 'week');
+  document.getElementById('calendarPanelDay').classList.toggle('is-hidden', calendarView !== 'day');
+  const weeklySec = document.getElementById('weeklyScheduleSection');
+  if (weeklySec) weeklySec.classList.toggle('is-hidden', calendarView !== 'month');
+}
+
+function setCalendarView(view) {
+  calendarView = view;
+  setViewToggleActive();
+  applyViewPanels();
+}
+
+document.addEventListener('DOMContentLoaded', async function () {
+  if (!checkAuth('worker')) return;
+
   document.getElementById('prevMonth').addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() - 1);
-    loadCalendar();
-  });
-  
-  document.getElementById('nextMonth').addEventListener('click', () => {
-    currentDate.setMonth(currentDate.getMonth() + 1);
+    if (calendarView === 'month') currentDate.setMonth(currentDate.getMonth() - 1);
+    else if (calendarView === 'week') currentDate.setDate(currentDate.getDate() - 7);
+    else currentDate.setDate(currentDate.getDate() - 1);
     loadCalendar();
   });
 
-  // 初期データ読み込み
+  document.getElementById('nextMonth').addEventListener('click', () => {
+    if (calendarView === 'month') currentDate.setMonth(currentDate.getMonth() + 1);
+    else if (calendarView === 'week') currentDate.setDate(currentDate.getDate() + 7);
+    else currentDate.setDate(currentDate.getDate() + 1);
+    loadCalendar();
+  });
+
+  document.getElementById('viewMonth').addEventListener('click', () => {
+    setCalendarView('month');
+    loadCalendar();
+  });
+  document.getElementById('viewWeek').addEventListener('click', () => {
+    setCalendarView('week');
+    loadCalendar();
+  });
+  document.getElementById('viewDay').addEventListener('click', () => {
+    setCalendarView('day');
+    loadCalendar();
+  });
+
+  document.getElementById('calendarPanelMonth').addEventListener('click', (e) => {
+    const job = e.target.closest('.calendar-job');
+    if (job) return;
+    const cell = e.target.closest('.calendar-day[data-date]');
+    if (!cell || cell.classList.contains('empty')) return;
+    const ds = cell.getAttribute('data-date');
+    if (!ds) return;
+    currentDate = parseLocalYMD(ds);
+    setCalendarView('day');
+    loadCalendar();
+  });
+
+  document.getElementById('calendarPanelWeek').addEventListener('click', (e) => {
+    const slotEl = e.target.closest('.week-slot[data-slot]');
+    if (!slotEl || slotEl.classList.contains('is-booking')) return;
+    const dateStr = slotEl.getAttribute('data-date');
+    const slot = Number(slotEl.getAttribute('data-slot'));
+    if (!dateStr || Number.isNaN(slot)) return;
+    toggleUnavailableSlot(dateStr, slot);
+    renderWeekView();
+  });
+
+  setViewToggleActive();
+  applyViewPanels();
   await loadCalendar();
 });
 
-// カレンダーを読み込む
 async function loadCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  const range = getFetchRange();
+  updateTitle();
+
   try {
-    // 月の最初と最後の日を計算
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    
-    // カレンダータイトルを更新
-    document.getElementById('calendarTitle').textContent = `${year}年${month + 1}月`;
-
-    // APIパラメータを構築
     const params = {
-      status: 'CONFIRMED,IN_PROGRESS', // 確定済みと進行中の予約
-      startDate: formatLocalYMD(firstDay),
-      endDate: formatLocalYMD(lastDay),
-      limit: 100 // 月の予約をすべて取得
+      status: 'CONFIRMED,IN_PROGRESS',
+      startDate: range.startDate,
+      endDate: range.endDate,
+      limit: 200,
     };
-
-    // API呼び出し
     const response = await api.getBookings(params);
-    
+
     if (response.data && response.data.bookings) {
       bookings = response.data.bookings;
-      
-      // カレンダーを表示
-      displayCalendar(year, month, bookings);
-      
-      // 今週の予定を表示
-      displayWeeklySchedule(bookings);
+      renderCurrentCalendar();
+      if (calendarView === 'month') displayWeeklySchedule(bookings);
     } else {
       throw new Error('予期しないレスポンス形式');
     }
   } catch (error) {
     console.error('カレンダーの読み込みエラー:', error);
-    const container = document.getElementById('calendarGrid');
-    container.innerHTML = `<div class="error-message">カレンダーの読み込みに失敗しました: ${error.message || 'エラーが発生しました'}</div>`;
+    grid.innerHTML = `<div class="error-message">カレンダーの読み込みに失敗しました: ${error.message || 'エラーが発生しました'}</div>`;
   }
 }
 
-// カレンダーを表示
-function displayCalendar(year, month, bookings) {
+function renderCurrentCalendar() {
+  if (calendarView === 'month') {
+    displayCalendar(currentDate.getFullYear(), currentDate.getMonth(), bookings);
+  } else if (calendarView === 'week') {
+    renderWeekView();
+  } else {
+    renderDayView();
+  }
+}
+
+function displayCalendar(year, month, list) {
   const container = document.getElementById('calendarGrid');
-  
-  // 月の最初の日の曜日を取得（0=日曜日）
   const firstDay = new Date(year, month, 1);
   const firstDayOfWeek = firstDay.getDay();
-  
-  // 月の日数を取得
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
-  // カレンダーHTMLを生成
+
   let html = `
     <div class="calendar-weekday">日</div>
     <div class="calendar-weekday">月</div>
@@ -203,102 +370,222 @@ function displayCalendar(year, month, bookings) {
     <div class="calendar-weekday">金</div>
     <div class="calendar-weekday">土</div>
   `;
-  
-  // 空のセルを追加（月の最初の日までの空白）
+
   for (let i = 0; i < firstDayOfWeek; i++) {
     html += '<div class="calendar-day empty"></div>';
   }
-  
-  // 日付セルを生成
+
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
     const dateStr = formatLocalYMD(date);
-    
-    // その日の予約を取得（scheduledDate は ISO 文字列想定。ローカル暦日でセルと照合）
-    const dayBookings = bookings.filter(booking => {
-      const raw = booking.scheduledDate || booking.date;
-      if (!raw) return false;
-      return formatLocalYMD(new Date(raw)) === dateStr;
-    });
-    
+    const dayBookings = list.filter((booking) => bookingDateStr(booking) === dateStr);
     const hasJob = dayBookings.length > 0;
     const dayClass = hasJob ? 'calendar-day has-job' : 'calendar-day';
-    
+
     html += `<div class="${dayClass}" data-date="${dateStr}">`;
     html += `<div class="day-number">${day}</div>`;
-    
+
     if (hasJob) {
-      dayBookings.forEach(booking => {
+      dayBookings.forEach((booking) => {
         const startTime = booking.startTime || '00:00';
         const duration = booking.duration || 0;
         const [hours, minutes] = startTime.split(':').map(Number);
         const endTime = new Date(date);
-        endTime.setHours(hours + duration, minutes, 0, 0);
+        endTime.setHours(hours + duration, minutes || 0, 0, 0);
         const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-        
         html += `<div class="calendar-job" onclick="window.location.href='job-detail.html?id=${booking.id}'">${startTime}-${endTimeStr}<br>${booking.serviceType || '-'}</div>`;
       });
     }
-    
     html += '</div>';
   }
-  
   container.innerHTML = html;
 }
 
-// 今週の予定を表示
-function displayWeeklySchedule(bookings) {
+function renderWeekView() {
+  const container = document.getElementById('weekViewContainer');
+  const mon = getMonday(currentDate);
+  const weekdayLabels = ['月', '火', '水', '木', '金', '土', '日'];
+  const keys = loadUnavailableKeys();
+
+  let rail = '<div class="week-time-rail">';
+  for (let slot = 0; slot < SLOTS_PER_DAY; slot++) {
+    const isHour = slot % 2 === 0;
+    const h = Math.floor(slot / 2);
+    const label = isHour ? `${h}` : '';
+    rail += `<div class="week-time-cell${isHour ? ' is-hour' : ''}">${label}</div>`;
+  }
+  rail += '</div>';
+
+  let cols = '<div class="week-columns">';
+  for (let i = 0; i < 7; i++) {
+    const colDate = new Date(mon);
+    colDate.setDate(mon.getDate() + i);
+    const dateStr = formatLocalYMD(colDate);
+    const dayList = bookingsForDate(dateStr);
+
+    cols += '<div class="week-col">';
+    cols += `<div class="week-col-head">${weekdayLabels[i]}<small>${colDate.getMonth() + 1}/${colDate.getDate()}</small></div>`;
+    cols += '<div class="week-col-body">';
+
+    cols += '<div class="week-slots-col">';
+    for (let slot = 0; slot < SLOTS_PER_DAY; slot++) {
+      const blocked = keys.includes(unavailableKey(dateStr, slot));
+      const hasBooking = dayList.some((b) => slotOverlapsBooking(slot, b));
+      let cls = 'week-slot';
+      if (blocked) cls += ' is-blocked';
+      if (hasBooking) cls += ' is-booking';
+      cols += `<div class="${cls}" data-date="${dateStr}" data-slot="${slot}" title="${hasBooking ? '予約あり（クリック不可）' : 'クリックで利用不可を切替'}"></div>`;
+    }
+    cols += '</div>';
+
+    cols += '<div class="week-bookings-overlay">';
+    dayList.forEach((booking) => {
+      const { startMin, endMin } = bookingToMinutes(booking);
+      const top = (startMin / (24 * 60)) * WEEK_BODY_PX;
+      const h = Math.max(((endMin - startMin) / (24 * 60)) * WEEK_BODY_PX, 18);
+      const st = booking.startTime || '00:00';
+      const raw = booking.scheduledDate || booking.date;
+      const d = raw ? new Date(raw) : colDate;
+      const [hours, minutes] = st.split(':').map(Number);
+      const endDt = new Date(d);
+      endDt.setHours((hours || 0) + (Number(booking.duration) || 0), minutes || 0, 0, 0);
+      const endStr = endDt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      const label = escapeHtml(booking.serviceType || '予約');
+      cols += `<a class="week-booking-block" style="top:${top}px;height:${h}px" href="job-detail.html?id=${booking.id}" title="${label}">${escapeHtml(st)}〜${escapeHtml(endStr)} ${label}</a>`;
+    });
+    cols += '</div>';
+
+    cols += '</div></div>';
+  }
+  cols += '</div>';
+
+  container.innerHTML = `<div class="week-view-table">${rail}${cols}</div>`;
+}
+
+function renderDayView() {
+  const container = document.getElementById('dayViewContainer');
+  const dateStr = formatLocalYMD(currentDate);
+  const dayList = bookingsForDate(dateStr).sort((a, b) => bookingToMinutes(a).startMin - bookingToMinutes(b).startMin);
+
+  const statusMap = {
+    CONFIRMED: { text: '確定', class: 'confirmed' },
+    IN_PROGRESS: { text: '進行中', class: 'in-progress' },
+    COMPLETED: { text: '完了', class: 'completed' },
+  };
+
+  let hoursHtml = '<div class="day-view-hours">';
+  for (let h = 0; h < 24; h++) {
+    hoursHtml += '<div class="day-view-hour-row">';
+    hoursHtml += `<div class="day-view-hour-label">${h}:00</div>`;
+    hoursHtml += '<div class="day-view-hour-body"></div>';
+    hoursHtml += '</div>';
+  }
+  hoursHtml += '</div>';
+
+  const layerHeight = 24 * 56;
+  let bookingsHtml = `<div class="day-view-bookings-layer" style="height:${layerHeight}px">`;
+
+  dayList.forEach((booking) => {
+    const { startMin, endMin } = bookingToMinutes(booking);
+    const top = (startMin / (24 * 60)) * layerHeight;
+    const h = Math.max(((endMin - startMin) / (24 * 60)) * layerHeight, 44);
+    const st = booking.startTime || '00:00';
+    const raw = booking.scheduledDate || booking.date;
+    const d = raw ? new Date(raw) : currentDate;
+    const parts = st.split(':').map(Number);
+    const endDt = new Date(d);
+    endDt.setHours((parts[0] || 0) + (Number(booking.duration) || 0), parts[1] || 0, 0, 0);
+    const endStr = endDt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    const status = statusMap[booking.status] || { text: booking.status || '-', class: 'pending' };
+    const addr = booking.address || '-';
+    const cust = booking.customerName || booking.clientName || booking.userName || '';
+    const custLine = cust ? `<div class="day-booking-meta">依頼者: ${escapeHtml(cust)}</div>` : '';
+    const svc = escapeHtml(booking.serviceType || 'サービス');
+    bookingsHtml += `
+      <div class="day-booking-card" style="top:${top}px;height:${h}px">
+        <div class="day-booking-time">${escapeHtml(st)} 〜 ${escapeHtml(endStr)}</div>
+        <div><a href="job-detail.html?id=${booking.id}">${svc}</a></div>
+        <div class="day-booking-meta">${escapeHtml(addr)}</div>
+        ${custLine}
+        <div class="schedule-status" style="margin-top:6px"><span class="status-badge ${status.class}">${escapeHtml(status.text)}</span></div>
+      </div>`;
+  });
+  bookingsHtml += '</div>';
+
+  const now = new Date();
+  const isToday = formatLocalYMD(now) === dateStr;
+  let nowLine = '';
+  if (isToday) {
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const y = (mins / (24 * 60)) * layerHeight;
+    nowLine = `<div class="day-view-now-line" style="top:${y}px" aria-hidden="true"></div>`;
+  }
+
+  container.innerHTML = `
+    <div class="day-view-timeline" style="position:relative">
+      ${hoursHtml}
+      ${nowLine}
+      ${bookingsHtml}
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function displayWeeklySchedule(list) {
   const container = document.getElementById('scheduleList');
-  
-  // 今週の開始日と終了日を計算
   const today = new Date();
   const dayOfWeek = today.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOfWeek);
+  startOfWeek.setDate(today.getDate() + mondayOffset);
   startOfWeek.setHours(0, 0, 0, 0);
-  
+
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
   endOfWeek.setHours(23, 59, 59, 999);
-  
-  // 今週の予約をフィルター
-  const weeklyBookings = bookings.filter(booking => {
-    const bookingDate = new Date(booking.scheduledDate);
-    return bookingDate >= startOfWeek && bookingDate <= endOfWeek;
-  }).sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
-  
+
+  const weeklyBookings = list
+    .filter((booking) => {
+      const raw = booking.scheduledDate || booking.date;
+      if (!raw) return false;
+      const bookingDate = new Date(raw);
+      return bookingDate >= startOfWeek && bookingDate <= endOfWeek;
+    })
+    .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+
   if (weeklyBookings.length === 0) {
     container.innerHTML = '<div class="empty-message">今週の予定はありません</div>';
     return;
   }
-  
-  container.innerHTML = weeklyBookings.map(booking => {
-    const scheduledDate = new Date(booking.scheduledDate);
-    const startTime = booking.startTime || '00:00';
-    const duration = booking.duration || 0;
-    
-    // 終了時間を計算
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const endTime = new Date(scheduledDate);
-    endTime.setHours(hours + duration, minutes, 0, 0);
-    const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-    
-    const day = scheduledDate.getDate();
-    const weekday = scheduledDate.toLocaleDateString('ja-JP', { weekday: 'short' });
-    
-    // ステータスバッジ
-    const statusMap = {
-      'CONFIRMED': { text: '確定', class: 'confirmed' },
-      'IN_PROGRESS': { text: '進行中', class: 'in-progress' },
-      'COMPLETED': { text: '完了', class: 'completed' }
-    };
-    const status = statusMap[booking.status] || { text: booking.status, class: 'pending' };
-    
-    // 住所から市区町村を抽出
-    const addressParts = booking.address ? booking.address.split(/[市区町村]/) : [];
-    const location = addressParts.length > 0 ? addressParts[0] + (addressParts[1] ? '市' : '') : booking.address || '-';
 
-    return `
+  container.innerHTML = weeklyBookings
+    .map((booking) => {
+      const scheduledDate = new Date(booking.scheduledDate || booking.date);
+      const startTime = booking.startTime || '00:00';
+      const duration = booking.duration || 0;
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const endTime = new Date(scheduledDate);
+      endTime.setHours(hours + duration, minutes || 0, 0, 0);
+      const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      const day = scheduledDate.getDate();
+      const weekday = scheduledDate.toLocaleDateString('ja-JP', { weekday: 'short' });
+      const statusMap = {
+        CONFIRMED: { text: '確定', class: 'confirmed' },
+        IN_PROGRESS: { text: '進行中', class: 'in-progress' },
+        COMPLETED: { text: '完了', class: 'completed' },
+      };
+      const status = statusMap[booking.status] || { text: booking.status, class: 'pending' };
+      const addressParts = booking.address ? booking.address.split(/[市区町村]/) : [];
+      const location = addressParts.length > 0 ? addressParts[0] + (addressParts[1] ? '市' : '') : booking.address || '-';
+
+      return `
       <div class="schedule-item">
         <div class="schedule-date">
           <div class="date-day">${day}</div>
@@ -315,9 +602,9 @@ function displayWeeklySchedule(bookings) {
         <div class="schedule-actions">
           <a href="job-detail.html?id=${booking.id}" class="btn btn-small btn--outline btn-action">詳細</a>
         </div>
-      </div>
-    `;
-  }).join('');
+      </div>`;
+    })
+    .join('');
 }
 </script>
 

@@ -1002,3 +1002,14 @@
     - 当日分のみを時間昇順で描画し、ステータス別バッジ（confirmed/in-progress/completed）を確実に表示
     - 予定なし時は「本日の予定はありません」を表示
   - 新しい仕事の依頼の取得条件を一時的に `CREATED,PENDING` へ拡張後、Prismaの`BookingStatus`に`CREATED`が存在しないため500エラー回避の目的で `PENDING` のみに戻して安定化
+
+### 2026年4月8日の更新内容
+
+- ✅ **ワーカー カレンダー**（`worker/calendar.html`）
+  - 予約日が JST で 1 日ずれる問題を修正（`toISOString()` の UTC 日付とローカル暦日の不一致）
+  - `formatLocalYMD(date)` を導入し、`data-date`・予約フィルタ・月次 API パラメータ（`startDate` / `endDate`）をローカル `YYYY-MM-DD` で統一
+- ✅ **ドキュメント**
+  - `docs/dfd-kajishift.md` … KAJISHIFT フロントエンドのデータフロー図（デマルコ式・Mermaid）。レベル0〜1、1.3 / 1.5 / 1.6 / 1.7 のレベル2分解、顧客説明用（運営管理者）図、`api.js` との対応表
+  - `docs/TASKS_REALTIME_PRODUCTION.md` … 本番におけるリアルタイム表示のギャップ一覧。`kajishift-backend` の Socket／通知実装を踏まえた優先度（最優先・高・中・低）
+- ✅ **その他**
+  - `.gitignore` に `.vercel` を追加（CLI 連携時のローカル設定をリポジトリ外に保つ）
