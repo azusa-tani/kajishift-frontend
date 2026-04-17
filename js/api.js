@@ -280,6 +280,16 @@ class ApiClient {
   }
 
   /**
+   * パスワード変更（現在のパスワード検証あり）
+   */
+  async changePassword({ currentPassword, newPassword }) {
+    return this.request('/users/me/password', {
+      method: 'PUT',
+      body: { currentPassword, newPassword },
+    });
+  }
+
+  /**
    * ユーザー詳細を取得
    */
   async getUserById(userId) {

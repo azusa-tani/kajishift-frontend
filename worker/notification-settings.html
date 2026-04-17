@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>通知設定｜KAJISHIFT（ワーカー）</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/worker-notification-badge.js" defer></script>
+</head>
+<body class="worker-page">
+
+<header class="worker-header">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html" class="active">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
+        <span aria-hidden="true">🔔</span>
+      </a>
+      <a href="profile.html" class="avatar">👤</a>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main">
+  <div class="container">
+    <section class="page-header">
+      <h1>通知設定</h1>
+      <p class="text-muted">メール通知の有無を設定します（アプリ内の通知一覧は従来どおり利用できます）。</p>
+    </section>
+
+    <section class="section-block card-standard" style="max-width: 640px">
+      <div id="loadingState" class="loading-message">読み込み中...</div>
+      <form id="prefsForm" class="is-hidden">
+        <p class="text-muted" style="margin-bottom: 16px">メールで受け取る通知</p>
+        <div class="checkbox-grid">
+          <label class="checkbox-item">
+            <input type="checkbox" id="emailBookings" />
+            <span class="checkbox-label">予約・依頼関連</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="emailMessages" />
+            <span class="checkbox-label">メッセージ</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="emailSystem" />
+            <span class="checkbox-label">システム・運営からのお知らせ</span>
+          </label>
+        </div>
+        <p class="text-muted" style="margin-top: 20px; font-size: 0.9rem">
+          通知の一覧・既読管理は <a href="notifications.html">通知一覧</a> から行えます。
+        </p>
+        <div class="modal-actions" style="margin-top: 1.5rem">
+          <a href="profile.html" class="btn btn--outline btn-action">戻る</a>
+          <button type="submit" class="btn btn-primary btn-action" id="saveBtn">保存</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="../terms.html">利用規約</a>
+      <a href="../privacy.html">プライバシーポリシー</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+function defaultPrefs() {
+  return { v: 1, emailBookings: true, emailMessages: true, emailSystem: true };
+}
+
+document.addEventListener('DOMContentLoaded', async function () {
+  if (!checkAuth('worker')) return;
+
+  try {
+    const res = await api.getUserMe();
+    const user = res.data;
+    const p = user && user.notificationPrefs && typeof user.notificationPrefs === 'object'
+      ? { ...defaultPrefs(), ...user.notificationPrefs, v: 1 }
+      : defaultPrefs();
+
+    document.getElementById('emailBookings').checked = !!p.emailBookings;
+    document.getElementById('emailMessages').checked = !!p.emailMessages;
+    document.getElementById('emailSystem').checked = !!p.emailSystem;
+
+    document.getElementById('loadingState').classList.add('is-hidden');
+    document.getElementById('prefsForm').classList.remove('is-hidden');
+  } catch (e) {
+    document.getElementById('loadingState').textContent =
+      '設定の読み込みに失敗しました。しばらくしてから再度お試しください。';
+    showError(e.message || '読み込みに失敗しました');
+  }
+
+  document.getElementById('prefsForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const body = {
+      v: 1,
+      emailBookings: document.getElementById('emailBookings').checked,
+      emailMessages: document.getElementById('emailMessages').checked,
+      emailSystem: document.getElementById('emailSystem').checked,
+    };
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    try {
+      await api.updateUserMe({ notificationPrefs: body });
+      showSuccess('通知設定を保存しました');
+    } catch (err) {
+      showError(err.message || '保存に失敗しました');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+});
+</script>
+</body>
+</html>

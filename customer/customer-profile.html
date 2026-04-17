@@ -302,11 +302,9 @@ document.getElementById('changePasswordForm').addEventListener('submit', async (
   }
 
   try {
-    // 現在のパスワードを確認するために、まずログインを試みる
-    // 注意: 実際の実装では、専用のパスワード確認APIがあると良い
-    // ここでは簡易的に、パスワード変更APIを呼び出す
-    await api.updateUserMe({
-      password: newPassword
+    await api.changePassword({
+      currentPassword,
+      newPassword,
     });
 
     showSuccess('パスワードを変更しました');
