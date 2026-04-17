@@ -230,11 +230,11 @@
 <div class="modal" id="editServiceAreaModal">
   <div class="modal-content modal-content--wide card-standard">
     <h2>対応エリアを編集</h2>
-    <p class="text-muted" style="margin-bottom: 12px;">1行に1エリアを入力できます。詳細を分けたい場合は「市区町村 | 対応範囲」のように区切ってください。</p>
+    <p class="text-muted" style="margin-bottom: 12px">都道府県と市区町村をプルダウンで選びます。リストにない県は「市区町村名」を入力してください。複数エリアは行を追加できます。</p>
     <form id="editServiceAreaForm">
-      <div class="form-group">
-        <label for="editServiceAreaText">対応エリア</label>
-        <textarea class="form-input" id="editServiceAreaText" rows="10" placeholder="例：&#10;札幌市 | 中央区、南区、西区&#10;江別市 | 全域"></textarea>
+      <div id="serviceAreaRowsMount" class="service-area-rows-mount"></div>
+      <div class="form-group" style="margin-top: 8px">
+        <button type="button" class="btn btn--outline btn-small btn-action" onclick="addServiceAreaRowForProfile()">＋ エリアを追加</button>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn--outline btn-action" onclick="closeModal('editServiceAreaModal')">キャンセル</button>
@@ -248,12 +248,9 @@
 <div class="modal" id="editAvailabilityModal">
   <div class="modal-content modal-content--wide card-standard">
     <h2>利用可能時間を編集</h2>
-    <p class="text-muted" style="margin-bottom: 12px;">曜日ごとの目安を自由形式で入力できます（例：月曜日 13:00〜17:00）。</p>
+    <p class="text-muted" style="margin-bottom: 12px">曜日ごとに、受付可否と開始・終了時刻をプルダウンで選べます（30分刻み）。</p>
     <form id="editAvailabilityForm">
-      <div class="form-group">
-        <label for="editAvailabilityText">利用可能時間</label>
-        <textarea class="form-input" id="editAvailabilityText" rows="12" placeholder="例：&#10;月曜日 13:00 - 17:00&#10;火曜日 10:00 - 17:00"></textarea>
-      </div>
+      <div id="availabilityDaysMount" class="availability-days-mount"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn--outline btn-action" onclick="closeModal('editAvailabilityModal')">キャンセル</button>
         <button type="submit" class="btn btn-primary btn-action">保存</button>
@@ -298,6 +295,7 @@
   </div>
 </div>
 
+<script src="../js/worker-profile-area-time.js"></script>
 <script>
 // グローバル変数
 let currentUser = null;
@@ -413,45 +411,20 @@ function displayProfile(user) {
 
 function renderServiceAreaDisplay(user) {
   const el = document.getElementById('serviceAreaCard');
-  if (!el) return;
-  const text = (user.serviceAreaText || '').trim();
-  if (!text) {
-    el.innerHTML = '<div class="empty-message">未設定（「編集」から入力できます）</div>';
-    return;
-  }
-  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
-  el.innerHTML =
-    '<div class="area-list">' +
-    lines
-      .map((line) => {
-        const parts = line.split('|').map((x) => x.trim());
-        const name = parts[0] || line;
-        const detail = parts.slice(1).join(' | ') || '';
-        return (
-          '<div class="area-item">' +
-          '<span class="area-name">' +
-          escapeHtml(name) +
-          '</span>' +
-          (detail ? '<span class="area-detail">' + escapeHtml(detail) + '</span>' : '') +
-          '</div>'
-        );
-      })
-      .join('') +
-    '</div>';
+  if (!el || !window.WORKER_PROFILE_AREA_TIME) return;
+  window.WORKER_PROFILE_AREA_TIME.renderServiceAreaCard(el, user.serviceAreaText || '');
 }
 
 function renderAvailabilityDisplay(user) {
   const el = document.getElementById('availabilityCard');
-  if (!el) return;
-  const text = (user.availabilityText || '').trim();
-  if (!text) {
-    el.innerHTML = '<div class="empty-message">未設定（「編集」から入力できます）</div>';
-    return;
-  }
-  el.innerHTML =
-    '<div class="availability-table profile-availability-read"><pre class="profile-freeform-text">' +
-    escapeHtml(text) +
-    '</pre></div>';
+  if (!el || !window.WORKER_PROFILE_AREA_TIME) return;
+  window.WORKER_PROFILE_AREA_TIME.renderAvailabilityCard(el, user.availabilityText || '');
+}
+
+function addServiceAreaRowForProfile() {
+  const mount = document.getElementById('serviceAreaRowsMount');
+  if (!mount || !window.WORKER_PROFILE_AREA_TIME) return;
+  window.WORKER_PROFILE_AREA_TIME.addServiceAreaRow(mount);
 }
 
 function formatAccountTypeLabel(t) {
@@ -492,7 +465,12 @@ function editServiceAreas() {
     alert('ユーザー情報が読み込まれていません');
     return;
   }
-  document.getElementById('editServiceAreaText').value = currentUser.serviceAreaText || '';
+  if (!window.WORKER_PROFILE_AREA_TIME) {
+    alert('画面の初期化に失敗しました。再読み込みしてください。');
+    return;
+  }
+  const mount = document.getElementById('serviceAreaRowsMount');
+  window.WORKER_PROFILE_AREA_TIME.mountServiceAreaEditor(mount, currentUser.serviceAreaText || '');
   document.getElementById('editServiceAreaModal').classList.add('is-open');
 }
 
@@ -501,7 +479,12 @@ function editAvailability() {
     alert('ユーザー情報が読み込まれていません');
     return;
   }
-  document.getElementById('editAvailabilityText').value = currentUser.availabilityText || '';
+  if (!window.WORKER_PROFILE_AREA_TIME) {
+    alert('画面の初期化に失敗しました。再読み込みしてください。');
+    return;
+  }
+  const mount = document.getElementById('availabilityDaysMount');
+  window.WORKER_PROFILE_AREA_TIME.mountAvailabilityEditor(mount, currentUser.availabilityText || '');
   document.getElementById('editAvailabilityModal').classList.add('is-open');
 }
 
@@ -576,9 +559,12 @@ document.addEventListener('DOMContentLoaded', function() {
   if (editServiceAreaForm) {
     editServiceAreaForm.addEventListener('submit', async function (e) {
       e.preventDefault();
+      if (!window.WORKER_PROFILE_AREA_TIME) return;
+      const mount = document.getElementById('serviceAreaRowsMount');
+      const payload = window.WORKER_PROFILE_AREA_TIME.readServiceAreaFromMount(mount).trim() || null;
       try {
         await api.updateWorkerProfile({
-          serviceAreaText: document.getElementById('editServiceAreaText').value.trim() || null,
+          serviceAreaText: payload,
         });
         showSuccess('対応エリアを保存しました');
         closeModal('editServiceAreaModal');
@@ -594,9 +580,12 @@ document.addEventListener('DOMContentLoaded', function() {
   if (editAvailabilityForm) {
     editAvailabilityForm.addEventListener('submit', async function (e) {
       e.preventDefault();
+      if (!window.WORKER_PROFILE_AREA_TIME) return;
+      const mount = document.getElementById('availabilityDaysMount');
+      const payload = window.WORKER_PROFILE_AREA_TIME.readAvailabilityFromMount(mount).trim() || null;
       try {
         await api.updateWorkerProfile({
-          availabilityText: document.getElementById('editAvailabilityText').value.trim() || null,
+          availabilityText: payload,
         });
         showSuccess('利用可能時間を保存しました');
         closeModal('editAvailabilityModal');
