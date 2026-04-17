@@ -17,76 +17,125 @@
 </head>
 <body class="customer-page">
 <script>
+function escapeHtml(text) {
+  if (text == null) return '';
+  const div = document.createElement('div');
+  div.textContent = String(text);
+  return div.innerHTML;
+}
+
+function parseUnreadCount(response) {
+  if (response && response.data && typeof response.data.count === 'number') {
+    return response.data.count;
+  }
+  if (response && typeof response.count === 'number') {
+    return response.count;
+  }
+  return 0;
+}
+
+function formatNoticeTime(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'たった今';
+  if (mins < 60) return `${mins}分前`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}時間前`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}日前`;
+  return d.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+}
+
+function noticeIconForType(type) {
+  const map = {
+    MESSAGE: '💬',
+    BOOKING_UPDATE: '📋',
+    BOOKING_CREATED: '📅',
+    BOOKING_CANCELLED: '⚠️',
+    REVIEW: '⭐',
+    PAYMENT: '💳',
+    PAYMENT_FAILED: '❌',
+    SYSTEM: '📢',
+    WORKER_APPROVED: '✅',
+    WORKER_REJECTED: '📢',
+  };
+  return map[type] || '📢';
+}
+
+function noticeBadgeHtml(type, label) {
+  const cls =
+    type === 'SYSTEM' || type === 'PAYMENT_FAILED' || type === 'WORKER_REJECTED'
+      ? 'notice-badge notice-badge--important'
+      : 'notice-badge notice-badge--message';
+  return `<span class="${cls}">${escapeHtml(label)}</span>`;
+}
+
 // 認証チェック
 document.addEventListener('DOMContentLoaded', async function() {
   if (!checkAuth('customer')) {
-    return; // リダイレクトされる
+    return;
   }
 
-  // Socket.io接続を初期化
   const token = localStorage.getItem('token');
-  if (token) {
+  if (token && typeof socketManager !== 'undefined') {
     socketManager.connect(token);
-    
-    // 未読通知数更新イベント
     socketManager.onUnreadCount((count) => {
       updateNotificationBadge(count);
     });
-
-    // 通知受信イベント
-    socketManager.onNotification((notification) => {
-      // 通知が来たことをユーザーに知らせる（オプション）
-      console.log('新しい通知:', notification);
-      // 未読通知数を再取得
+    socketManager.onNotification(() => {
       updateUnreadCount();
+      loadDashboardNotifications();
     });
   }
-  
-  // ユーザー情報を取得して表示
+
   try {
     const userResponse = await api.getMe();
     if (userResponse.data) {
       const user = userResponse.data;
-      // ウェルカムメッセージを更新
       const welcomeTitle = document.querySelector('.welcome-section h1');
       if (welcomeTitle && user.name) {
         welcomeTitle.textContent = `おかえりなさい、${user.name}さん`;
       }
+      const welcomeSub = document.getElementById('welcomeSubtext');
+      if (welcomeSub) {
+        welcomeSub.textContent = '予約・決済・お知らせは下記から確認できます。';
+      }
     }
-    
-    // 予約一覧を取得
-    const bookingsResponse = await api.getBookings({ 
-      status: 'CONFIRMED,IN_PROGRESS',
-      limit: 3 
+
+    const bookingsResponse = await api.getBookings({
+      status: 'PENDING,CONFIRMED,IN_PROGRESS',
+      limit: 3,
     });
-    
-    if (bookingsResponse.data && bookingsResponse.data.length > 0) {
-      updateUpcomingBookings(bookingsResponse.data);
-    }
-    
-    // 未読通知数を取得
+    const bookings =
+      bookingsResponse.data?.bookings ||
+      (Array.isArray(bookingsResponse.data) ? bookingsResponse.data : []);
+    updateUpcomingBookings(bookings);
+
     await updateUnreadCount();
+    await loadRecentPayments();
+    await loadDashboardNotifications();
   } catch (error) {
     console.error('データ取得エラー:', error);
   }
 });
 
-// 未読通知数を更新
 async function updateUnreadCount() {
   try {
     const notificationResponse = await api.getUnreadNotificationCount();
-    updateNotificationBadge(notificationResponse.count);
+    updateNotificationBadge(parseUnreadCount(notificationResponse));
   } catch (error) {
     console.error('未読通知数取得エラー:', error);
   }
 }
 
-// 通知バッジを更新
 function updateNotificationBadge(count) {
+  const n = typeof count === 'number' && !Number.isNaN(count) ? count : 0;
   const notificationBadge = document.querySelector('.notification-badge');
   if (notificationBadge) {
-    if (count > 0) {
-      notificationBadge.textContent = count;
+    if (n > 0) {
+      notificationBadge.textContent = String(n);
       notificationBadge.classList.remove('is-hidden');
     } else {
       notificationBadge.classList.add('is-hidden');
@@ -94,75 +143,256 @@ function updateNotificationBadge(count) {
   }
 }
 
-// 予約一覧を更新
 function updateUpcomingBookings(bookings) {
   const timelineList = document.querySelector('.timeline-list');
   if (!timelineList) return;
 
   timelineList.innerHTML = '';
 
-  bookings.forEach(booking => {
+  if (!bookings || bookings.length === 0) {
+    timelineList.innerHTML = '<p class="no-data">今後の予約はありません</p>';
+    return;
+  }
+
+  const timeFormatter = new Intl.DateTimeFormat('ja-JP', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const dateFormatter = new Intl.DateTimeFormat('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  });
+
+  bookings.forEach((booking) => {
     const item = document.createElement('div');
     item.className = 'timeline-item';
 
     const statusToClass = {
-      'PENDING': 'confirmed', // 仮: UI的には「予約確定」に含める
-      'CONFIRMED': 'confirmed',
-      'IN_PROGRESS': 'in-progress',
-      'COMPLETED': 'completed',
-      'CANCELLED': 'cancelled'
+      PENDING: 'confirmed',
+      CONFIRMED: 'confirmed',
+      IN_PROGRESS: 'in-progress',
+      COMPLETED: 'completed',
+      CANCELLED: 'cancelled',
     };
-    const statusText = {
-      'PENDING': '予約確定',
-      'CONFIRMED': '予約確定',
-      'IN_PROGRESS': '進行中',
-      'COMPLETED': '完了',
-      'CANCELLED': 'キャンセル'
-    }[booking.status] || booking.status;
+    const statusText =
+      {
+        PENDING: '予約確定',
+        CONFIRMED: '予約確定',
+        IN_PROGRESS: '進行中',
+        COMPLETED: '完了',
+        CANCELLED: 'キャンセル',
+      }[booking.status] || booking.status;
 
-    const date = new Date(booking.startTime);
-    const endDate = new Date(booking.endTime);
-    const dateStr = date.toLocaleDateString('ja-JP', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      weekday: 'short'
-    });
-    const timeStr = `${date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+    const startDate = booking.startTime
+      ? new Date(booking.startTime)
+      : booking.scheduledDate
+        ? new Date(booking.scheduledDate)
+        : null;
+    const endDate = booking.endTime ? new Date(booking.endTime) : null;
+    const duration = booking.duration || 2;
+
+    let dateStr = '日付未設定';
+    let timeStr = '時間未設定';
+    if (startDate && !Number.isNaN(startDate.getTime())) {
+      dateStr = dateFormatter.format(startDate);
+      if (endDate && !Number.isNaN(endDate.getTime())) {
+        timeStr = `${timeFormatter.format(startDate)} - ${timeFormatter.format(endDate)}`;
+      } else {
+        const estimatedEnd = new Date(startDate.getTime() + duration * 60 * 60 * 1000);
+        timeStr = `${timeFormatter.format(startDate)} - ${timeFormatter.format(estimatedEnd)}`;
+      }
+    }
+
+    const serviceLabel = escapeHtml(booking.serviceType || 'サービス');
+    const workerName = booking.worker ? escapeHtml(booking.worker.name) : '';
+    const rating =
+      booking.worker && booking.worker.rating != null
+        ? booking.worker.rating.toFixed(1)
+        : '';
 
     item.innerHTML = `
       <span class="timeline-dot" aria-hidden="true"></span>
-      <div class="timeline-card" role="group" aria-label="${dateStr}の${booking.serviceType || 'サービス'}">
+      <div class="timeline-card" role="group" aria-label="${escapeHtml(dateStr)}の${serviceLabel}">
         <div class="timeline-header">
-          <span class="timeline-date">${dateStr}｜${timeStr}</span>
-          <span class="timeline-status ${statusToClass[booking.status] || ''}">${statusText}</span>
+          <span class="timeline-date">${escapeHtml(dateStr)}｜${escapeHtml(timeStr)}</span>
+          <span class="timeline-status ${statusToClass[booking.status] || ''}">${escapeHtml(statusText)}</span>
         </div>
         <div class="timeline-body">
-          <h3>${booking.serviceType || 'サービス'}</h3>
+          <h3>${serviceLabel}</h3>
           <div class="timeline-meta">
-            ${booking.worker ? `<span class="timeline-worker">👤 ${booking.worker.name}さん</span>` : ''}
-            ${booking.worker && booking.worker.rating ? `<span class="timeline-rating">⭐ ${booking.worker.rating.toFixed(1)}</span>` : ''}
+            ${workerName ? `<span class="timeline-worker">👤 ${workerName}さん</span>` : ''}
+            ${rating ? `<span class="timeline-rating">⭐ ${rating}</span>` : ''}
           </div>
-          ${booking.address ? `<p class="timeline-address">📍 ${booking.address}</p>` : ''}
+          ${booking.address ? `<p class="timeline-address">📍 ${escapeHtml(booking.address)}</p>` : ''}
         </div>
         <div class="timeline-actions">
-          <a href="booking-detail.html?id=${booking.id}" class="btn btn--outline">詳細を見る</a>
+          <a href="booking-detail.html?id=${escapeHtml(booking.id)}" class="btn btn--outline">詳細を見る</a>
         </div>
       </div>
     `;
 
     timelineList.appendChild(item);
   });
+}
 
-  if (bookings.length === 0) {
-    timelineList.innerHTML = '<p class="no-data">今後の予約はありません</p>';
+async function loadRecentPayments() {
+  const mount = document.getElementById('dashboardRecentPayments');
+  if (!mount) return;
+  mount.innerHTML = '<div class="loading-message">読み込み中...</div>';
+  try {
+    const response = await api.getPayments({ limit: 100 });
+    const list = response.data?.payments || [];
+    const sorted = [...list].sort(
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
+    renderRecentPayments(sorted.slice(0, 8));
+  } catch (error) {
+    console.error('決済履歴の取得エラー:', error);
+    mount.innerHTML =
+      '<div class="error-message">利用履歴の読み込みに失敗しました</div>';
   }
 }
 
-// ログアウト関数（グローバルスコープ）
-window.logout = function() {
+function paymentStatusLabel(status) {
+  const map = {
+    COMPLETED: '支払済み',
+    PENDING: '支払い待ち',
+    FAILED: '支払い失敗',
+    REFUNDED: '返金済み',
+  };
+  return map[status] || status || '-';
+}
+
+function renderRecentPayments(payments) {
+  const mount = document.getElementById('dashboardRecentPayments');
+  if (!mount) return;
+
+  if (!payments || payments.length === 0) {
+    mount.innerHTML = '<div class="empty-message">利用履歴はありません</div>';
+    return;
+  }
+
+  mount.innerHTML = payments
+    .map((payment) => {
+      const paymentDate = new Date(payment.createdAt);
+      const dateStr = Number.isNaN(paymentDate.getTime())
+        ? '-'
+        : paymentDate.toLocaleDateString('ja-JP', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+      const serviceType = escapeHtml(
+        payment.booking ? payment.booking.serviceType || '-' : '-'
+      );
+      const workerName =
+        payment.booking && payment.booking.worker
+          ? escapeHtml(payment.booking.worker.name || '不明')
+          : '-';
+      const amount =
+        payment.amount != null ? `¥${Number(payment.amount).toLocaleString()}` : '-';
+      const booking = payment.booking;
+      let footer = '';
+      if (booking && booking.id) {
+        if (booking.status === 'COMPLETED' && !booking.reviewed) {
+          footer = `<div class="history-card__footer">
+            <a href="booking-detail.html?id=${escapeHtml(booking.id)}&review=true" class="btn btn-small btn--outline">レビュー</a>
+          </div>`;
+        } else if (booking.reviewed || booking.review) {
+          footer = `<div class="history-card__footer"><span class="reviewed-badge">レビュー済み</span></div>`;
+        } else {
+          footer = `<div class="history-card__footer">
+            <a href="booking-detail.html?id=${escapeHtml(booking.id)}" class="btn btn-small btn--outline">詳細</a>
+          </div>`;
+        }
+      } else {
+        footer = `<div class="history-card__footer"><span class="text-muted">${escapeHtml(
+          paymentStatusLabel(payment.status)
+        )}</span></div>`;
+      }
+
+      return `
+        <article class="history-card">
+          <div class="history-card__header">
+            <span class="history-card__date">${escapeHtml(dateStr)}</span>
+            <span class="history-card__amount">${escapeHtml(amount)}</span>
+          </div>
+          <div class="history-card__body">
+            <h4 class="history-card__title">${serviceType}</h4>
+            <p class="history-card__meta">👤 ${workerName === '-' ? '-' : `${workerName}さん`}</p>
+          </div>
+          ${footer}
+        </article>
+      `;
+    })
+    .join('');
+}
+
+async function loadDashboardNotifications() {
+  const mount = document.getElementById('dashboardNoticeList');
+  if (!mount) return;
+  mount.innerHTML = '<div class="loading-message">読み込み中...</div>';
+  try {
+    const response = await api.getNotifications({ page: 1, limit: 6 });
+    const payload = response.data || {};
+    const notifications = payload.notifications || [];
+    renderDashboardNotifications(notifications);
+  } catch (error) {
+    console.error('通知一覧取得エラー:', error);
+    mount.innerHTML =
+      '<div class="error-message">お知らせの読み込みに失敗しました</div>';
+  }
+}
+
+function renderDashboardNotifications(notifications) {
+  const mount = document.getElementById('dashboardNoticeList');
+  if (!mount) return;
+
+  if (!notifications || notifications.length === 0) {
+    mount.innerHTML = '<div class="empty-message">お知らせはありません</div>';
+    return;
+  }
+
+  const typeLabels = {
+    MESSAGE: 'メッセージ',
+    BOOKING_UPDATE: '予約更新',
+    BOOKING_CREATED: '予約作成',
+    BOOKING_CANCELLED: '予約キャンセル',
+    REVIEW: 'レビュー',
+    PAYMENT: '決済',
+    PAYMENT_FAILED: '決済失敗',
+    SYSTEM: 'システム',
+    WORKER_APPROVED: 'ワーカー承認',
+    WORKER_REJECTED: 'ワーカー却下',
+  };
+
+  mount.innerHTML = notifications
+    .map((n) => {
+      const typeLabel = typeLabels[n.type] || n.type || 'お知らせ';
+      const rel = formatNoticeTime(n.createdAt);
+      const iso = n.createdAt ? new Date(n.createdAt).toISOString() : '';
+      return `
+        <article class="notice-item">
+          <div class="notice-icon" aria-hidden="true">${noticeIconForType(n.type)}</div>
+          <div class="notice-content">
+            <div class="notice-title-row">
+              <h4 class="notice-title">${escapeHtml(n.title || '')}</h4>
+              ${noticeBadgeHtml(n.type, typeLabel)}
+            </div>
+            <p class="notice-text">${escapeHtml(n.content || '')}</p>
+            <time class="notice-time" datetime="${escapeHtml(iso)}">${escapeHtml(rel)}</time>
+          </div>
+        </article>
+      `;
+    })
+    .join('');
+}
+
+window.logout = function () {
   if (confirm('ログアウトしますか？')) {
-    logout(); // auth.jsのlogout関数を呼び出す
+    logout();
   }
 };
 </script>
@@ -192,8 +422,8 @@ window.logout = function() {
     
     <!-- ウェルカムセクション -->
     <section class="welcome-section">
-      <h1>おかえりなさい、山田さん</h1>
-      <p>次回の予約まであと2日です。準備はできていますか？</p>
+      <h1>おかえりなさい</h1>
+      <p id="welcomeSubtext">読み込み中...</p>
     </section>
 
     <!-- クイックアクション -->
@@ -248,46 +478,8 @@ window.logout = function() {
         <a href="payment.html" class="link-more">すべて見る →</a>
       </div>
       <div class="history-scroll" aria-label="最近の利用履歴の横スクロール一覧">
-        <div class="history-cards">
-          <article class="history-card">
-            <div class="history-card__header">
-              <span class="history-card__date">2024年3月10日</span>
-              <span class="history-card__amount">¥5,000</span>
-            </div>
-            <div class="history-card__body">
-              <h4 class="history-card__title">掃除・片付け</h4>
-              <p class="history-card__meta">👤 田中 花子さん</p>
-            </div>
-            <div class="history-card__footer">
-              <button class="btn btn-small btn--outline">レビュー</button>
-            </div>
-          </article>
-          <article class="history-card">
-            <div class="history-card__header">
-              <span class="history-card__date">2024年3月3日</span>
-              <span class="history-card__amount">¥6,000</span>
-            </div>
-            <div class="history-card__body">
-              <h4 class="history-card__title">料理・買い物</h4>
-              <p class="history-card__meta">👤 鈴木 一郎さん</p>
-            </div>
-            <div class="history-card__footer">
-              <button class="btn btn-small btn--outline">レビュー</button>
-            </div>
-          </article>
-          <article class="history-card">
-            <div class="history-card__header">
-              <span class="history-card__date">2024年2月25日</span>
-              <span class="history-card__amount">¥4,000</span>
-            </div>
-            <div class="history-card__body">
-              <h4 class="history-card__title">洗濯</h4>
-              <p class="history-card__meta">👤 佐藤 美咲さん</p>
-            </div>
-            <div class="history-card__footer">
-              <span class="reviewed-badge">レビュー済み</span>
-            </div>
-          </article>
+        <div class="history-cards" id="dashboardRecentPayments">
+          <div class="loading-message">読み込み中...</div>
         </div>
       </div>
     </section>
@@ -295,29 +487,8 @@ window.logout = function() {
     <!-- お知らせ -->
     <section class="notifications-section section-block">
       <h2 class="section-title">お知らせ</h2>
-      <div class="notice-list">
-        <article class="notice-item">
-          <div class="notice-icon" aria-hidden="true">📢</div>
-          <div class="notice-content">
-            <div class="notice-title-row">
-              <h4 class="notice-title">次回予約のリマインダー</h4>
-              <span class="notice-badge notice-badge--important">重要</span>
-            </div>
-            <p class="notice-text">2024年3月17日の予約まであと2日です</p>
-            <time class="notice-time" datetime="2024-03-15T10:00:00">2時間前</time>
-          </div>
-        </article>
-        <article class="notice-item">
-          <div class="notice-icon" aria-hidden="true">💬</div>
-          <div class="notice-content">
-            <div class="notice-title-row">
-              <h4 class="notice-title">新しいメッセージ</h4>
-              <span class="notice-badge notice-badge--message">メッセージ</span>
-            </div>
-            <p class="notice-text">田中 花子さんからメッセージが届きました</p>
-            <time class="notice-time" datetime="2024-03-14T10:00:00">1日前</time>
-          </div>
-        </article>
+      <div class="notice-list" id="dashboardNoticeList">
+        <div class="loading-message">読み込み中...</div>
       </div>
     </section>
 

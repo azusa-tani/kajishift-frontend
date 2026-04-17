@@ -22,10 +22,10 @@
       <a href="payment.html" class="active">決済・履歴</a>
     </nav>
     <div class="header-actions">
-      <button class="btn-icon" id="notificationBtn" aria-label="通知">
-        <span class="notification-badge">2</span>
-        🔔
-      </button>
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
+        <span aria-hidden="true">🔔</span>
+      </a>
       <a href="customer-profile.html" class="avatar">👤</a>
     </div>
   </div>
@@ -243,7 +243,30 @@ document.addEventListener('DOMContentLoaded', async function() {
   // データを読み込み
   await loadPayments();
   await loadCards();
+  await updateHeaderUnreadCount();
 });
+
+async function updateHeaderUnreadCount() {
+  try {
+    const res = await api.getUnreadNotificationCount();
+    const count =
+      res && res.data && typeof res.data.count === 'number'
+        ? res.data.count
+        : typeof res?.count === 'number'
+          ? res.count
+          : 0;
+    const badge = document.querySelector('.notification-badge');
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = String(count);
+      badge.classList.remove('is-hidden');
+    } else {
+      badge.classList.add('is-hidden');
+    }
+  } catch (e) {
+    console.error('未読通知数取得エラー:', e);
+  }
+}
 
 // 月選択を初期化
 function initMonthFilter() {
