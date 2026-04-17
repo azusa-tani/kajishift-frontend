@@ -439,14 +439,13 @@ footer a:hover {
 
 /* ===== Worker Page Styles ===== */
 
+/* ワーカー領域共通：ダッシュボード・プロフィール等で背景を統一 */
 .worker-page {
-  background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
+  background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
   min-height: 100vh;
 }
 
-.worker-dashboard-page {
-  background: #f4f6f8;
-}
+/* dashboard.html の worker-dashboard-page は将来のダッシュボード専用スタイル用。背景は上記 .worker-page のみ（グレー上書きしない） */
 
 .worker-header {
   background: #fff;
