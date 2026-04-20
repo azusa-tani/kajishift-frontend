@@ -148,8 +148,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   const bookingId = urlParams.get('id') || urlParams.get('bookingId');
 
   if (!bookingId || bookingId === 'undefined') {
-    alert('予約IDが指定されていません');
-    window.location.href = 'booking.html';
+    if (typeof showError === 'function') {
+      showError('予約IDが指定されていません。予約の流れからやり直してください。');
+    }
+    setTimeout(() => {
+      window.location.href = 'booking.html';
+    }, 1500);
     return;
   }
 
@@ -168,19 +172,24 @@ async function loadBooking(bookingId) {
   try {
     console.log('Fetching Booking ID:', bookingId);
     const response = await api.getBookingById(bookingId);
-    currentBooking = response.data;
+    currentBooking = response.data != null ? response.data : response;
 
-    if (!currentBooking) {
+    if (!currentBooking || !currentBooking.id) {
       throw new Error('予約が見つかりません');
     }
 
-    // 予約サマリーを表示
     displayBookingSummary(currentBooking);
   } catch (error) {
     console.error('予約情報の読み込みエラー:', error);
     console.dir(error);
-    alert('予約情報の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
-    window.location.href = 'bookings.html';
+    const msg =
+      (error && error.message) || '予約情報を読み込めませんでした。予約一覧から開き直してください。';
+    if (typeof showError === 'function') {
+      showError(msg);
+    }
+    setTimeout(() => {
+      window.location.href = 'bookings.html';
+    }, 2000);
   }
 }
 
@@ -514,8 +523,11 @@ async function viewWorkerProfile(workerId) {
     await loadWorkerProfileReviews(workerId);
   } catch (error) {
     console.error('ワーカープロフィールの読み込みエラー:', error);
-    alert('ワーカープロフィールの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
-    document.getElementById('workerProfileContent').innerHTML = '<div class="error-message">エラー: ワーカープロフィールの読み込みに失敗しました</div>';
+    if (typeof showError === 'function') {
+      showError('ワーカープロフィールの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    }
+    document.getElementById('workerProfileContent').innerHTML =
+      '<div class="error-message">エラー: ワーカープロフィールの読み込みに失敗しました</div>';
   }
 }
 
@@ -592,14 +604,6 @@ window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
     event.target.classList.remove('is-open');
   }
-}
-
-function showSuccess(message) {
-  alert('成功: ' + message);
-}
-
-function showError(message) {
-  alert('エラー: ' + message);
 }
 
 // ワーカーのレビューを読み込む

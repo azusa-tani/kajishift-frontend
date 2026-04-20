@@ -186,3 +186,52 @@ function hideLoading(loadingElement) {
     loadingElement.remove();
   }
 }
+
+/**
+ * 依頼者ページの通知バッジを API の未読件数と同期する（静的 HTML のダミー表示の解消）
+ * Socket.io のイベントと併用し、ページ初回表示時の整合性を取る。
+ */
+function parseUnreadNotificationCount(response) {
+  if (!response) return 0;
+  if (typeof response.count === 'number') return response.count;
+  if (response.data != null && typeof response.data.count === 'number') return response.data.count;
+  return 0;
+}
+
+async function syncCustomerNotificationBadge() {
+  const path = window.location && window.location.pathname ? window.location.pathname : '';
+  if (!path.includes('/customer/')) return;
+  if (typeof api === 'undefined' || !api || !api.token) {
+    document.querySelectorAll('.notification-badge').forEach((el) => {
+      el.textContent = '0';
+      el.classList.add('is-hidden');
+    });
+    return;
+  }
+
+  try {
+    const response = await api.getUnreadNotificationCount();
+    const count = parseUnreadNotificationCount(response);
+    document.querySelectorAll('.notification-badge').forEach((el) => {
+      if (count > 0) {
+        el.textContent = String(count);
+        el.classList.remove('is-hidden');
+      } else {
+        el.textContent = '0';
+        el.classList.add('is-hidden');
+      }
+    });
+    const btn = document.getElementById('notificationBtn');
+    if (btn) {
+      btn.setAttribute('aria-label', count > 0 ? `通知（${count}件の未読）` : '通知');
+    }
+  } catch (e) {
+    console.error('未読通知数の同期に失敗しました:', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  syncCustomerNotificationBadge();
+});
+
+window.syncCustomerNotificationBadge = syncCustomerNotificationBadge;
