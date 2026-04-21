@@ -6,9 +6,11 @@
   <title>予約管理｜KAJISHIFT管理画面</title>
   <link rel="preload" href="../css/style.css" as="style" />
   <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
 </head>
 <body class="admin-page">
 <script>
@@ -57,16 +59,16 @@ if (typeof checkAuth === 'function') {
       <div class="filter-card">
         <div class="filter-row">
           <div class="filter-item">
-            <label>予約ID</label>
-            <input type="text" class="form-input" placeholder="予約IDで検索" />
+            <label for="admin-booking-id">予約ID</label>
+            <input id="admin-booking-id" type="text" class="form-input" placeholder="予約IDで検索" />
           </div>
           <div class="filter-item">
-            <label>日付</label>
-            <input type="date" class="form-input" />
+            <label for="admin-booking-date">日付</label>
+            <input id="admin-booking-date" type="date" class="form-input" />
           </div>
           <div class="filter-item">
-            <label>エリア</label>
-            <select class="form-select">
+            <label for="admin-booking-area">エリア</label>
+            <select id="admin-booking-area" class="form-select">
               <option value="">すべて</option>
               <option value="sapporo">札幌市</option>
               <option value="ebetsu">江別市</option>
@@ -75,12 +77,12 @@ if (typeof checkAuth === 'function') {
             </select>
           </div>
           <div class="filter-item">
-            <label>ワーカー</label>
-            <input type="text" class="form-input" placeholder="ワーカー名で検索" />
+            <label for="admin-booking-worker">ワーカー</label>
+            <input id="admin-booking-worker" type="text" class="form-input" placeholder="ワーカー名で検索" />
           </div>
           <div class="filter-item">
-            <label>利用者</label>
-            <input type="text" class="form-input" placeholder="利用者名で検索" />
+            <label for="admin-booking-customer">利用者</label>
+            <input id="admin-booking-customer" type="text" class="form-input" placeholder="利用者名で検索" />
           </div>
           <div class="filter-item">
             <button class="btn btn-primary">検索</button>
@@ -272,56 +274,71 @@ if (typeof checkAuth === 'function') {
 </div>
 
 <script>
+const BOOKING_STATUS_TAB = {
+  CONFIRMED: 'confirmed',
+  PENDING: 'pending',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled'
+};
+
 let currentTab = 'confirmed';
 let currentStatus = 'CONFIRMED';
-let currentPage = {};
+let currentPage = { CONFIRMED: 1, PENDING: 1, COMPLETED: 1, CANCELLED: 1 };
 let totalPages = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // 認証チェック
   if (!checkAuth('admin')) {
     return;
   }
 
-  // タブ切り替え
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', function () {
       const tab = this.dataset.tab;
       const status = this.dataset.status;
       currentTab = tab;
       currentStatus = status;
       currentPage[status] = 1;
-      
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
       this.classList.add('active');
-      document.getElementById(tab + '-tab').classList.add('active');
-      
+      document.getElementById(`${tab}-tab`).classList.add('active');
+
       loadBookings(status, 1);
     });
   });
 
-  // 検索ボタン
-  document.querySelector('.filter-section .btn-primary').addEventListener('click', () => {
-    loadBookings(currentStatus, 1);
-  });
-
-  // リセットボタン
-  document.querySelector('.filter-section .btn-outline').addEventListener('click', () => {
-    document.querySelectorAll('.filter-section input, .filter-section select').forEach(el => {
-      if (el.type === 'text' || el.type === 'date') {
-        el.value = '';
-      } else if (el.tagName === 'SELECT') {
-        el.selectedIndex = 0;
-      }
+  const filterRoot = document.querySelector('.admin-filter-section');
+  if (filterRoot) {
+    filterRoot.querySelector('.btn-primary')?.addEventListener('click', () => {
+      loadBookings(currentStatus, 1);
     });
-    loadBookings(currentStatus, 1);
-  });
 
-  // 初期データ読み込み
+    filterRoot.querySelector('.btn-outline')?.addEventListener('click', () => {
+      filterRoot.querySelectorAll('input, select').forEach((el) => {
+        if (el.type === 'text' || el.type === 'date') {
+          el.value = '';
+        } else if (el.tagName === 'SELECT') {
+          el.selectedIndex = 0;
+        }
+      });
+      loadBookings(currentStatus, 1);
+    });
+  }
+
   await loadBookings('CONFIRMED', 1);
   await loadBookingCounts();
 });
+
+function unwrapApiPayload(response) {
+  if (response == null) return null;
+  return response.data !== undefined ? response.data : response;
+}
+
+function bookingListTotal(response) {
+  const d = unwrapApiPayload(response);
+  return d?.pagination?.total ?? 0;
+}
 
 async function loadBookingCounts() {
   try {
@@ -332,65 +349,82 @@ async function loadBookingCounts() {
       api.getBookings({ status: 'CANCELLED', limit: 1 })
     ]);
 
-    document.getElementById('confirmed-count').textContent = confirmed.data?.pagination?.total || 0;
-    document.getElementById('pending-count').textContent = pending.data?.pagination?.total || 0;
-    document.getElementById('completed-count').textContent = completed.data?.pagination?.total || 0;
-    document.getElementById('cancelled-count').textContent = cancelled.data?.pagination?.total || 0;
+    document.getElementById('confirmed-count').textContent = bookingListTotal(confirmed);
+    document.getElementById('pending-count').textContent = bookingListTotal(pending);
+    document.getElementById('completed-count').textContent = bookingListTotal(completed);
+    document.getElementById('cancelled-count').textContent = bookingListTotal(cancelled);
   } catch (error) {
     console.error('予約数の取得エラー:', error);
+    showError('ステータス別件数の取得に失敗しました: ' + (error.message || 'エラーが発生しました'));
   }
+}
+
+function getBookingListFilters(status, page) {
+  const filters = {
+    status,
+    page,
+    limit: 20
+  };
+
+  const bookingId = document.getElementById('admin-booking-id')?.value?.trim();
+  const date = document.getElementById('admin-booking-date')?.value;
+  const area = document.getElementById('admin-booking-area')?.value;
+  const workerName = document.getElementById('admin-booking-worker')?.value?.trim();
+  const customerName = document.getElementById('admin-booking-customer')?.value?.trim();
+
+  if (bookingId) filters.id = bookingId;
+  if (date) {
+    filters.startDate = date;
+    filters.endDate = date;
+  }
+  if (area) filters.area = area;
+  if (workerName) filters.workerName = workerName;
+  if (customerName) filters.customerName = customerName;
+
+  return filters;
 }
 
 async function loadBookings(status, page) {
   try {
-    const filters = {
-      status: status,
-      page: page,
-      limit: 20
-    };
-
-    // 検索フィルターを追加
-    const bookingId = document.querySelector('.filter-section input[placeholder*="予約ID"]')?.value;
-    const date = document.querySelector('.filter-section input[type="date"]')?.value;
-    const area = document.querySelector('.filter-section select')?.value;
-    const workerName = document.querySelector('.filter-section input[placeholder*="ワーカー名"]')?.value;
-    const customerName = document.querySelector('.filter-section input[placeholder*="利用者名"]')?.value;
-
-    if (bookingId) filters.id = bookingId;
-    if (date) {
-      filters.startDate = date;
-      filters.endDate = date;
-    }
-    if (workerName) filters.workerName = workerName;
-    if (customerName) filters.customerName = customerName;
-
+    const filters = getBookingListFilters(status, page);
     const response = await api.getBookings(filters);
-    
-    if (response.data && response.data.bookings) {
-      const bookings = response.data.bookings;
-      const pagination = response.data.pagination;
-      
-      currentPage[status] = pagination.page;
-      totalPages[status] = pagination.totalPages;
+    const payload = unwrapApiPayload(response);
 
-      displayBookings(status, bookings);
-      updatePagination(status, pagination);
-    } else {
+    const bookings = payload?.bookings;
+    const pagination = payload?.pagination;
+
+    if (!Array.isArray(bookings) || !pagination) {
       throw new Error('予期しないレスポンス形式');
     }
+
+    currentPage[status] = pagination.page;
+    totalPages[status] = pagination.totalPages;
+
+    displayBookings(status, bookings, pagination);
+    updatePagination(status, pagination);
   } catch (error) {
     console.error('予約一覧の読み込みエラー:', error);
     showError('予約一覧の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
   }
 }
 
-function displayBookings(status, bookings) {
-  const tbodyId = `${status}-table-body`;
-  const tbody = document.getElementById(tbodyId);
+function bookingsTableEmptyColspan(status) {
+  if (status === 'PENDING' || status === 'CANCELLED') return 7;
+  return 8;
+}
+
+function displayBookings(status, bookings, pagination) {
+  const tabKey = BOOKING_STATUS_TAB[status];
+  const tbody = document.getElementById(`${tabKey}-table-body`);
+  if (!tbody) return;
   tbody.innerHTML = '';
 
+  const emptyCol = bookingsTableEmptyColspan(status);
+
   if (bookings.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty-message">予約がありません</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${emptyCol}" class="empty-message">予約がありません</td></tr>`;
+    const titleCount = document.getElementById(`${tabKey}-title-count`);
+    if (titleCount) titleCount.textContent = pagination?.total ?? 0;
     return;
   }
 
@@ -457,17 +491,15 @@ function displayBookings(status, bookings) {
     }
   });
 
-  // タイトルの件数を更新
-  const titleCountId = `${status}-title-count`;
-  const titleCount = document.getElementById(titleCountId);
-  if (titleCount) {
-    titleCount.textContent = bookings.length;
+  const titleCountEl = document.getElementById(`${tabKey}-title-count`);
+  if (titleCountEl) {
+    titleCountEl.textContent = pagination?.total ?? bookings.length;
   }
 }
 
 function updatePagination(status, pagination) {
-  const paginationId = `${status}-pagination`;
-  const paginationEl = document.getElementById(paginationId);
+  const tabKey = BOOKING_STATUS_TAB[status];
+  const paginationEl = document.getElementById(`${tabKey}-pagination`);
   if (!paginationEl) return;
 
   paginationEl.innerHTML = `
@@ -498,8 +530,8 @@ async function confirmCancel() {
     await api.updateBooking(bookingId, {
       status: 'CANCELLED'
     });
-    
-    alert('予約をキャンセルしました');
+
+    showSuccess('予約をキャンセルしました');
     closeModal('cancelModal');
     await loadBookings(currentStatus, currentPage[currentStatus]);
     await loadBookingCounts();
@@ -509,24 +541,22 @@ async function confirmCancel() {
   }
 }
 
+function getBookingExportParams(status) {
+  const f = getBookingListFilters(status, 1);
+  const params = {};
+  if (f.startDate) params.startDate = f.startDate;
+  if (f.endDate) params.endDate = f.endDate;
+  if (f.area) params.area = f.area;
+  if (f.workerName) params.workerName = f.workerName;
+  if (f.customerName) params.customerName = f.customerName;
+  if (f.id) params.id = f.id;
+  if (status) params.status = status;
+  return params;
+}
+
 async function exportBookings(status, buttonElement) {
   try {
-    // 日付範囲を取得（フィルターから）
-    const dateInput = document.querySelector('.admin-filter-section input[type="date"]');
-    const startDate = dateInput?.value || '';
-    const endDate = dateInput?.value || '';
-
-    const params = {};
-    if (startDate) {
-      params.startDate = startDate;
-    }
-    if (endDate) {
-      params.endDate = endDate;
-    }
-    // ステータスフィルターを追加
-    if (status) {
-      params.status = status;
-    }
+    const params = getBookingExportParams(status);
 
     // ローディング表示
     const button = buttonElement || document.querySelector(`button[onclick*="exportBookings('${status}')"]`);
@@ -560,22 +590,7 @@ async function exportBookings(status, buttonElement) {
 // Excelエクスポート機能
 async function exportBookingsExcel(status, buttonElement) {
   try {
-    // 日付範囲を取得（フィルターから）
-    const dateInput = document.querySelector('.admin-filter-section input[type="date"]');
-    const startDate = dateInput?.value || '';
-    const endDate = dateInput?.value || '';
-
-    const params = {};
-    if (startDate) {
-      params.startDate = startDate;
-    }
-    if (endDate) {
-      params.endDate = endDate;
-    }
-    // ステータスフィルターを追加
-    if (status) {
-      params.status = status;
-    }
+    const params = getBookingExportParams(status);
 
     // ローディング表示
     const button = buttonElement || document.querySelector(`button[onclick*="exportBookingsExcel('${status}')"]`);
@@ -618,14 +633,6 @@ window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
     event.target.classList.remove('is-open');
   }
-}
-
-function showError(message) {
-  alert('エラー: ' + message);
-}
-
-function showSuccess(message) {
-  alert('成功: ' + message);
 }
 
 function logout() {

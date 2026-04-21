@@ -6,9 +6,11 @@
   <title>利用者管理｜KAJISHIFT管理画面</title>
   <link rel="preload" href="../css/style.css" as="style" />
   <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
 </head>
 <body class="admin-page">
 <script>
@@ -58,12 +60,12 @@ if (typeof checkAuth === 'function') {
       <div class="filter-card">
         <div class="filter-row">
           <div class="filter-item">
-            <label>検索</label>
-            <input type="text" class="form-input" placeholder="氏名、メールアドレスで検索" />
+            <label for="admin-user-search">検索</label>
+            <input id="admin-user-search" type="text" class="form-input" placeholder="氏名、メールアドレスで検索" />
           </div>
           <div class="filter-item">
-            <label>エリア</label>
-            <select class="form-select">
+            <label for="admin-user-area">エリア</label>
+            <select id="admin-user-area" class="form-select">
               <option value="">すべて</option>
               <option value="sapporo">札幌市</option>
               <option value="ebetsu">江別市</option>
@@ -72,8 +74,8 @@ if (typeof checkAuth === 'function') {
             </select>
           </div>
           <div class="filter-item">
-            <label>状態</label>
-            <select class="form-select">
+            <label for="admin-user-status">状態</label>
+            <select id="admin-user-status" class="form-select">
               <option value="">すべて</option>
               <option value="active">アクティブ</option>
               <option value="inactive">非アクティブ</option>
@@ -212,15 +214,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // 検索ボタン
-  document.querySelector('.filter-section .btn-primary').addEventListener('click', () => {
+  const filterRoot = document.querySelector('.admin-filter-section');
+  if (!filterRoot) return;
+
+  filterRoot.querySelector('.btn-primary')?.addEventListener('click', () => {
     currentPage = 1;
     loadUsers();
   });
 
-  // リセットボタン
-  document.querySelector('.filter-section .btn-outline').addEventListener('click', () => {
-    document.querySelectorAll('.filter-section input, .filter-section select').forEach(el => {
+  filterRoot.querySelector('.btn-outline')?.addEventListener('click', () => {
+    filterRoot.querySelectorAll('input, select').forEach((el) => {
       if (el.type === 'text') {
         el.value = '';
       } else if (el.tagName === 'SELECT') {
@@ -231,46 +234,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadUsers();
   });
 
-  // 初期データ読み込み
   await loadUsers();
 });
 
+function unwrapApiPayload(response) {
+  if (response == null) return null;
+  return response.data !== undefined ? response.data : response;
+}
+
+const USER_STATUS_MAP = {
+  active: 'ACTIVE',
+  inactive: 'INACTIVE',
+  suspended: 'SUSPENDED'
+};
+
+function getUserListFilters() {
+  const search = document.getElementById('admin-user-search')?.value?.trim();
+  const area = document.getElementById('admin-user-area')?.value;
+  const statusKey = document.getElementById('admin-user-status')?.value;
+  const filters = {
+    role: 'CUSTOMER',
+    page: currentPage,
+    limit: 20
+  };
+  if (search) filters.search = search;
+  if (area) filters.area = area;
+  if (statusKey && USER_STATUS_MAP[statusKey]) {
+    filters.status = USER_STATUS_MAP[statusKey];
+  }
+  return filters;
+}
+
+function getUserExportParams() {
+  const f = getUserListFilters();
+  const params = {};
+  if (f.search) params.search = f.search;
+  if (f.area) params.area = f.area;
+  if (f.status) params.status = f.status;
+  return params;
+}
+
 async function loadUsers() {
   try {
-    const filters = {
-      role: 'CUSTOMER',
-      page: currentPage,
-      limit: 20
-    };
-
-    // 検索フィルターを追加
-    const search = document.querySelector('.filter-section input[placeholder*="検索"]')?.value;
-    const status = document.querySelector('.filter-section select[aria-label*="状態"]')?.value || 
-                   document.querySelector('.filter-section select:last-of-type')?.value;
-
-    if (search) {
-      // バックエンドAPIが検索に対応していない場合は、フロントエンドでフィルタリング
-      // 現時点ではAPIに検索パラメータを送信しない
-    }
-    if (status) {
-      filters.status = status.toUpperCase();
-    }
-
+    const filters = getUserListFilters();
     const response = await api.getAdminUsers(filters);
-    
-    if (response.data && response.data.users) {
-      const users = response.data.users;
-      const pagination = response.data.pagination;
-      
-      currentPage = pagination.page;
-      totalPages = pagination.totalPages;
+    const payload = unwrapApiPayload(response);
 
-      document.getElementById('total-users').textContent = pagination.total || 0;
-      displayUsers(users);
-      updatePagination(pagination);
-    } else {
+    const users = payload?.users;
+    const pagination = payload?.pagination;
+
+    if (!Array.isArray(users) || !pagination) {
       throw new Error('予期しないレスポンス形式');
     }
+
+    currentPage = pagination.page;
+    totalPages = pagination.totalPages;
+
+    document.getElementById('total-users').textContent = pagination.total || 0;
+    displayUsers(users);
+    updatePagination(pagination);
   } catch (error) {
     console.error('利用者一覧の読み込みエラー:', error);
     showError('利用者一覧の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
@@ -375,23 +397,7 @@ async function activateUser(userId) {
 
 async function exportUsers(buttonElement) {
   try {
-    // 日付範囲を取得（フィルターから、オプション）
-    const dateInput = document.querySelector('.admin-filter-section input[type="date"]');
-    const startDate = dateInput?.value || '';
-    const endDate = dateInput?.value || '';
-
-    const params = {};
-    if (startDate) {
-      params.startDate = startDate;
-    }
-    if (endDate) {
-      params.endDate = endDate;
-    }
-    // 検索条件があれば追加（オプション）
-    const searchInput = document.querySelector('.admin-filter-section input[type="text"]');
-    if (searchInput?.value) {
-      params.search = searchInput.value;
-    }
+    const params = getUserExportParams();
 
     // ローディング表示
     const button = buttonElement || document.querySelector('button[onclick*="exportUsers"]');
@@ -425,7 +431,7 @@ async function exportUsers(buttonElement) {
 // Excelエクスポート機能
 async function exportUsersExcel(buttonElement) {
   try {
-    // ローディング表示
+    const params = getUserExportParams();
     const button = buttonElement || document.querySelector('button[onclick*="exportUsersExcel"]');
     const originalText = button?.textContent || 'Excelエクスポート';
     if (button) {
@@ -433,7 +439,7 @@ async function exportUsersExcel(buttonElement) {
       button.textContent = 'エクスポート中...';
     }
 
-    const result = await api.downloadExcel('users', {});
+    const result = await api.downloadExcel('users', params);
     
     if (button) {
       button.disabled = false;
@@ -452,16 +458,6 @@ async function exportUsersExcel(buttonElement) {
       button.textContent = 'Excelエクスポート';
     }
   }
-}
-
-function showError(message) {
-  // 簡易的なエラー表示（将来的にはトースト通知などに置き換え可能）
-  alert('エラー: ' + message);
-}
-
-function showSuccess(message) {
-  // 簡易的な成功表示（将来的にはトースト通知などに置き換え可能）
-  alert('成功: ' + message);
 }
 
 function logout() {

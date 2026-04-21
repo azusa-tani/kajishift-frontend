@@ -1,5 +1,7 @@
 # KAJISHIFT プロジェクト引継ぎメモ
 
+新規担当者や AI チャットへの引継ぎ用に、**そのまま貼れる短いプロンプト**を [`HANDOVER_PROMPT.md`](./HANDOVER_PROMPT.md) にまとめています。
+
 ## 📋 プロジェクト概要
 
 家事代行マッチングサービス「KAJISHIFT」の静的HTMLサイトです。

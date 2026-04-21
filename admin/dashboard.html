@@ -9,9 +9,11 @@
   <link rel="canonical" href="https://kajishift.jp/admin/dashboard.html" />
   <link rel="preload" href="../css/style.css" as="style" />
   <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
 </head>
 <body class="admin-page admin-dashboard-page">
 <script>
@@ -187,33 +189,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadDashboardData();
 });
 
+function unwrapApiPayload(response) {
+  if (response == null) return null;
+  return response.data !== undefined ? response.data : response;
+}
+
 async function loadDashboardData() {
   try {
-    // 並列でデータを取得
     const [userReport, workerReport, bookingReport, revenueReport, todayBookings, pendingWorkers, pendingInquiries] = await Promise.all([
       api.getAdminUserReport({ startDate: getMonthStart(), endDate: getMonthEnd() }),
       api.getAdminWorkerReport({ startDate: getMonthStart(), endDate: getMonthEnd() }),
       api.getAdminBookingReport({ startDate: getMonthStart(), endDate: getMonthEnd() }),
       api.getAdminRevenueReport({ startDate: getMonthStart(), endDate: getMonthEnd() }),
-      api.getBookings({ 
-        startDate: getTodayStart(), 
+      api.getBookings({
+        startDate: getTodayStart(),
         endDate: getTodayEnd(),
-        limit: 10 
+        limit: 20
       }),
       api.getAdminWorkers({ approvalStatus: 'PENDING', limit: 5 }),
       api.getSupportTickets({ status: 'OPEN', limit: 5 })
     ]);
 
-    // KPIサマリーを更新
     updateKPISummary(userReport, workerReport, bookingReport, revenueReport);
-    
-    // 今日の予約を表示
+
+    try {
+      const statsRaw = await api.getAdminStats();
+      const stats = unwrapApiPayload(statsRaw);
+      if (stats && typeof stats === 'object') {
+        applyKpiFromAdminStatsOverlay(stats);
+      }
+    } catch (e) {
+      console.warn('getAdminStats は未実装または失敗しました（レポートAPIのKPIを表示します）', e);
+    }
+
     displayTodayBookings(todayBookings);
-    
-    // ワーカー審査待ちを表示
     displayPendingWorkers(pendingWorkers);
-    
-    // 未対応の問い合わせを表示
     displayPendingInquiries(pendingInquiries);
   } catch (error) {
     console.error('ダッシュボードデータの読み込みエラー:', error);
@@ -221,34 +231,88 @@ async function loadDashboardData() {
   }
 }
 
+/** getAdminStats の値でKPIを上書き（フィールドが取れたものだけ） */
+function applyKpiFromAdminStatsOverlay(stats) {
+  const root = stats.summary && typeof stats.summary === 'object' ? stats.summary : stats;
+  const num = (v) => {
+    const x = Number(v);
+    return Number.isFinite(x) ? x : null;
+  };
+
+  const ac = num(root.activeCustomers ?? root.activeUsers ?? root.active_user_count ?? stats.activeCustomers);
+  if (ac != null) {
+    document.getElementById('activeCustomers').textContent = ac.toLocaleString();
+  }
+  const custDelta = num(root.customerChange ?? root.newCustomersThisMonth ?? stats.customerChange);
+  if (custDelta != null) {
+    document.getElementById('customerChange').textContent = `+${custDelta} (今月)`;
+    document.getElementById('customerChange').className = 'kpi-change positive';
+  }
+
+  const aw = num(root.activeWorkers ?? root.active_workers ?? stats.activeWorkers);
+  if (aw != null) {
+    document.getElementById('activeWorkers').textContent = aw.toLocaleString();
+  }
+  const workDelta = num(root.workerChange ?? root.approvedThisMonth ?? stats.workerChange);
+  if (workDelta != null) {
+    document.getElementById('workerChange').textContent = `+${workDelta} (今月)`;
+    document.getElementById('workerChange').className = 'kpi-change positive';
+  }
+
+  const tb = num(root.todayBookings ?? root.today_bookings ?? stats.todayBookings);
+  if (tb != null) {
+    document.getElementById('todayBookings').textContent = tb.toLocaleString();
+  }
+
+  const mr = num(root.monthlyRevenue ?? root.totalRevenue ?? root.total_revenue ?? stats.monthlyRevenue);
+  if (mr != null) {
+    document.getElementById('monthlyRevenue').textContent = `¥${mr.toLocaleString()}`;
+  }
+  const revenueChange = num(root.revenueChangePercent ?? root.comparison?.percentage ?? stats.revenueChangePercent);
+  if (revenueChange != null) {
+    const revEl = document.getElementById('revenueChange');
+    if (revenueChange > 0) {
+      revEl.textContent = `+${revenueChange.toFixed(1)}% (前月比)`;
+      revEl.className = 'kpi-change positive';
+    } else if (revenueChange < 0) {
+      revEl.textContent = `${revenueChange.toFixed(1)}% (前月比)`;
+      revEl.className = 'kpi-change negative';
+    } else {
+      revEl.textContent = '変化なし';
+      revEl.className = 'kpi-change';
+    }
+  }
+}
+
 function updateKPISummary(userReport, workerReport, bookingReport, revenueReport) {
-  // アクティブ利用者
-  const activeCustomers = userReport.data?.summary?.active || 0;
-  const customerChange = userReport.data?.summary?.customers || 0;
-  document.getElementById('activeCustomers').textContent = activeCustomers.toLocaleString();
+  const u = unwrapApiPayload(userReport) || {};
+  const w = unwrapApiPayload(workerReport) || {};
+  const b = unwrapApiPayload(bookingReport) || {};
+  const r = unwrapApiPayload(revenueReport) || {};
+
+  const activeCustomers = u.summary?.active || 0;
+  const customerChange = u.summary?.customers || 0;
+  document.getElementById('activeCustomers').textContent = Number(activeCustomers).toLocaleString();
   document.getElementById('customerChange').textContent = `+${customerChange} (今月)`;
   document.getElementById('customerChange').className = 'kpi-change positive';
 
-  // アクティブワーカー
-  const activeWorkers = workerReport.data?.summary?.active || 0;
-  const workerChange = workerReport.data?.summary?.approved || 0;
-  document.getElementById('activeWorkers').textContent = activeWorkers.toLocaleString();
+  const activeWorkers = w.summary?.active || 0;
+  const workerChange = w.summary?.approved || 0;
+  document.getElementById('activeWorkers').textContent = Number(activeWorkers).toLocaleString();
   document.getElementById('workerChange').textContent = `+${workerChange} (今月)`;
   document.getElementById('workerChange').className = 'kpi-change positive';
 
-  // 今日の予約
-  const todayBookingsCount = bookingReport.data?.summary?.today || 0;
-  document.getElementById('todayBookings').textContent = todayBookingsCount.toLocaleString();
+  const todayBookingsCount = b.summary?.today || 0;
+  document.getElementById('todayBookings').textContent = Number(todayBookingsCount).toLocaleString();
 
-  // 今月の売上
-  const monthlyRevenue = revenueReport.data?.summary?.totalRevenue || 0;
-  const revenueChange = revenueReport.data?.comparison?.percentage || 0;
-  document.getElementById('monthlyRevenue').textContent = `¥${monthlyRevenue.toLocaleString()}`;
+  const monthlyRevenue = r.summary?.totalRevenue || 0;
+  const revenueChange = r.comparison?.percentage || 0;
+  document.getElementById('monthlyRevenue').textContent = `¥${Number(monthlyRevenue).toLocaleString()}`;
   if (revenueChange > 0) {
-    document.getElementById('revenueChange').textContent = `+${revenueChange.toFixed(1)}% (前月比)`;
+    document.getElementById('revenueChange').textContent = `+${Number(revenueChange).toFixed(1)}% (前月比)`;
     document.getElementById('revenueChange').className = 'kpi-change positive';
   } else if (revenueChange < 0) {
-    document.getElementById('revenueChange').textContent = `${revenueChange.toFixed(1)}% (前月比)`;
+    document.getElementById('revenueChange').textContent = `${Number(revenueChange).toFixed(1)}% (前月比)`;
     document.getElementById('revenueChange').className = 'kpi-change negative';
   } else {
     document.getElementById('revenueChange').textContent = '変化なし';
@@ -259,12 +323,16 @@ function displayTodayBookings(response) {
   const tbody = document.getElementById('todayBookingsTable');
   tbody.innerHTML = '';
 
-  if (!response.data || !response.data.bookings || response.data.bookings.length === 0) {
+  const raw = unwrapApiPayload(response);
+  const bookings = raw?.bookings ?? (Array.isArray(raw) ? raw : []);
+  const list = Array.isArray(bookings) ? bookings.slice(0, 5) : [];
+
+  if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" class="empty-message">今日の予約はありません</td></tr>';
     return;
   }
 
-  response.data.bookings.forEach(booking => {
+  list.forEach(booking => {
     const scheduledDate = new Date(booking.scheduledDate);
     const startTime = booking.startTime || '00:00';
     const duration = booking.duration || 0;
@@ -299,12 +367,15 @@ function displayPendingWorkers(response) {
   const tbody = document.getElementById('pendingWorkersTable');
   tbody.innerHTML = '';
 
-  if (!response.data || !response.data.workers || response.data.workers.length === 0) {
+  const raw = unwrapApiPayload(response);
+  const workers = raw?.workers ?? (Array.isArray(raw) ? raw : []);
+
+  if (!workers.length) {
     tbody.innerHTML = '<tr><td colspan="5" class="empty-message">審査待ちのワーカーはありません</td></tr>';
     return;
   }
 
-  response.data.workers.forEach(worker => {
+  workers.forEach(worker => {
     const createdAt = new Date(worker.createdAt);
     const dateStr = createdAt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
     const idDocumentStatus = worker.idDocumentUrl ? '確認済み' : '未確認';
@@ -326,12 +397,15 @@ function displayPendingInquiries(response) {
   const container = document.getElementById('pendingInquiries');
   container.innerHTML = '';
 
-  if (!response.data || !response.data.tickets || response.data.tickets.length === 0) {
+  const raw = unwrapApiPayload(response);
+  const tickets = raw?.tickets ?? (Array.isArray(raw) ? raw : []);
+
+  if (!tickets.length) {
     container.innerHTML = '<div class="empty-message">未対応の問い合わせはありません</div>';
     return;
   }
 
-  response.data.tickets.forEach(ticket => {
+  tickets.forEach(ticket => {
     const createdAt = new Date(ticket.createdAt);
     const dateStr = createdAt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = createdAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });

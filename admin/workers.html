@@ -6,9 +6,11 @@
   <title>ワーカー管理｜KAJISHIFT管理画面</title>
   <link rel="preload" href="../css/style.css" as="style" />
   <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
 </head>
 <body class="admin-page">
 <script>
@@ -57,12 +59,12 @@ if (typeof checkAuth === 'function') {
       <div class="filter-card">
         <div class="filter-row">
           <div class="filter-item">
-            <label>検索</label>
-            <input type="text" class="form-input" placeholder="氏名、メールアドレスで検索" />
+            <label for="admin-worker-search">検索</label>
+            <input id="admin-worker-search" type="text" class="form-input" placeholder="氏名、メールアドレスで検索" />
           </div>
           <div class="filter-item">
-            <label>エリア</label>
-            <select class="form-select">
+            <label for="admin-worker-area">エリア</label>
+            <select id="admin-worker-area" class="form-select">
               <option value="">すべて</option>
               <option value="sapporo">札幌市</option>
               <option value="ebetsu">江別市</option>
@@ -71,8 +73,8 @@ if (typeof checkAuth === 'function') {
             </select>
           </div>
           <div class="filter-item">
-            <label>評価</label>
-            <select class="form-select">
+            <label for="admin-worker-rating">評価</label>
+            <select id="admin-worker-rating" class="form-select">
               <option value="">すべて</option>
               <option value="5">5.0</option>
               <option value="4">4.0以上</option>
@@ -80,8 +82,8 @@ if (typeof checkAuth === 'function') {
             </select>
           </div>
           <div class="filter-item">
-            <label>状態</label>
-            <select class="form-select">
+            <label for="admin-worker-state">状態</label>
+            <select id="admin-worker-state" class="form-select">
               <option value="">すべて</option>
               <option value="approved">承認済み</option>
               <option value="pending">審査中</option>
@@ -138,20 +140,20 @@ let currentPage = 1;
 let totalPages = 1;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // 認証チェック
   if (!checkAuth('admin')) {
     return;
   }
 
-  // 検索ボタン
-  document.querySelector('.filter-section .btn-primary').addEventListener('click', () => {
+  const filterRoot = document.querySelector('.admin-filter-section');
+  if (!filterRoot) return;
+
+  filterRoot.querySelector('.btn-primary')?.addEventListener('click', () => {
     currentPage = 1;
     loadWorkers();
   });
 
-  // リセットボタン
-  document.querySelector('.filter-section .btn-outline').addEventListener('click', () => {
-    document.querySelectorAll('.filter-section input, .filter-section select').forEach(el => {
+  filterRoot.querySelector('.btn-outline')?.addEventListener('click', () => {
+    filterRoot.querySelectorAll('input, select').forEach((el) => {
       if (el.type === 'text') {
         el.value = '';
       } else if (el.tagName === 'SELECT') {
@@ -162,44 +164,74 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadWorkers();
   });
 
-  // 初期データ読み込み
   await loadWorkers();
 });
 
+function unwrapApiPayload(response) {
+  if (response == null) return null;
+  return response.data !== undefined ? response.data : response;
+}
+
+function getWorkerListFilters() {
+  const search = document.getElementById('admin-worker-search')?.value?.trim();
+  const area = document.getElementById('admin-worker-area')?.value;
+  const rating = document.getElementById('admin-worker-rating')?.value;
+  const state = document.getElementById('admin-worker-state')?.value;
+
+  const filters = {
+    page: currentPage,
+    limit: 20
+  };
+
+  if (search) filters.search = search;
+  if (area) filters.area = area;
+
+  if (rating) {
+    const n = Number(rating);
+    if (Number.isFinite(n)) filters.minRating = n;
+  }
+
+  if (state === 'approved') {
+    filters.approvalStatus = 'APPROVED';
+  } else if (state === 'pending') {
+    filters.approvalStatus = 'PENDING';
+  } else if (state === 'suspended') {
+    filters.status = 'SUSPENDED';
+  }
+
+  return filters;
+}
+
+function getWorkerExportParams() {
+  const f = getWorkerListFilters();
+  const params = {};
+  if (f.search) params.search = f.search;
+  if (f.area) params.area = f.area;
+  if (f.minRating != null) params.minRating = f.minRating;
+  if (f.approvalStatus) params.approvalStatus = f.approvalStatus;
+  if (f.status) params.status = f.status;
+  return params;
+}
+
 async function loadWorkers() {
   try {
-    const filters = {
-      page: currentPage,
-      limit: 20
-    };
-
-    // 検索フィルターを追加
-    const approvalStatus = document.querySelector('.filter-section select[aria-label*="状態"]')?.value || 
-                           document.querySelectorAll('.filter-section select')[3]?.value;
-    const status = document.querySelectorAll('.filter-section select')[3]?.value;
-
-    if (approvalStatus) {
-      filters.approvalStatus = approvalStatus.toUpperCase();
-    }
-    if (status && status !== approvalStatus) {
-      filters.status = status.toUpperCase();
-    }
-
+    const filters = getWorkerListFilters();
     const response = await api.getAdminWorkers(filters);
-    
-    if (response.data && response.data.workers) {
-      const workers = response.data.workers;
-      const pagination = response.data.pagination;
-      
-      currentPage = pagination.page;
-      totalPages = pagination.totalPages;
+    const payload = unwrapApiPayload(response);
 
-      document.getElementById('total-workers').textContent = pagination.total || 0;
-      displayWorkers(workers);
-      updatePagination(pagination);
-    } else {
+    const workers = payload?.workers;
+    const pagination = payload?.pagination;
+
+    if (!Array.isArray(workers) || !pagination) {
       throw new Error('予期しないレスポンス形式');
     }
+
+    currentPage = pagination.page;
+    totalPages = pagination.totalPages;
+
+    document.getElementById('total-workers').textContent = pagination.total || 0;
+    displayWorkers(workers);
+    updatePagination(pagination);
   } catch (error) {
     console.error('ワーカー一覧の読み込みエラー:', error);
     showError('ワーカー一覧の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
@@ -290,23 +322,7 @@ async function suspendWorker(workerId) {
 
 async function exportWorkers(buttonElement) {
   try {
-    // 日付範囲を取得（フィルターから、オプション）
-    const dateInput = document.querySelector('.admin-filter-section input[type="date"]');
-    const startDate = dateInput?.value || '';
-    const endDate = dateInput?.value || '';
-
-    const params = {};
-    if (startDate) {
-      params.startDate = startDate;
-    }
-    if (endDate) {
-      params.endDate = endDate;
-    }
-    // 検索条件があれば追加（オプション）
-    const searchInput = document.querySelector('.admin-filter-section input[type="text"]');
-    if (searchInput?.value) {
-      params.search = searchInput.value;
-    }
+    const params = getWorkerExportParams();
 
     // ローディング表示
     const button = buttonElement || document.querySelector('button[onclick*="exportWorkers"]');
@@ -340,7 +356,7 @@ async function exportWorkers(buttonElement) {
 // Excelエクスポート機能
 async function exportWorkersExcel(buttonElement) {
   try {
-    // ローディング表示
+    const params = getWorkerExportParams();
     const button = buttonElement || document.querySelector('button[onclick*="exportWorkersExcel"]');
     const originalText = button?.textContent || 'Excelエクスポート';
     if (button) {
@@ -348,7 +364,7 @@ async function exportWorkersExcel(buttonElement) {
       button.textContent = 'エクスポート中...';
     }
 
-    const result = await api.downloadExcel('workers', {});
+    const result = await api.downloadExcel('workers', params);
     
     if (button) {
       button.disabled = false;
@@ -367,16 +383,6 @@ async function exportWorkersExcel(buttonElement) {
       button.textContent = 'Excelエクスポート';
     }
   }
-}
-
-function showError(message) {
-  // 簡易的なエラー表示（将来的にはトースト通知などに置き換え可能）
-  alert('エラー: ' + message);
-}
-
-function showSuccess(message) {
-  // 簡易的な成功表示（将来的にはトースト通知などに置き換え可能）
-  alert('成功: ' + message);
 }
 
 function logout() {

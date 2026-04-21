@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>チャット｜KAJISHIFT</title>
+  <title>チャット｜KAJISHIFT（ワーカー）</title>
   <link rel="preload" href="../css/style.css" as="style" />
   <link rel="stylesheet" href="../css/style.css" />
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -11,24 +11,26 @@
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
   <script src="../js/socket.js" defer></script>
+  <script src="../js/worker-notification-badge.js" defer></script>
 </head>
-<body class="customer-page">
+<body class="worker-page">
 
-<header class="customer-header">
+<header class="worker-header" role="banner">
   <div class="container header-inner">
     <div class="logo">KAJISHIFT</div>
-    <nav class="nav">
-      <a href="dashboard.html">マイページ</a>
-      <a href="booking.html">予約する</a>
-      <a href="bookings.html">予約一覧</a>
-      <a href="payment.html">決済・履歴</a>
+    <nav class="nav" role="navigation" aria-label="メインナビゲーション">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html">プロフィール</a>
     </nav>
     <div class="header-actions">
-      <button class="btn-icon" id="notificationBtn" aria-label="通知">
-        <span class="notification-badge">2</span>
-        🔔
-      </button>
-      <a href="customer-profile.html" class="avatar">👤</a>
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
+        <span aria-hidden="true">🔔</span>
+      </a>
+      <a href="profile.html" class="avatar" aria-label="プロフィールページへ移動">👤</a>
     </div>
   </div>
 </header>
@@ -39,7 +41,7 @@
     <!-- チャットヘッダー -->
     <div class="chat-header-bar">
       <div class="back-link-small">
-        <a href="bookings.html">← 戻る</a>
+        <a href="jobs.html">← 戻る</a>
       </div>
       <div class="chat-partner-info" id="chatPartnerInfo">
         <div class="chat-avatar">👤</div>
@@ -51,14 +53,11 @@
       <div class="chat-menu-container">
         <button class="btn-icon" id="chatMenuBtn" aria-label="メニュー">⋯</button>
         <div class="chat-menu-dropdown is-hidden" id="chatMenuDropdown">
-          <button class="chat-menu-item" id="viewWorkerProfileBtn">
-            <span>👤</span> ワーカープロフィールを見る
-          </button>
           <button class="chat-menu-item" id="viewBookingDetailBtn">
-            <span>📋</span> 予約詳細を見る
+            <span>📋</span> 仕事詳細を見る
           </button>
           <button class="chat-menu-item" id="viewBookingListBtn">
-            <span>📝</span> 予約一覧に戻る
+            <span>📝</span> 仕事一覧に戻る
           </button>
         </div>
       </div>
@@ -85,19 +84,6 @@
   </div>
 </main>
 
-<!-- ワーカープロフィールモーダル -->
-<div class="modal" id="workerProfileModal">
-  <div class="modal-content card-standard modal-content--wide">
-    <div class="modal-inline-header">
-      <h2>ワーカープロフィール</h2>
-      <button class="btn-icon modal-close-lg" onclick="closeModal('workerProfileModal')">×</button>
-    </div>
-    <div id="workerProfileContent">
-      <div class="loading-message">読み込み中...</div>
-    </div>
-  </div>
-</div>
-
 <script>
 // グローバル変数
 let bookingId = null;
@@ -111,7 +97,7 @@ let sentBurstCount = 0;
 // ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
   // 認証チェック
-  if (!checkAuth('customer')) {
+  if (!checkAuth('worker')) {
     return;
   }
 
@@ -121,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   if (!bookingId) {
     alert('予約IDが指定されていません');
-    window.location.href = 'bookings.html';
+    window.location.href = 'jobs.html';
     return;
   }
   
@@ -144,13 +130,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 初期メッセージを読み込み
   await loadMessages();
   
-  // Socket.io接続を初期化
   const token = localStorage.getItem('token');
   if (token && typeof socketManager !== 'undefined') {
     socketManager.ensureConnected(token);
 
     socketManager.onMessage((message) => {
       console.log('WebSocketでメッセージを受信:', message);
+      // この予約に関連するメッセージのみ処理
       if (message && String(message.bookingId) === String(bookingId)) {
         // 既に表示済みのメッセージはスキップ
         if (!loadedMessageIds.has(message.id)) {
@@ -205,37 +191,22 @@ function setupChatMenu() {
     }
   });
   
-  // ワーカープロフィールを見る
-  const viewWorkerProfileBtn = document.getElementById('viewWorkerProfileBtn');
-  if (viewWorkerProfileBtn) {
-    viewWorkerProfileBtn.addEventListener('click', async function() {
-      if (currentBooking && currentBooking.workerId) {
-        await viewWorkerProfile(currentBooking.workerId);
-      } else {
-        alert('ワーカー情報が取得できません');
-      }
-      menuDropdown.classList.add('is-hidden');
-    });
-  }
-  
-  // 予約詳細を見る
   const viewBookingDetailBtn = document.getElementById('viewBookingDetailBtn');
   if (viewBookingDetailBtn) {
     viewBookingDetailBtn.addEventListener('click', function() {
       if (bookingId) {
-        window.location.href = `booking-detail.html?id=${bookingId}`;
+        window.location.href = `job-detail.html?id=${encodeURIComponent(bookingId)}`;
       } else {
         alert('予約IDが取得できません');
       }
       menuDropdown.classList.add('is-hidden');
     });
   }
-  
-  // 予約一覧に戻る
+
   const viewBookingListBtn = document.getElementById('viewBookingListBtn');
   if (viewBookingListBtn) {
     viewBookingListBtn.addEventListener('click', function() {
-      window.location.href = 'bookings.html';
+      window.location.href = 'jobs.html';
       menuDropdown.classList.add('is-hidden');
     });
   }
@@ -293,19 +264,24 @@ function setupEventListeners() {
 async function loadBookingInfo() {
   try {
     const response = await api.getBookingById(bookingId);
-    currentBooking = response.data;
+    currentBooking = response.data != null ? response.data : response;
 
     if (!currentBooking) {
       throw new Error('予約が見つかりません');
     }
 
-    // 相手（ワーカー）の情報を表示
-    if (currentBooking.worker) {
-      document.getElementById('partnerName').textContent = `${currentBooking.worker.name || '不明'}さん`;
-      document.getElementById('partnerStatus').textContent = 'オンライン';
+    const cust = currentBooking.customer;
+    const statusEl = document.getElementById('partnerStatus');
+    if (cust && cust.name) {
+      document.getElementById('partnerName').textContent = `${cust.name}さん`;
+      if (statusEl) {
+        statusEl.innerHTML = '<span class="status-dot" aria-hidden="true"></span>依頼者';
+      }
     } else {
-      document.getElementById('partnerName').textContent = 'ワーカー未割り当て';
-      document.getElementById('partnerStatus').textContent = '-';
+      document.getElementById('partnerName').textContent = '依頼者';
+      if (statusEl) {
+        statusEl.innerHTML = '<span class="status-dot" aria-hidden="true"></span>-';
+      }
     }
   } catch (error) {
     console.error('予約情報の読み込みエラー:', error);
@@ -719,132 +695,6 @@ function openImageModal(imageUrl) {
   document.body.appendChild(modal);
 }
 
-function showError(message) {
-  alert('エラー: ' + message);
-}
-
-// ページを離れる時にSocket接続を切断
-window.addEventListener('beforeunload', function() {
-  // Socket接続はグローバルなので切断しない（他のページでも使用するため）
-  // 必要に応じて、このページ専用のSocket接続を管理する場合は切断する
-});
-
-// ワーカープロフィールを表示
-async function viewWorkerProfile(workerId) {
-  try {
-    document.getElementById('workerProfileContent').innerHTML = '<div class="loading-message">読み込み中...</div>';
-    document.getElementById('workerProfileModal').classList.add('is-open');
-    
-    const response = await api.getWorkerById(workerId);
-    const worker = response.data;
-    
-    if (!worker) {
-      throw new Error('ワーカー情報が取得できませんでした');
-    }
-    
-    // プロフィールHTMLを生成
-    const profileHTML = `
-      <div class="worker-profile-detail">
-        <div class="worker-profile-header">
-          <div class="worker-avatar-large">👤</div>
-          <div class="worker-profile-info">
-            <h3>${escapeHtml(worker.name || '名前未設定')}</h3>
-            <div class="worker-rating">
-              <span class="rating-stars">${generateStars(worker.rating || 0)}</span>
-              <span class="rating-value">${(worker.rating || 0).toFixed(1)}</span>
-              <span class="review-count">(${worker.reviewCount || 0}件のレビュー)</span>
-            </div>
-            <div class="worker-rate">
-              <strong>時給: ¥${(worker.hourlyRate || 0).toLocaleString()}</strong>
-            </div>
-          </div>
-        </div>
-
-        <div class="worker-stats worker-profile-stats">
-          <div class="stat-item">
-            <span class="stat-label">時給</span>
-            <span class="stat-value no-wrap">¥${(worker.hourlyRate || 0).toLocaleString()}/時間</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">実績</span>
-            <span class="stat-value no-wrap">${worker.reviewCount || 0}件</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">完了予約数</span>
-            <span class="stat-value no-wrap">${worker.completedBookings || 0}件</span>
-          </div>
-        </div>
-        
-        ${worker.bio ? `
-          <div class="worker-bio">
-            <h4>自己紹介</h4>
-            <p>${escapeHtml(worker.bio)}</p>
-          </div>
-        ` : ''}
-        
-        <div class="worker-profile-reviews" id="workerProfileReviews">
-          <h4>レビュー</h4>
-          <div class="loading-message">読み込み中...</div>
-        </div>
-      </div>
-    `;
-    
-    document.getElementById('workerProfileContent').innerHTML = profileHTML;
-    
-    // レビューを読み込む
-    await loadWorkerProfileReviews(workerId);
-  } catch (error) {
-    console.error('ワーカープロフィールの読み込みエラー:', error);
-    alert('ワーカープロフィールの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
-    document.getElementById('workerProfileContent').innerHTML = '<div class="error-message">エラー: ワーカープロフィールの読み込みに失敗しました</div>';
-  }
-}
-
-// ワーカープロフィールのレビューを読み込む
-async function loadWorkerProfileReviews(workerId) {
-  try {
-    const response = await api.getReviewsByWorkerId(workerId, { limit: 5 });
-    const reviews = response.data?.reviews || [];
-    
-    const reviewsElement = document.getElementById('workerProfileReviews');
-    if (!reviewsElement) return;
-    
-    if (reviews.length === 0) {
-      reviewsElement.innerHTML = '<h4>レビュー</h4><div class="empty-message">レビューがありません</div>';
-      return;
-    }
-    
-    const reviewsHTML = `
-      <h4>レビュー (${reviews.length}件)</h4>
-      <div class="reviews-list">
-        ${reviews.map(review => `
-          <div class="review-item">
-            <div class="review-header">
-              <span class="reviewer-name">${escapeHtml(review.reviewer?.name || '匿名')}</span>
-              <span class="review-rating">${generateStars(review.rating)}</span>
-              <span class="review-date">${formatDate(review.createdAt)}</span>
-            </div>
-            ${review.comment ? `<p class="review-comment">${escapeHtml(review.comment)}</p>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    `;
-    
-    reviewsElement.innerHTML = reviewsHTML;
-  } catch (error) {
-    console.error('レビュー読み込みエラー:', error);
-    const reviewsElement = document.getElementById('workerProfileReviews');
-    if (reviewsElement) {
-      reviewsElement.innerHTML = '<h4>レビュー</h4><div class="error-message">レビューの読み込みに失敗しました</div>';
-    }
-  }
-}
-
-// モーダルを閉じる
-function closeModal(modalId) {
-  document.getElementById(modalId).classList.remove('is-open');
-}
-
 // ユーティリティ関数
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -852,19 +702,6 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function generateStars(rating) {
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-  
-  return '★'.repeat(fullStars) + (hasHalfStar ? '☆' : '') + '☆'.repeat(emptyStars);
-}
-
-function formatDate(dateString) {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
-}
 </script>
 
 </body>

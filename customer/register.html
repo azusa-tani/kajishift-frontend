@@ -7,9 +7,11 @@
   <link rel="preload" href="../css/style.css" as="style" />
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="preload" href="../js/validation.js" as="script" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
   <script src="../js/validation.js" defer></script>
 </head>
 <body class="auth-page">
@@ -249,7 +251,7 @@
         const password = document.getElementById('password').value;
         const error = Validators.passwordConfirm(password, passwordConfirm.value);
         if (error) {
-          showError(passwordConfirm, error);
+          showFieldError(passwordConfirm, error);
         } else {
           clearError(passwordConfirm);
         }
@@ -330,20 +332,16 @@
       
       const submitButton = this.querySelector('button[type="submit"]');
       const originalButtonText = submitButton.textContent;
-      
-      // ローディング状態
+
       submitButton.disabled = true;
       submitButton.textContent = '登録中...';
-      
+
       try {
-        // APIで登録
         const response = await api.register(formData);
-        
+
         if (response.data && response.data.user) {
-          // 登録成功
           showSuccess('登録が完了しました。ログインしています...');
-          
-          // ダッシュボードにリダイレクト
+
           setTimeout(() => {
             window.location.href = 'dashboard.html';
           }, 1000);
@@ -351,9 +349,9 @@
           throw new Error('登録に失敗しました');
         }
       } catch (error) {
-        // エラー処理
         console.error('登録エラー:', error);
         showError(error.message || '登録に失敗しました。入力内容を確認してください。');
+      } finally {
         submitButton.disabled = false;
         submitButton.textContent = originalButtonText;
       }

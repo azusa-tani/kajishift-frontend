@@ -7,9 +7,11 @@
   <link rel="preload" href="../css/style.css" as="style" />
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="preload" href="../js/validation.js" as="script" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
   <script src="../js/validation.js" defer></script>
 </head>
 <body class="worker-login-page">
@@ -219,7 +221,7 @@
         const password = document.getElementById('password').value;
         const error = Validators.passwordConfirm(password, passwordConfirm.value);
         if (error) {
-          showError(passwordConfirm, error);
+          showFieldError(passwordConfirm, error);
         } else {
           clearError(passwordConfirm);
         }
@@ -349,34 +351,34 @@
         formData.append('idDocument', idDocumentInput.files[0]);
       }
 
+      const submitButton = this.querySelector('button[type="submit"]');
       try {
-        // 登録ボタンを無効化
-        const submitButton = this.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         submitButton.textContent = '登録中...';
 
-        // APIで登録（FormData形式で送信）
         const response = await api.registerWithFile(formData);
-        
+
         if (response.data && response.data.token) {
-          // トークンを保存
           api.setToken(response.data.token);
           if (response.data.user) {
             api.setUser(response.data.user);
           }
-          
+
           alert('登録が完了しました。審査完了後、メールでお知らせします。');
-          // ログインページへリダイレクト
           window.location.href = 'login.html';
         } else {
           throw new Error('登録に失敗しました');
         }
       } catch (error) {
         console.error('登録エラー:', error);
-        showError('登録に失敗しました: ' + (error.message || 'エラーが発生しました'), document.getElementById('errorMessage'));
-        
-        // 登録ボタンを再有効化
-        const submitButton = this.querySelector('button[type="submit"]');
+        const errMsg =
+          error && error.message
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'エラーが発生しました';
+        showError('登録に失敗しました: ' + errMsg, document.getElementById('errorMessage'));
+      } finally {
         submitButton.disabled = false;
         submitButton.textContent = '登録する';
       }

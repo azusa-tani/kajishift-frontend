@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   const token = localStorage.getItem('token');
   if (token && typeof socketManager !== 'undefined') {
-    socketManager.connect(token);
+    socketManager.ensureConnected(token);
 
     socketManager.onUnreadCount((count) => {
       updateNotificationBadge(count);

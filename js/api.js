@@ -39,6 +39,13 @@ class ApiClient {
    * トークンをクリア（ログアウト）
    */
   clearToken() {
+    try {
+      if (typeof window !== 'undefined' && window.socketManager && typeof window.socketManager.disconnect === 'function') {
+        window.socketManager.disconnect();
+      }
+    } catch (e) {
+      console.warn('Socket 切断をスキップ:', e);
+    }
     this.token = null;
     this.user = null;
     localStorage.removeItem('token');
@@ -184,12 +191,25 @@ class ApiClient {
       body: formData,
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || '登録に失敗しました');
+    const raw = await response.text();
+    let data = {};
+    if (raw) {
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        data = {};
+      }
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      const msg =
+        (data && (data.message || data.error)) ||
+        `登録に失敗しました（HTTP ${response.status}）`;
+      const err = new Error(msg);
+      err.status = response.status;
+      err.data = data;
+      throw err;
+    }
 
     // トークンを保存
     if (data.data && data.data.token) {
@@ -836,6 +856,14 @@ class ApiClient {
   }
 
   /**
+   * ワーカー詳細を取得（管理者のみ・GET /admin/workers/:id）
+   * 未実装のバックエンドでは 404 のため、呼び出し側で GET /workers/:id にフォールバックする
+   */
+  async getAdminWorkerById(workerId) {
+    return this.request(`/admin/workers/${encodeURIComponent(workerId)}`);
+  }
+
+  /**
    * ワーカーを承認/却下（管理者のみ）
    */
   async approveWorker(workerId, approvalStatus) {
@@ -936,6 +964,13 @@ class ApiClient {
     const queryString = new URLSearchParams(params).toString();
     const endpoint = `/admin/reports/workers${queryString ? `?${queryString}` : ''}`;
     return this.request(endpoint);
+  }
+
+  /**
+   * 管理ダッシュボード用KPIサマリー（バックエンドが /admin/stats を実装している場合）
+   */
+  async getAdminStats() {
+    return this.request('/admin/stats');
   }
 
   // ==================== システム設定API ====================

@@ -141,17 +141,51 @@ const Validators = {
   }
 };
 
-// エラーメッセージ表示
-function showError(input, message) {
+/** @param {unknown} el */
+function isFieldElement(el) {
+  return Boolean(
+    el &&
+      typeof el === 'object' &&
+      el.nodeType === 1 &&
+      typeof el.closest === 'function'
+  );
+}
+
+/**
+ * 入力欄直下にエラーを表示（`auth.js` の `showError(message)` と名前が被らないよう分離）
+ * input が無い・DOM でない場合はページ上部の #errorMessage / .error-message にフォールバック
+ */
+function showFieldError(input, message) {
+  const text = message != null ? String(message) : '';
+
+  if (!isFieldElement(input)) {
+    const pageEl =
+      (typeof document !== 'undefined' && document.getElementById('errorMessage')) ||
+      (typeof document !== 'undefined' && document.querySelector('.error-message'));
+    if (pageEl) {
+      pageEl.textContent = text;
+      pageEl.classList.remove('is-hidden');
+    }
+    return;
+  }
+
   const formGroup = input.closest('.form-group');
-  if (!formGroup) return;
+  if (!formGroup) {
+    const pageEl =
+      document.getElementById('errorMessage') || document.querySelector('.error-message');
+    if (pageEl) {
+      pageEl.textContent = text;
+      pageEl.classList.remove('is-hidden');
+    }
+    return;
+  }
 
   formGroup.classList.add('has-error');
   formGroup.classList.remove('has-success');
 
   // エラーIDを生成
-  const errorId = input.id + '-error';
-  
+  const errorId = (input.id || 'field') + '-error';
+
   let errorElement = formGroup.querySelector('.form-error');
   if (!errorElement) {
     errorElement = document.createElement('div');
@@ -161,12 +195,12 @@ function showError(input, message) {
     errorElement.setAttribute('aria-live', 'polite');
     formGroup.appendChild(errorElement);
   }
-  errorElement.textContent = message;
-  
+  errorElement.textContent = text;
+
   // ARIA属性を設定
   input.setAttribute('aria-invalid', 'true');
   input.setAttribute('aria-describedby', errorId);
-  
+
   // 既存のaria-describedbyを保持（ヒントなどがある場合）
   const existingDescribedBy = input.getAttribute('aria-describedby');
   if (existingDescribedBy && !existingDescribedBy.includes(errorId)) {
@@ -176,6 +210,8 @@ function showError(input, message) {
 
 // エラーメッセージ削除
 function clearError(input) {
+  if (!isFieldElement(input)) return;
+
   const formGroup = input.closest('.form-group');
   if (!formGroup) return;
 
@@ -186,10 +222,10 @@ function clearError(input) {
   if (errorElement) {
     errorElement.remove();
   }
-  
+
   // ARIA属性をクリア
   input.setAttribute('aria-invalid', 'false');
-  const errorId = input.id + '-error';
+  const errorId = (input.id || 'field') + '-error';
   const existingDescribedBy = input.getAttribute('aria-describedby');
   if (existingDescribedBy) {
     const describedBy = existingDescribedBy.split(' ').filter(id => id !== errorId).join(' ');
@@ -227,7 +263,7 @@ function validateField(input, validator, options = {}) {
   const error = validator(value, options);
   
   if (error) {
-    showError(input, error);
+    showFieldError(input, error);
     return false;
   } else {
     clearError(input);

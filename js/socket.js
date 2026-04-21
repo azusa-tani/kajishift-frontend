@@ -1,202 +1,244 @@
 /**
- * Socket.io接続管理クラス
- * リアルタイム通知とメッセージ機能を提供
+ * Socket.io 接続管理（全ロール共通）
+ * - JWT は auth: { token } で送信
+ * - DOMContentLoaded 時にトークンがあれば自動接続（js/socket-bootstrap 相当の処理を内包）
  */
+
+function socketExtractPayload(raw) {
+  if (raw == null) return null;
+  if (typeof raw === 'object' && raw.data !== undefined) {
+    return raw.data;
+  }
+  return raw;
+}
 
 class SocketManager {
   constructor() {
     this.socket = null;
     this.isConnected = false;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
-    this.reconnectDelay = 1000; // 1秒
+    this.maxReconnectAttempts = Infinity;
+    this.reconnectDelay = 1000;
+    this._authToken = null;
+    this._serverURL = null;
+    this._globalHandlersRegistered = false;
     this.listeners = {
       notification: [],
       message: [],
-      unreadCount: []
+      unreadCount: [],
     };
   }
 
   /**
-   * Socket.io接続を初期化
-   * @param {string} token - JWTトークン
-   * @param {string} serverURL - サーバーURL（デフォルト: 環境変数または環境に応じた自動切り替え）
+   * 既存ソケットを破棄（リスナーは残す：ページ用コールバックのため）
    */
-  connect(token, serverURL = null) {
-    // serverURLが指定されていない場合、環境に応じて自動決定
-    if (!serverURL) {
-      if (window.SOCKET_SERVER_URL) {
-        serverURL = window.SOCKET_SERVER_URL;
-      } else {
-        // 環境に応じて自動切り替え
-        // localhostの場合は開発環境、それ以外は本番環境
-        const isDevelopment = window.location.hostname === 'localhost' || 
-                             window.location.hostname === '127.0.0.1' ||
-                             window.location.hostname === '';
-        serverURL = isDevelopment 
-          ? 'http://localhost:3000'
-          : 'https://kajishift-backend-production.up.railway.app';
-      }
+  _destroySocketInstance() {
+    if (!this.socket) return;
+    try {
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+    } catch (e) {
+      console.warn('Socket 切断時の警告:', e);
     }
-    if (this.socket && this.isConnected) {
-      console.log('Socket.ioは既に接続されています');
+    this.socket = null;
+    this.isConnected = false;
+  }
+
+  connect(token, serverURL = null) {
+    if (typeof io === 'undefined') {
+      console.error('Socket.io クライアントが読み込まれていません（CDN の socket.io を先に読み込んでください）');
       return;
     }
 
     if (!token) {
-      console.error('Socket.io接続にトークンが必要です');
+      console.warn('Socket.io: トークンがないため接続しません');
       return;
     }
 
-    // Socket.ioクライアントライブラリが読み込まれているか確認
-    if (typeof io === 'undefined') {
-      console.error('Socket.ioクライアントライブラリが読み込まれていません');
+    const tokenStr = String(token);
+    let resolvedUrl = serverURL;
+    if (!resolvedUrl) {
+      if (window.SOCKET_SERVER_URL) {
+        resolvedUrl = window.SOCKET_SERVER_URL;
+      } else {
+        const isDevelopment =
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1' ||
+          window.location.hostname === '';
+        resolvedUrl = isDevelopment
+          ? 'http://localhost:3000'
+          : 'https://kajishift-backend-production.up.railway.app';
+      }
+    }
+
+    // 同一トークン・接続済みなら何もしない
+    if (this.socket && this.socket.connected && this._authToken === tokenStr) {
       return;
     }
+
+    // トークン変更または未接続 → 作り直し
+    if (this.socket) {
+      this._destroySocketInstance();
+    }
+
+    this._authToken = tokenStr;
+    this._serverURL = resolvedUrl;
 
     try {
-      this.socket = io(serverURL, {
+      this.socket = io(resolvedUrl, {
         auth: {
-          token: token
+          token: tokenStr,
         },
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: this.reconnectDelay,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: this.maxReconnectAttempts
+        reconnectionDelayMax: 8000,
+        reconnectionAttempts: this.maxReconnectAttempts,
+        timeout: 20000,
       });
 
       this.setupEventHandlers();
     } catch (error) {
-      console.error('Socket.io接続エラー:', error);
+      console.error('Socket.io 接続エラー:', error);
     }
   }
 
   /**
-   * イベントハンドラーを設定
+   * 明示的に接続を確保（既存ページの connect(token) と互換）
    */
+  ensureConnected(token, serverURL = null) {
+    this.connect(token, serverURL);
+  }
+
   setupEventHandlers() {
     if (!this.socket) return;
 
-    // 接続成功
     this.socket.on('connect', () => {
-      console.log('Socket.io接続成功');
+      console.log('Socket.io 接続成功');
       this.isConnected = true;
       this.reconnectAttempts = 0;
+      if (typeof window.syncNotificationBadgesGlobally === 'function') {
+        window.syncNotificationBadgesGlobally();
+      }
     });
 
-    // 接続確認
     this.socket.on('connected', (data) => {
-      console.log('Socket.io接続確認:', data);
+      console.log('Socket.io 接続確認:', data);
       this.isConnected = true;
     });
 
-    // 通知受信
-    this.socket.on('notification', (data) => {
-      console.log('新しい通知を受信:', data);
-      if (data && data.data) {
-        this.listeners.notification.forEach(callback => {
-          try {
-            callback(data.data);
-          } catch (error) {
-            console.error('通知コールバックエラー:', error);
-          }
-        });
-      }
-    });
+    const dispatchNotification = (raw) => {
+      const payload = socketExtractPayload(raw);
+      if (payload == null && raw == null) return;
+      const data = payload != null ? payload : raw;
+      this.listeners.notification.forEach((callback) => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error('通知コールバックエラー:', error);
+        }
+      });
+    };
 
-    // メッセージ受信
-    this.socket.on('message', (data) => {
-      console.log('新しいメッセージを受信:', data);
-      if (data && data.data) {
-        this.listeners.message.forEach(callback => {
-          try {
-            callback(data.data);
-          } catch (error) {
-            console.error('メッセージコールバックエラー:', error);
-          }
-        });
-      }
-    });
+    this.socket.on('notification', dispatchNotification);
 
-    // 未読通知数更新
-    this.socket.on('unread-count', (data) => {
-      console.log('未読通知数更新:', data);
+    const dispatchMessage = (raw) => {
+      const payload = socketExtractPayload(raw);
+      if (payload == null && raw == null) return;
+      const data = payload != null ? payload : raw;
+      this.listeners.message.forEach((callback) => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error('メッセージコールバックエラー:', error);
+        }
+      });
+    };
+
+    this.socket.on('message', dispatchMessage);
+    this.socket.on('new_message', dispatchMessage);
+
+    this.socket.on('unread-count', (raw) => {
+      const data = socketExtractPayload(raw);
+      let count;
       if (data && typeof data.count === 'number') {
-        this.listeners.unreadCount.forEach(callback => {
-          try {
-            callback(data.count);
-          } catch (error) {
-            console.error('未読通知数コールバックエラー:', error);
-          }
-        });
+        count = data.count;
+      } else if (raw && typeof raw.count === 'number') {
+        count = raw.count;
+      } else {
+        return;
       }
+      console.log('未読通知数更新:', count);
+      this.listeners.unreadCount.forEach((callback) => {
+        try {
+          callback(count);
+        } catch (error) {
+          console.error('未読通知数コールバックエラー:', error);
+        }
+      });
     });
 
-    // 接続エラー
     this.socket.on('connect_error', (error) => {
-      console.error('Socket.io接続エラー:', error);
+      console.error('Socket.io connect_error:', error);
       this.isConnected = false;
       this.reconnectAttempts++;
-
-      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.error('Socket.io再接続試行回数の上限に達しました');
-      }
     });
 
-    // 切断
     this.socket.on('disconnect', (reason) => {
-      console.log('Socket.io切断:', reason);
+      console.log('Socket.io 切断:', reason);
       this.isConnected = false;
-
-      // 意図的な切断でない場合は再接続を試みる
-      if (reason === 'io server disconnect') {
-        // サーバー側で切断された場合は手動で再接続
+      if (reason === 'io server disconnect' && this.socket) {
         this.socket.connect();
       }
     });
 
-    // エラー
     this.socket.on('error', (error) => {
-      console.error('Socket.ioエラー:', error);
+      console.error('Socket.io error:', error);
     });
+
+    this._registerGlobalSideEffectsOnce();
   }
 
   /**
-   * 通知受信イベントのリスナーを登録
-   * @param {Function} callback - コールバック関数
+   * どのページでもベルバッジを更新（重複登録しない）
    */
+  _registerGlobalSideEffectsOnce() {
+    if (this._globalHandlersRegistered) return;
+    this._globalHandlersRegistered = true;
+
+    this.onUnreadCount((count) => {
+      if (typeof window.applySocketUnreadCountToBadges === 'function') {
+        window.applySocketUnreadCountToBadges(count);
+      }
+    });
+
+    this.onNotification(() => {
+      if (typeof window.syncNotificationBadgesGlobally === 'function') {
+        window.syncNotificationBadgesGlobally();
+      } else if (typeof window.syncCustomerNotificationBadge === 'function') {
+        window.syncCustomerNotificationBadge();
+      }
+    });
+  }
+
   onNotification(callback) {
     if (typeof callback === 'function') {
       this.listeners.notification.push(callback);
     }
   }
 
-  /**
-   * メッセージ受信イベントのリスナーを登録
-   * @param {Function} callback - コールバック関数
-   */
   onMessage(callback) {
     if (typeof callback === 'function') {
       this.listeners.message.push(callback);
     }
   }
 
-  /**
-   * 未読通知数更新イベントのリスナーを登録
-   * @param {Function} callback - コールバック関数
-   */
   onUnreadCount(callback) {
     if (typeof callback === 'function') {
       this.listeners.unreadCount.push(callback);
     }
   }
 
-  /**
-   * リスナーを削除
-   * @param {string} eventType - イベントタイプ（notification, message, unreadCount）
-   * @param {Function} callback - 削除するコールバック関数
-   */
   off(eventType, callback) {
     if (this.listeners[eventType]) {
       const index = this.listeners[eventType].indexOf(callback);
@@ -206,35 +248,37 @@ class SocketManager {
     }
   }
 
-  /**
-   * すべてのリスナーを削除
-   */
   removeAllListeners() {
     this.listeners.notification = [];
     this.listeners.message = [];
     this.listeners.unreadCount = [];
+    this._globalHandlersRegistered = false;
   }
 
-  /**
-   * Socket.io接続を切断
-   */
   disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-      this.isConnected = false;
-      this.removeAllListeners();
-    }
+    this._destroySocketInstance();
+    this.removeAllListeners();
+    this._authToken = null;
   }
 
-  /**
-   * 接続状態を取得
-   * @returns {boolean} 接続中かどうか
-   */
   getConnectionStatus() {
     return this.isConnected && this.socket && this.socket.connected;
   }
 }
 
-// グローバルインスタンスを作成
 const socketManager = new SocketManager();
+if (typeof window !== 'undefined') {
+  window.socketManager = socketManager;
+}
+
+function kajishiftInitSocketIfLoggedIn() {
+  if (typeof api === 'undefined') return;
+  const token = api.token || localStorage.getItem('token');
+  if (!token) return;
+  if (typeof io === 'undefined') return;
+  socketManager.connect(token);
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', kajishiftInitSocketIfLoggedIn);
+}

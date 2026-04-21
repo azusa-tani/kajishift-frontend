@@ -79,7 +79,7 @@ function redirectToLogin(role = null, customPath = null) {
  */
 function logout() {
   api.clearToken();
-  
+
   // 現在のパスからロールを推測してログインページにリダイレクト
   const currentPath = window.location.pathname;
   if (currentPath.includes('/customer/')) {
@@ -98,7 +98,11 @@ function logout() {
  */
 function showError(message, container = null) {
   const errorContainer = container || document.querySelector('.error-message') || document.body;
-  
+
+  if (errorContainer.classList && errorContainer.classList.contains('is-hidden')) {
+    errorContainer.classList.remove('is-hidden');
+  }
+
   // 既存のエラーメッセージを削除
   const existingError = errorContainer.querySelector('.alert-error');
   if (existingError) {
@@ -188,8 +192,7 @@ function hideLoading(loadingElement) {
 }
 
 /**
- * 依頼者ページの通知バッジを API の未読件数と同期する（静的 HTML のダミー表示の解消）
- * Socket.io のイベントと併用し、ページ初回表示時の整合性を取る。
+ * 通知バッジ用：API レスポンスから未読件数を取り出す
  */
 function parseUnreadNotificationCount(response) {
   if (!response) return 0;
@@ -198,9 +201,30 @@ function parseUnreadNotificationCount(response) {
   return 0;
 }
 
-async function syncCustomerNotificationBadge() {
-  const path = window.location && window.location.pathname ? window.location.pathname : '';
-  if (!path.includes('/customer/')) return;
+/**
+ * Socket の unread-count イベント用：数値でヘッダーのベルを一括更新
+ */
+function applySocketUnreadCountToBadges(count) {
+  const n = typeof count === 'number' && !Number.isNaN(count) ? Math.max(0, count) : 0;
+  document.querySelectorAll('.notification-badge').forEach((el) => {
+    if (n > 0) {
+      el.textContent = String(n);
+      el.classList.remove('is-hidden');
+    } else {
+      el.textContent = '0';
+      el.classList.add('is-hidden');
+    }
+  });
+  const btn = document.getElementById('notificationBtn');
+  if (btn) {
+    btn.setAttribute('aria-label', n > 0 ? `通知（${n}件の未読）` : '通知');
+  }
+}
+
+/**
+ * 未読件数を API で再取得し、すべての .notification-badge を同期（依頼者・ワーカー共通）
+ */
+async function syncNotificationBadgesGlobally() {
   if (typeof api === 'undefined' || !api || !api.token) {
     document.querySelectorAll('.notification-badge').forEach((el) => {
       el.textContent = '0';
@@ -212,26 +236,20 @@ async function syncCustomerNotificationBadge() {
   try {
     const response = await api.getUnreadNotificationCount();
     const count = parseUnreadNotificationCount(response);
-    document.querySelectorAll('.notification-badge').forEach((el) => {
-      if (count > 0) {
-        el.textContent = String(count);
-        el.classList.remove('is-hidden');
-      } else {
-        el.textContent = '0';
-        el.classList.add('is-hidden');
-      }
-    });
-    const btn = document.getElementById('notificationBtn');
-    if (btn) {
-      btn.setAttribute('aria-label', count > 0 ? `通知（${count}件の未読）` : '通知');
-    }
+    applySocketUnreadCountToBadges(count);
   } catch (e) {
     console.error('未読通知数の同期に失敗しました:', e);
   }
 }
 
+async function syncCustomerNotificationBadge() {
+  await syncNotificationBadgesGlobally();
+}
+
 document.addEventListener('DOMContentLoaded', function () {
-  syncCustomerNotificationBadge();
+  syncNotificationBadgesGlobally();
 });
 
 window.syncCustomerNotificationBadge = syncCustomerNotificationBadge;
+window.syncNotificationBadgesGlobally = syncNotificationBadgesGlobally;
+window.applySocketUnreadCountToBadges = applySocketUnreadCountToBadges;

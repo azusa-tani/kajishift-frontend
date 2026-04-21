@@ -1,0 +1,432 @@
+/**
+ * 管理画面 — ワーカー詳細などの高密度ダッシュボード用
+ * （style.css のカラーパレットに合わせつつコントラスト強化）
+ */
+
+/* --- フラッシュメッセージ --- */
+.admin-worker-flash {
+  margin: 0 auto 16px;
+  max-width: 1120px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.admin-worker-flash--success {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-color: #a5d6a7;
+}
+
+.admin-worker-flash--error {
+  background: #ffebee;
+  color: #b71c1c;
+  border-color: #ef9a9a;
+}
+
+.admin-worker-flash--info {
+  background: #e3f2fd;
+  color: #0d47a1;
+  border-color: #90caf9;
+}
+
+/* --- ヒーロー（名前 + バッジ） --- */
+.admin-worker-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px 22px;
+  background: linear-gradient(135deg, #fafbfc 0%, #f0f4f8 100%);
+  border: 1px solid #d8dee6;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.admin-worker-hero__title {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.02em;
+}
+
+.admin-worker-hero__sub {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.admin-worker-hero__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* --- 2カラム定義リスト --- */
+.admin-def-list {
+  margin: 0;
+  padding: 0;
+  border: 1px solid #d8dee6;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.admin-def-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 30%) 1fr;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-def-row:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 720px) {
+  .admin-def-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-def-label {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  background: #f1f5f9;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .admin-def-label {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+}
+
+.admin-def-value {
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #fff;
+  line-height: 1.5;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.admin-def-value-text {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-def-value-text--pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-weight: 600;
+}
+
+.admin-def-value-muted {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.admin-def-value--danger .admin-def-value-empty,
+.admin-def-value-empty {
+  color: #c62828;
+  font-weight: 700;
+}
+
+.admin-def-value--danger {
+  background: #fffafb;
+}
+
+/* --- 審査・状態バッジ（強コントラスト） --- */
+.status-badge--approval,
+.status-badge--account {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.status-badge--pending-yellow {
+  background: linear-gradient(180deg, #fff8e1 0%, #ffecb3 100%);
+  color: #e65100;
+  border: 1px solid #ffb74d;
+  box-shadow: 0 1px 0 rgba(230, 81, 0, 0.12);
+}
+
+.status-badge--approved-green {
+  background: linear-gradient(180deg, #e8f5e9 0%, #c8e6c9 100%);
+  color: #1b5e20;
+  border: 1px solid #81c784;
+}
+
+.status-badge--rejected-red {
+  background: linear-gradient(180deg, #ffebee 0%, #ffcdd2 100%);
+  color: #b71c1c;
+  border: 1px solid #e57373;
+}
+
+.status-badge--neutral {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* --- 本人確認書類 --- */
+.admin-id-doc-preview {
+  margin-top: 8px;
+}
+
+.admin-id-doc-img {
+  display: block;
+  max-width: min(100%, 560px);
+  max-height: 420px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border: 1px solid #d8dee6;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.admin-id-doc-note {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.admin-id-doc-pdf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-id-doc-pdf-link:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.admin-id-doc-pdf-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #b71c1c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-id-doc-actions {
+  margin-top: 12px;
+}
+
+.admin-id-doc-empty {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+/* --- レビュー一覧 --- */
+.admin-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-review-item {
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.admin-review-item__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.admin-review-item__rating {
+  font-size: 14px;
+}
+
+.admin-review-item__rating-num {
+  margin-left: 8px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-review-item__date {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.admin-review-item__author {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.admin-review-item__body {
+  margin: 0;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+/* --- 下部アクション（大ボタン） --- */
+.admin-worker-actions-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  margin: 32px -12px -24px;
+  padding: 16px 12px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0) 0%, rgba(241, 245, 249, 0.97) 18%, #f1f5f9 100%);
+  border-top: 1px solid #cbd5e1;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.admin-worker-actions-sticky__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.admin-worker-actions-sticky__hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.admin-worker-actions-sticky__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn--lg {
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 10px;
+  min-height: 48px;
+}
+
+.admin-worker-btn-primary {
+  box-shadow: 0 2px 6px rgba(25, 118, 210, 0.25);
+}
+
+/* --- モーダル --- */
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.admin-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.admin-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 440px);
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2);
+  border: 1px solid #e2e8f0;
+}
+
+.admin-modal__title {
+  margin: 0 0 12px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.admin-modal__body {
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+.admin-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.admin-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: #475569;
+}
+
+.admin-modal__close:hover {
+  background: #e2e8f0;
+}
+
+.admin-worker-detail .section-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.admin-worker-detail .admin-card {
+  border: 1px solid #d8dee6;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
