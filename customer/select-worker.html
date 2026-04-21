@@ -11,6 +11,7 @@
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
   <script src="../js/socket.js" defer></script>
+  <script src="../js/booking-datetime.js" defer></script>
 </head>
 <body class="customer-page">
 
@@ -38,7 +39,7 @@
     
     <section class="selection-header">
       <div class="back-link">
-        <a href="booking.html">← 予約内容を変更</a>
+        <a href="bookings.html">← 予約一覧に戻る</a>
       </div>
       <h1>ワーカーを選択</h1>
       <div class="booking-summary" id="bookingSummary">
@@ -180,6 +181,12 @@ async function loadBooking(bookingId) {
       throw new Error('予約が見つかりません');
     }
 
+    const me = typeof api.getUser === 'function' ? api.getUser() : null;
+    const customerId = currentBooking.customerId;
+    if (customerId && me && me.id && String(customerId) !== String(me.id)) {
+      throw new Error('この予約を編集する権限がありません');
+    }
+
     displayBookingSummary(currentBooking);
   } catch (error) {
     console.error('予約情報の読み込みエラー:', error);
@@ -197,25 +204,21 @@ async function loadBooking(bookingId) {
 
 // 予約サマリーを表示
 function displayBookingSummary(booking) {
-  // 日時の表示
-  const scheduledDate = new Date(booking.scheduledDate);
-  const startTime = booking.startTime || '00:00';
-  const duration = booking.duration || 0;
-  
-  // 終了時間を計算
-  const [hours, minutes] = startTime.split(':').map(Number);
-  const endTime = new Date(scheduledDate);
-  endTime.setHours(hours + duration, minutes, 0, 0);
-  
-  const dateStr = scheduledDate.toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short'
-  });
-  const timeStr = `${startTime}-${endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
-  
-  document.getElementById('summaryDateTime').textContent = `${dateStr} ${timeStr}`;
+  if (!booking) {
+    document.getElementById('summaryDateTime').textContent = '—';
+    document.getElementById('summaryServiceType').textContent = '—';
+    document.getElementById('summaryAddress').textContent = '—';
+    return;
+  }
+
+  const DT = window.KajishiftBookingDateTime;
+  if (DT && typeof DT.formatBookingSummaryLine === 'function') {
+    const { line } = DT.formatBookingSummaryLine(booking);
+    document.getElementById('summaryDateTime').textContent = line;
+  } else {
+    document.getElementById('summaryDateTime').textContent = '日付未設定';
+  }
+
   document.getElementById('summaryServiceType').textContent = booking.serviceType || '-';
   document.getElementById('summaryAddress').textContent = booking.address || '-';
 }
