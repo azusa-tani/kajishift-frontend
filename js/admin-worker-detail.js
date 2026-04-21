@@ -734,11 +734,41 @@ function initAdminWorkerDetail() {
   loadWorkerDetail();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function startAdminWorkerDetailPage() {
   if (typeof checkAuth === 'function' && !checkAuth('admin')) {
     return;
   }
   initAdminWorkerDetail();
+}
+
+/**
+ * api.js より先に実行されるケースでも window.api 準備を待ってから初期化する
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  let apiWaitAttempts = 0;
+  const API_WAIT_MAX = 100;
+
+  const init = () => {
+    if (!window.api) {
+      apiWaitAttempts += 1;
+      if (apiWaitAttempts > API_WAIT_MAX) {
+        console.error(
+          'api.js が読み込まれませんでした。ネットワークと script の順序を確認してください。'
+        );
+        const loading = document.getElementById('loadingMessage');
+        if (loading) {
+          loading.textContent = 'エラー: API クライアント（api.js）の読み込みに失敗しました';
+        }
+        return;
+      }
+      console.error('api.js is not loaded yet. Retrying in 100ms...');
+      setTimeout(init, 100);
+      return;
+    }
+    startAdminWorkerDetailPage();
+  };
+
+  init();
 });
 
 /** ヘッダーのログアウトボタン用 */

@@ -867,10 +867,17 @@ class ApiClient {
    * ワーカーを承認/却下（管理者のみ）
    */
   async approveWorker(workerId, approvalStatus) {
-    return this.request(`/admin/workers/${workerId}/approve`, {
+    return this.request(`/admin/workers/${encodeURIComponent(workerId)}/approve`, {
       method: 'PUT',
       body: { approvalStatus },
     });
+  }
+
+  /**
+   * ワーカー却下（管理者のみ・approveWorker のショートカット）
+   */
+  async rejectWorker(workerId) {
+    return this.approveWorker(workerId, 'REJECTED');
   }
 
   /**
@@ -1166,14 +1173,15 @@ class ApiClient {
   }
 }
 
-// グローバルインスタンスを作成
+// グローバルインスタンス（必ず window に公開 — 他スクリプトは window.api を参照）
 const api = new ApiClient();
+window.api = api;
+window.ApiClient = ApiClient;
+console.log('KAJISHIFT API initialized and attached to window.api');
 
 // ページ読み込み時にトークンとユーザー情報を復元
 if (api.token) {
-  // トークンが有効か確認
   api.getMe().catch(() => {
-    // トークンが無効な場合はクリア
     api.clearToken();
   });
 }
