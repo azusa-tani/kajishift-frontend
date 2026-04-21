@@ -219,13 +219,13 @@ document.getElementById('booking-wizard').addEventListener('submit', async funct
     // ワーカー選択ページまたは予約詳細ページに遷移
     setTimeout(() => {
       if (bookingId) {
-        window.location.href = `select-worker.html?bookingId=${bookingId}`;
+        window.location.href = `select-worker.html?id=${encodeURIComponent(bookingId)}`;
       } else if (response.data && response.data.id) {
         // 新規作成: クイック予約時は詳細、通常はワーカー選択へ
         if (isQuickBookingMode && preferredWorkerId) {
           window.location.href = `booking-detail.html?id=${response.data.id}`;
         } else {
-          window.location.href = `select-worker.html?bookingId=${response.data.id}`;
+          window.location.href = `select-worker.html?id=${encodeURIComponent(response.data.id)}`;
         }
       } else {
         // フォールバック：予約一覧に遷移

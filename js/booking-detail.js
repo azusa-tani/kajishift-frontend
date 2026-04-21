@@ -162,7 +162,7 @@ function displayBookingDetail(booking) {
     // 今後の予約
     actionsHtml = `
       ${booking.worker ? `<button class="btn btn--outline btn-action" onclick="window.location.href='chat.html?booking=${booking.id}'">チャット</button>` : ''}
-      <button class="btn btn--outline btn-action" onclick="window.location.href='select-worker.html?bookingId=${booking.id}'">予約変更</button>
+      <button class="btn btn--outline btn-action" onclick="window.location.href='booking.html?id=${booking.id}'">予約変更</button>
       <button class="btn btn--outline btn-action danger" onclick="openCancelModal()">キャンセル</button>
     `;
   }
@@ -283,7 +283,7 @@ function displayWorkerInfo(worker) {
   profileBtnEl.textContent = 'プロフィールを見る';
   if (status === 'PENDING' && currentBooking && currentBooking.id) {
     profileBtnEl.addEventListener('click', () => {
-      window.location.href = `select-worker.html?bookingId=${encodeURIComponent(currentBooking.id)}`;
+      window.location.href = `select-worker.html?id=${encodeURIComponent(currentBooking.id)}`;
     });
   } else {
     profileBtnEl.addEventListener('click', () => openWorkerProfileModal(worker.id));

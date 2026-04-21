@@ -219,7 +219,7 @@
   }
 
   /**
-   * ワーカー選択へ（既存予約の日時・内容は GET /bookings/:id で取得される）
+   * 予約変更：まず日時・住所の確認・変更（booking.html）へ（PUT 後にワーカー選択へ進む）
    */
   function goToChangeBooking(bookingId) {
     if (!bookingId) {
@@ -231,7 +231,7 @@
       if (typeof showError === 'function') showError('ログイン情報を確認してください');
       return;
     }
-    window.location.href = `select-worker.html?bookingId=${encodeURIComponent(bookingId)}`;
+    window.location.href = `booking.html?id=${encodeURIComponent(bookingId)}`;
   }
 
   function openCancelModal(id) {

@@ -3,6 +3,17 @@ let currentBooking = null;
 let workers = [];
 let selectedWorkerId = null;
 
+/** ワーカー選択の「戻る」：一つ前のステップである日時・住所の変更画面へ（クエリは `id` を正とし、`bookingId` は互換用） */
+function goBackFromWorkerSelection() {
+  const params = new URLSearchParams(window.location.search);
+  const reservationId = params.get('id') || params.get('bookingId');
+  if (reservationId && reservationId !== 'undefined') {
+    window.location.href = `booking.html?id=${encodeURIComponent(reservationId)}`;
+  } else {
+    window.location.href = 'bookings.html';
+  }
+}
+
 // ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
   // 認証チェック
@@ -10,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     return;
   }
 
-  // URLパラメータから予約IDを取得
+  // 予約ID（`id` を正規のクエリ名とし、旧 `bookingId` は読み取り互換のみ）
   const urlParams = new URLSearchParams(window.location.search);
   const bookingId = urlParams.get('id') || urlParams.get('bookingId');
 
