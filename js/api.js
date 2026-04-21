@@ -1179,7 +1179,7 @@ window.api = api;
 window.ApiClient = ApiClient;
 console.log('KAJISHIFT API initialized and attached to window.api');
 
-// ページ読み込み時にトークンとユーザー情報を復元
+// ページ読み込み時に 1 回だけ /auth/me を呼ぶ（ポーリングやループは行わない）
 if (api.token) {
   api.getMe().catch(() => {
     api.clearToken();
