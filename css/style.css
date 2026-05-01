@@ -1488,6 +1488,32 @@ a.btn-icon {
   flex-wrap: wrap;
 }
 
+.booking-detail-actions .booking-detail-payment-method {
+  flex: 1 1 100%;
+  min-width: 100%;
+  margin-bottom: 0;
+}
+
+.booking-detail-actions .booking-detail-payment-method .form-select {
+  width: 100%;
+}
+
+.action-bar--fixed .action-bar-payment-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.action-bar--fixed .action-bar-payment-stack .booking-detail-payment-method {
+  margin-bottom: 0;
+}
+
+.action-bar--fixed .action-bar-payment-stack .form-select {
+  width: 100%;
+}
+
 /* ===== Customer 予約詳細 — モバイル最適化 (customer/booking-detail.html) ===== */
 @media (max-width: 768px) {
   .customer-page .booking-detail__header {

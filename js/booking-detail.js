@@ -43,6 +43,85 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 let currentBooking = null;
 
+/** 完了済みで決済が未完了（payment なし、または status が COMPLETED 以外。PENDING 含む） */
+function isCompletedBookingPaymentIncomplete(booking) {
+  if (!booking || booking.status !== 'COMPLETED') return false;
+  const p = booking.payment;
+  if (!p) return true;
+  return p.status !== 'COMPLETED';
+}
+
+/**
+ * 「決済を確定する」API を呼べる状態（バックエンドは PENDING 中の再実行を拒否するため除外）
+ * 有効な paymentMethod: credit_card | bank_transfer | cash
+ */
+function canCustomerSubmitPaymentConfirmation(booking) {
+  if (!isCompletedBookingPaymentIncomplete(booking)) return false;
+  const st = booking.payment && booking.payment.status;
+  if (st === 'PENDING') return false;
+  return true;
+}
+
+let paymentProcessLocked = false;
+
+function getSelectedPaymentMethod() {
+  const main = document.getElementById('bookingPaymentMethod');
+  if (main && main.value) return main.value;
+  const first = document.querySelector('.js-payment-method-select');
+  return first && first.value ? first.value : 'credit_card';
+}
+
+async function startPaymentProcess() {
+  if (!currentBooking || currentBooking.status !== 'COMPLETED') return;
+  if (!canCustomerSubmitPaymentConfirmation(currentBooking)) return;
+  if (paymentProcessLocked) return;
+
+  if (!confirm('この予約の決済を確定しますか？')) return;
+
+  paymentProcessLocked = true;
+  document.querySelectorAll('.js-payment-confirm-btn').forEach((btn) => {
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+  });
+  document.querySelectorAll('.js-payment-method-select').forEach((el) => {
+    el.disabled = true;
+  });
+
+  try {
+    await api.processPayment({
+      bookingId: currentBooking.id,
+      paymentMethod: getSelectedPaymentMethod(),
+    });
+    showSuccess('決済が完了しました');
+    location.reload();
+  } catch (error) {
+    console.error('決済エラー:', error);
+    showError(error.message || '決済の確定に失敗しました');
+    paymentProcessLocked = false;
+    document.querySelectorAll('.js-payment-confirm-btn').forEach((btn) => {
+      btn.disabled = false;
+      btn.removeAttribute('aria-busy');
+    });
+    document.querySelectorAll('.js-payment-method-select').forEach((el) => {
+      el.disabled = false;
+    });
+  }
+}
+
+async function downloadReceipt(paymentId) {
+  if (!paymentId) {
+    showError('決済情報が見つかりません');
+    return;
+  }
+  try {
+    const result = await api.downloadReceipt(paymentId);
+    showSuccess(result.message || '領収書をダウンロードしました');
+  } catch (error) {
+    console.error('領収書ダウンロードエラー:', error);
+    showError(error.message || '領収書のダウンロードに失敗しました');
+  }
+}
+
 // 予約詳細を読み込む
 async function loadBookingDetail(bookingId) {
   try {
@@ -152,9 +231,44 @@ function displayBookingDetail(booking) {
   const workerName = booking.worker ? booking.worker.name : '未割り当て';
   const workerRating = booking.worker && booking.worker.rating ? booking.worker.rating.toFixed(1) : null;
   
+  const paymentConfirmLabel = `💳 決済を確定する (¥${price.toLocaleString()})`;
+
+  const paymentMethodSelectHtml = (selectId) => `
+    <div class="form-group booking-detail-payment-method">
+      <label for="${selectId}" class="form-label">お支払い方法</label>
+      <select id="${selectId}" class="form-select form-input js-payment-method-select" autocomplete="off">
+        <option value="credit_card">クレジットカード</option>
+        <option value="bank_transfer">銀行振込</option>
+        <option value="cash">現金</option>
+      </select>
+    </div>
+  `;
+
   let actionsHtml = '';
-  if (booking.status === 'COMPLETED' || booking.status === 'CANCELLED') {
-    // 過去の予約
+  if (booking.status === 'COMPLETED') {
+    if (canCustomerSubmitPaymentConfirmation(booking)) {
+      actionsHtml = `
+      ${paymentMethodSelectHtml('bookingPaymentMethod')}
+      <button type="button" class="btn btn-primary btn-action btn-large js-payment-confirm-btn" onclick="startPaymentProcess()">${paymentConfirmLabel}</button>
+      <a href="bookings.html" class="btn btn--outline btn-action">予約一覧に戻る</a>
+    `;
+    } else if (booking.payment && booking.payment.status === 'PENDING') {
+      actionsHtml = `
+      <p class="text-muted no-margin">決済を処理中です。しばらくしてから画面を更新してください。</p>
+      <a href="bookings.html" class="btn btn--outline btn-action">予約一覧に戻る</a>
+    `;
+    } else if (booking.payment && booking.payment.status === 'COMPLETED') {
+      const paymentId = booking.payment.id;
+      actionsHtml = `
+      <button type="button" class="btn btn-primary btn-action" onclick="downloadReceipt('${paymentId}')">領収書をダウンロード</button>
+      <a href="bookings.html" class="btn btn--outline btn-action">予約一覧に戻る</a>
+    `;
+    } else {
+      actionsHtml = `
+      <a href="bookings.html" class="btn btn--outline btn-action">予約一覧に戻る</a>
+    `;
+    }
+  } else if (booking.status === 'CANCELLED') {
     actionsHtml = `
       <a href="bookings.html" class="btn btn--outline btn-action">予約一覧に戻る</a>
     `;
@@ -223,9 +337,17 @@ function displayBookingDetail(booking) {
     </div>
   `;
 
-  // モバイル固定アクション（チャット優先）
+  // モバイル固定アクション（チャット優先 / 決済待ちは決済ボタン）
   const fixedBar = document.getElementById('fixedActionBar');
-  if (booking.worker && booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED') {
+  if (canCustomerSubmitPaymentConfirmation(booking)) {
+    fixedBar.classList.remove('is-hidden');
+    fixedBar.innerHTML = `
+      <div class="action-bar-payment-stack">
+        ${paymentMethodSelectHtml('bookingPaymentMethodFixed')}
+        <button type="button" class="btn btn-primary btn-action btn-large js-payment-confirm-btn" onclick="startPaymentProcess()">${paymentConfirmLabel}</button>
+      </div>
+    `;
+  } else if (booking.worker && booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED') {
     fixedBar.classList.remove('is-hidden');
     fixedBar.innerHTML = `
       <button class="btn btn-primary btn-action" onclick="window.location.href='chat.html?booking=${booking.id}'">チャットで連絡</button>
@@ -595,6 +717,20 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
     showError('レビューの投稿に失敗しました: ' + (error.message || 'エラーが発生しました'));
   }
 });
+
+// メインと固定バーの支払い方法セレクトを同期（capture 前に1回だけ登録）
+(function bindPaymentMethodSelectSync() {
+  if (window.__ksBookingPaymentMethodSync) return;
+  window.__ksBookingPaymentMethodSync = true;
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (!t || !t.classList || !t.classList.contains('js-payment-method-select')) return;
+    const v = t.value;
+    document.querySelectorAll('.js-payment-method-select').forEach((s) => {
+      if (s !== t) s.value = v;
+    });
+  });
+})();
 
 window.onclick = function(event) {
   if (event.target.classList.contains('modal')) {
