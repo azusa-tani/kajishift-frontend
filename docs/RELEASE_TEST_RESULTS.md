@@ -39,6 +39,8 @@
 
 ## 5. テスト結果サマリー
 
+2026-05-18 更新: Stripe βフローをProduction URLで確認。PaymentIntent作成、Stripeテスト決済、Webhook反映、領収書PDF、レビュー投稿、チャット、通知既読、管理者ログインをAPIスモークで確認した。フロント変更はコミット `4d83f73` をpush済み。Vercel本番再デプロイは投入済みだが、確認時点ではQueued/Initializing継続。
+
 2026-05-12 更新: TC-E-001〜E-004、TC-SEC-001、TC-N-001 を反映（詳細は6章）。同日、主要ログイン3画面のブラウザ表示・HTTPS（鍵アイコン）をスクショで追記。
 
 | 分類 | 総件数 | OK | NG | 保留 | 対象外 | 未実施 | リリース必須Yes件数 | リリース必須YesのNG/未実施件数 | 備考 |
@@ -212,6 +214,7 @@
 
 | 日付 | 内容 |
 |---|---|
+| 2026-05-18 | Stripe βフローのProduction APIスモーク結果を追記。`PaymentIntent=pi_3TYKXpFX94mMTqKm15d0ewBK`、`bookingId=bbb1ebf4-3111-4dcb-919b-db31952763a0`、Webhook後 `Payment.status=COMPLETED` を確認。 |
 | 2026-05-12 | TC-E-001 / TC-E-003 / TC-N-001: ブラウザDevToolsでのAPI Request URL、REST/Socket CORS応答、Socket.io WebSocket 101接続の確認結果と証跡画像を追加。TC-E-003、TC-N-001 は残確認事項があるため保留を維持。 |
 | 2026-05-12 | TC-SEC-001: Vercel本番URLの証明書詳細確認結果を追記し、証跡画像 `TC-SEC-001_certificate-vercelapp-valid.png` を追加。カスタムドメイン確認は保留として維持。 |
 | 2026-05-12 | ブラウザ証跡 PNG を `docs/evidence/2026-05-12/` に格納し、TC-E-004・TC-SEC-001 の証跡列をリポジトリ相対パスに更新。 |
