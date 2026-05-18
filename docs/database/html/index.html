@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DB設計書一覧 — KAJISHIFT</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <h1 class="doc-title"><a href="index.html">DB設計書一覧</a></h1>
+    
+<nav class="doc-nav">
+  <a href="index.html">一覧</a>
+  <a href="table_definition.html">テーブル定義書</a>
+  <a href="er_diagram.html">ER図</a>
+  <a href="relations.html">リレーション一覧</a>
+  <a href="questions.html">不明点・確認事項</a>
+</nav>
+  </div>
+</header>
+<main class="content">
+  <p class="index-intro">
+    以下は <code>docs/database</code> 配下の Markdown を HTML に整形したものです。
+    ER図ページでは Mermaid.js（CDN）で図を描画します。オフライン閲覧時は図が出ない場合があります。
+  </p>
+  <div class="card-grid">
+    <a class="card" href="table_definition.html">
+      <h2>テーブル定義書</h2>
+      <p>全テーブルのカラム・インデックス・制約・ENUM 付録</p>
+    </a>
+    <a class="card" href="er_diagram.html">
+      <h2>ER図</h2>
+      <p>全テーブル属性付き Mermaid ER 図と論理関連の説明</p>
+    </a>
+    <a class="card" href="relations.html">
+      <h2>テーブル間リレーション一覧</h2>
+      <p>DB FK・Prisma・サービス層 include・論理参照の整理</p>
+    </a>
+    <a class="card" href="questions.html">
+      <h2>不明点・確認事項一覧</h2>
+      <p>スキーマ乖離・未FK・運用上の確認ポイント</p>
+    </a>
+  </div>
+</main>
+<footer class="doc-footer">Markdown を更新したあと再生成する場合: <code>docs/database/html</code> で <code>node build.mjs</code></footer>
+</body>
+</html>

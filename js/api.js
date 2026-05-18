@@ -522,7 +522,17 @@ class ApiClient {
   }
 
   /**
-   * 決済を処理
+   * Stripe PaymentIntentを作成
+   */
+  async createPaymentIntent(bookingId) {
+    return this.request('/payments/intent', {
+      method: 'POST',
+      body: { bookingId },
+    });
+  }
+
+  /**
+   * 旧決済API（互換用・バックエンドは410を返す）
    */
   async createPayment(data) {
     return this.request('/payments', {
@@ -541,7 +551,26 @@ class ApiClient {
   }
 
   /**
-   * カードを追加
+   * Stripe SetupIntentを作成
+   */
+  async createCardSetupIntent() {
+    return this.request('/cards/setup-intent', {
+      method: 'POST',
+    });
+  }
+
+  /**
+   * Stripe PaymentMethod IDでカードを追加
+   */
+  async addStripeCard(paymentMethodId, isDefault = false) {
+    return this.request('/cards', {
+      method: 'POST',
+      body: { paymentMethodId, isDefault },
+    });
+  }
+
+  /**
+   * カードを追加（互換用）
    */
   async addCard(data) {
     return this.request('/cards', {

@@ -1,0 +1,344 @@
+/* KAJISHIFT DB 設計書 — ブラウザ／印刷用 */
+
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --text: #1a1d21;
+  --muted: #5c6570;
+  --border: #c8d0d8;
+  --accent: #0b5fff;
+  --accent-soft: #e8f1ff;
+  --code-bg: #1e2430;
+  --code-text: #e8eaed;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Meiryo", sans-serif;
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.doc-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.doc-header-inner {
+  max-width: 56rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.doc-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.doc-title a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.doc-title a:hover {
+  color: var(--accent);
+}
+
+.doc-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.doc-nav a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.doc-nav a:hover {
+  text-decoration: underline;
+}
+
+main.content {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+  background: var(--surface);
+  min-height: calc(100vh - 4rem);
+  overflow-x: auto;
+}
+
+main.content > *:first-child {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 1.75rem;
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+}
+
+h2 {
+  font-size: 1.35rem;
+  margin: 2rem 0 0.75rem;
+  color: #111;
+}
+
+h3 {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+p {
+  margin: 0.75rem 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+ul,
+ol {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.5rem;
+}
+
+li {
+  margin: 0.25rem 0;
+}
+
+strong {
+  font-weight: 600;
+}
+
+/* 表 */
+.table-scroll {
+  overflow-x: auto;
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fafbfc;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  min-width: 640px;
+}
+
+thead th {
+  background: var(--accent-soft);
+  color: #0a2d66;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  vertical-align: top;
+}
+
+tbody tr:nth-child(even) {
+  background: #f3f5f7;
+}
+
+tbody tr:hover {
+  background: #eef6ff;
+}
+
+/* marked が thead 無しの表を出す場合 */
+table th {
+  background: var(--accent-soft);
+  font-weight: 600;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+}
+
+table td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.65rem;
+}
+
+/* コード */
+pre {
+  margin: 1rem 0;
+  padding: 1rem 1.1rem;
+  background: var(--code-bg);
+  color: var(--code-text);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+code {
+  font-family: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  font-size: 0.88em;
+}
+
+p code,
+li code,
+td code {
+  background: #eef1f5;
+  color: #222;
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Mermaid */
+.mermaid-wrap {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.mermaid {
+  display: flex;
+  justify-content: center;
+  min-height: 120px;
+}
+
+/* 一覧 index */
+.index-intro {
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+
+.card-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.card {
+  display: block;
+  padding: 1.25rem 1.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(11, 95, 255, 0.12);
+}
+
+.card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  color: var(--accent);
+}
+
+.card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+footer.doc-footer {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* 印刷 */
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .doc-header {
+    position: static;
+    border-bottom: 2px solid #000;
+  }
+
+  .doc-nav a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.75em;
+    color: #555;
+  }
+
+  main.content {
+    max-width: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .table-scroll {
+    overflow: visible;
+  }
+
+  table {
+    min-width: 0;
+    page-break-inside: avoid;
+  }
+
+  pre,
+  .mermaid-wrap {
+    page-break-inside: avoid;
+  }
+
+  a {
+    color: #000;
+  }
+
+  .card {
+    break-inside: avoid;
+  }
+}

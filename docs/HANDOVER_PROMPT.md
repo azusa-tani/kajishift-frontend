@@ -28,7 +28,7 @@
 
 ### バックエンドリポジトリ（`kajishift-backend`）の実装メモ
 
-- **予約・決済 API**: `bookingService.js` / `paymentService.js` で、レスポンスの `booking.worker` に **`profileImageUrl`**（プロフィール画像の公開 URL。`File` の `PROFILE_IMAGE` から生成）を付与。`serializeBooking` / `WORKER_PROFILE_FILES` を `bookingService` からエクスポートし決済側でも利用。
+- **予約・決済 API**: `bookingService.js` / `paymentService.js` で、レスポンスの `booking.worker` に **`profileImageUrl`**（プロフィール画像の公開 URL。`File` の `PROFILE_IMAGE` から生成）を付与。`serializeBooking` / `WORKER_PROFILE_FILES` を `bookingService` からエクスポートし決済側でも利用。**`getBookingById` は `payment` を select 同梱**（依頼者予約詳細の決済・領収書 UI 用）。作業完了で `completedAt` を書く場合は **Prisma `Booking.completedAt`（DB `completed_at`）** が必要。
 - **認証登録**: `authController.js` / `authService.js`。メール重複などクライアント起因は **`httpError` / 400** や Prisma `P2002` 処理で返す実装がある。**変更前に現行コードを読むこと。**
 - **予約詳細の権限**: 権限・存在エラーは **403 / 404** で返す整理が入っている（コミット例: `fix(bookings): 予約詳細の権限エラーを403/404で返すよう整理`）。
 
@@ -57,6 +57,7 @@
 
 ### 依頼者 UI メモ（要コード確認）
 
+- **`customer/booking-detail.html` + `js/booking-detail.js`**: 予約 `COMPLETED` かつ決済未完了なら「決済を確定する」→ `api.processPayment`（`bookingId` + **`paymentMethod` 必須** … `credit_card` / `bank_transfer` / `cash`）。済みなら `api.downloadReceipt`。`GET /bookings/:id` の **`booking.payment`**（`status` 等）で UI 分岐。モバイルは `#fixedActionBar`。レビューモーダル `#reviewModal` の星は **`input[name="rating"]:checked`** のまま、マークアップは value **5→1** 順 + CSS `#reviewModal .rating-input`（`row-reverse` と `~`）で左から 1〜N 星表示。
 - **`customer/notifications.html`**: 通知はカード型 UI。HTML は **`buildNotificationCardHTML()`** で生成。スタイルは `css/style.css` の **Customer notifications** 付近（`.customer-page .notification-card` 等）。空一覧は `.notifications-empty`。
 
 ### ユーザーからの要望（会話スタイル）

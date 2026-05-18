@@ -247,8 +247,21 @@ async function syncCustomerNotificationBadge() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  injectBetaBanner();
   syncNotificationBadgesGlobally();
 });
+
+function injectBetaBanner() {
+  if (!window.BETA_MODE || document.querySelector('.beta-banner')) {
+    return;
+  }
+
+  const banner = document.createElement('div');
+  banner.className = 'beta-banner';
+  banner.setAttribute('role', 'status');
+  banner.textContent = 'β版公開中：決済はStripeテストモードです。実際の課金は発生しません。';
+  document.body.insertBefore(banner, document.body.firstChild);
+}
 
 window.syncCustomerNotificationBadge = syncCustomerNotificationBadge;
 window.syncNotificationBadgesGlobally = syncNotificationBadgesGlobally;

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>不明点・確認事項一覧 — DB設計書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <h1 class="doc-title"><a href="index.html">不明点・確認事項一覧</a></h1>
+    
+<nav class="doc-nav">
+  <a href="index.html">一覧</a>
+  <a href="table_definition.html">テーブル定義書</a>
+  <a href="er_diagram.html">ER図</a>
+  <a href="relations.html">リレーション一覧</a>
+  <a href="questions.html">不明点・確認事項</a>
+</nav>
+  </div>
+</header>
+<main class="content">
+<h1>不明点・確認事項一覧</h1>
+<p>解析ソースは <code>kajishift-backend</code> の <code>prisma/schema.prisma</code>、<code>prisma/migrations/**/*.sql</code>、<code>prisma/seed.js</code>、<code>README.md</code>、および **src/services 配下の JavaScript（Prisma 利用箇所）**です。リポジトリ外の本番 DB には直接アクセスしていません。コードと DB の対応表は <a href="./relations.html">relations.md</a> を参照してください。</p>
+<h2>スキーマとマイグレーションの乖離</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td><code>bookings.completed_at</code></td>
+<td><code>schema.prisma</code> および <code>README.md</code>（2026-05-01 更新履歴）では <code>completed_at</code> が存在する一方、リポジトリ内の <code>prisma/migrations</code> の SQL には当該カラムを追加する <code>ALTER TABLE</code> が見当たりません。本番・検証環境でマイグレーション以外の手段で追加されたか、未コミットのマイグレーションがあるかの確認が必要です。</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>マイグレーション履歴の完全性</td>
+<td>上記のように、実 DB と Prisma スキーマの一致は <code>prisma migrate status</code> や本番 DDL のダンプで検証することを推奨します。</td>
+</tr>
+</tbody></table></div>
+<h2>外部キーが定義されていないカラム</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">3</td>
+<td><code>support_tickets.admin_id</code></td>
+<td>管理者ユーザーの ID を想定したコメントがあるが、Prisma 上は <code>User</code> へのリレーションがなく、マイグレーションにも外部キー制約はありません。参照整合性はアプリケーション層のみか、将来 FK 追加予定かの確認が必要です。</td>
+</tr>
+</tbody></table></div>
+<h2>区分値・文字列カラムの取りうる値</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">4</td>
+<td><code>bookings.service_type</code></td>
+<td>DB 上は自由な <code>TEXT</code>。<strong>確定</strong>: サービスメニュー削除時は <code>adminService.js</code> <code>deleteServiceMenu</code> で <code>booking.count({ where: { serviceType: service.name } })</code> と <strong><code>service_menus.name</code> との一致</strong>を前提にガードしている。<strong>未確定</strong>: 予約作成 API（<code>bookingService.js</code> <code>createBooking</code>）は <strong>マスタ存在チェックをしておらず</strong>任意文字列を保存し得る。フロントが常に <code>service_menus.name</code> を送る運用か、不正値の許容範囲かの仕様確認が必要です。</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td><code>payments.payment_method</code></td>
+<td><strong>コード上の確定値</strong>（<code>paymentService.js</code> <code>processPayment</code>）: <code>credit_card</code>, <code>bank_transfer</code>, <code>cash</code>。DB は TEXT。<strong>確認</strong>: クライアント・決済ゲートウェイと <code>cash</code> を含む3値で齟齬がないか。</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td><code>users.account_type</code></td>
+<td>DB 制約はなし。<strong>コード上</strong>: <code>workerService.js</code> 更新時は <code>ordinary</code> / <code>checking</code>（および入力 <code>普通</code> / <code>当座</code> を正規化）に限定。DB を直接触る場合の値のばらつきに注意。</td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td><code>credit_cards.brand</code></td>
+<td><code>TEXT</code> で <code>&quot;visa&quot;</code> 等の想定はコメントのみ。正規化ルールの有無を確認したいです。</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td><code>notifications.related_type</code></td>
+<td>自由な <code>TEXT</code>。シードでは <code>BOOKING</code>, <code>MESSAGE</code> 等が使われますが、公式な列挙やバリデーションの有無はコード横断確認が必要です。</td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td><code>notifications.related_id</code></td>
+<td>ポリモーフィック関連の ID。<code>related_type</code> と組み合わせでのみ意味が確定します。</td>
+</tr>
+</tbody></table></div>
+<h2>JSON・拡張設定</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">10</td>
+<td><code>users.notification_prefs</code></td>
+<td><code>JSONB</code>。スキーマコメントは「JSON v1」ですが、キー構造・バージョン管理方針は別ドキュメントまたは API 仕様の確認が必要です。</td>
+</tr>
+</tbody></table></div>
+<h2>マスタテーブルとトランザクションの関係</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">11</td>
+<td><code>service_menus</code> / <code>areas</code></td>
+<td>予約・ユーザーとは <strong>FK なし</strong>。<strong><code>service_menus</code></strong>: 上記 No.4 のとおり削除時のみ <code>service_type</code> と <code>name</code> の一致を利用。<strong><code>areas</code></strong>: <code>adminService.js</code> <code>deleteArea</code> は予約との整合チェックを <strong>実装しておらず</strong>（コメントのみ）。ワーカー検索の <code>area</code> クエリは <strong><code>users.address</code> の部分一致</strong>（<code>areas</code> テーブルとは結合しない、<code>workerService.js</code>）。マスタの意図した使い分け（住所検索 vs エリアマスタ）のプロダクト確認が有用です。</td>
+</tr>
+<tr>
+<td align="right">12</td>
+<td><code>system_settings</code></td>
+<td>キー・値のマスタ。<code>value</code> に JSON 文字列を格納する想定はコメントにあるが、カテゴリ・キーの一覧は運用ドキュメントまたはシードの有無で確認したいです。</td>
+</tr>
+<tr>
+<td align="right">16</td>
+<td>ER 図のリレーション線</td>
+<td><a href="./er_diagram.html">er_diagram.md</a> の Mermaid では <strong>DB 上の外部キーに対応する線のみ</strong>を描いています。<code>bookings</code> ↔ <code>service_menus</code> 等の <strong>論理対応</strong>は線なしで、同ファイルの「論理関連（FK 以外）」節および本書 No.4 / No.11 を参照してください。</td>
+</tr>
+</tbody></table></div>
+<h2>スキーマに存在しないテーブル種別</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">17</td>
+<td>履歴・ワーク・監査ログ専用テーブル</td>
+<td>現行 <code>schema.prisma</code> には <strong>履歴テーブル・ワークテーブル・変更ログ専用テーブルは定義されていません</strong>。時系列や状態は <code>created_at</code> / <code>updated_at</code> / 各種 status 列で表現されています。将来追加する場合は ER 図・本書の更新が必要です。</td>
+</tr>
+<tr>
+<td align="right">18</td>
+<td><code>areas</code> マスタの利用範囲</td>
+<td>管理 API で CRUD されるが、<strong>予約・ワーカー検索の主経路では <code>areas.id</code> は使われていない</strong>（検索は <code>users.address</code> テキスト）。<code>areas</code> を今後どの画面・整合ルールで必須にするか、または住所テキストとの二重管理をどうするかの方針確認。</td>
+</tr>
+</tbody></table></div>
+<h2>論理削除・状態管理</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">13</td>
+<td>ユーザー削除時の子レコード</td>
+<td><code>bookings</code> 等は多く <code>ON DELETE RESTRICT</code> のため、ユーザー物理削除は子データ次第で失敗し得ます。運用上は論理削除（<code>users.status</code>）が主かの確認が必要です。</td>
+</tr>
+<tr>
+<td align="right">14</td>
+<td><code>credit_cards.is_active</code> / <code>is_default</code></td>
+<td>複数デフォルトの禁止など DB 制約はユニークインデックスでは表現されていません（<code>user_id</code> + <code>is_default</code> のインデックスのみ）。アプリでどう排他するかの確認です。</td>
+</tr>
+</tbody></table></div>
+<h2>シードスクリプト</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">15</td>
+<td><code>prisma/seed.js</code> の削除範囲</td>
+<td>実行時に <code>deleteMany</code> するテーブルとしないテーブル（例: <code>credit_cards</code>, <code>worker_unavailable_slots</code>, <code>service_menus</code>, <code>areas</code>, <code>system_settings</code> は削除していない）があり、ローカルでシードを繰り返す場合の残存データの扱いに注意が必要です。仕様として意図されているか確認です。</td>
+</tr>
+</tbody></table></div>
+</main>
+<footer class="doc-footer">KAJISHIFT データベース設計書（HTML版） / ソースは親ディレクトリの Markdown</footer>
+
+</body>
+</html>

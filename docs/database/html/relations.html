@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>テーブル間リレーション一覧 — DB設計書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <h1 class="doc-title"><a href="index.html">テーブル間リレーション一覧</a></h1>
+    
+<nav class="doc-nav">
+  <a href="index.html">一覧</a>
+  <a href="table_definition.html">テーブル定義書</a>
+  <a href="er_diagram.html">ER図</a>
+  <a href="relations.html">リレーション一覧</a>
+  <a href="questions.html">不明点・確認事項</a>
+</nav>
+  </div>
+</header>
+<main class="content">
+<h1>テーブル間リレーション一覧（保守・レビュー用）</h1>
+<p><strong>検証ソース（再確認済み）</strong></p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>種別</th>
+<th>パス</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DB 制約</td>
+<td><code>kajishift-backend/prisma/migrations/**/*.sql</code></td>
+</tr>
+<tr>
+<td>ORM モデル</td>
+<td><code>kajishift-backend/prisma/schema.prisma</code></td>
+</tr>
+<tr>
+<td>アプリのデータアクセス</td>
+<td><code>kajishift-backend/src/services/*.js</code>（<code>src/config/database.js</code> の <code>PrismaClient</code> を直接使用。<strong>Repository / DAO 層は存在しない</strong>）</td>
+</tr>
+</tbody></table></div>
+<p>**ER 図（Mermaid・属性付き）**は <a href="./er_diagram.html">er_diagram.md</a> を参照してください。本書は <strong>FK・Prisma リレーション・コード上の include／論理参照</strong>を表形式で整理します。</p>
+<hr>
+<h2>1. アーキテクチャ（データアクセス）</h2>
+<ul>
+<li><strong>単一の Prisma クライアント</strong>（<code>src/config/database.js</code>）を各サービスが <code>require</code> して利用。</li>
+<li><strong>SQL の JOIN を直接記述している箇所はない</strong>（<code>src/index.js</code> の <code>$queryRaw</code> はヘルスチェック用のメタ情報取得のみ）。</li>
+<li>結合は <strong>Prisma の include / select / リレーションフィールド</strong>、または <strong>複数クエリ＋アプリ側の値照合</strong>（例: <code>serviceType</code> と <code>service_menus.name</code>）で実現している。</li>
+</ul>
+<hr>
+<h2>2. 外部キー一覧（DB マイグレーションで明示）</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>子テーブル</th>
+<th>子カラム</th>
+<th>親テーブル</th>
+<th>親カラム</th>
+<th>ON DELETE</th>
+<th>ON UPDATE</th>
+<th>制約名</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>bookings</td>
+<td>customer_id</td>
+<td>users</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>bookings_customer_id_fkey</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>bookings</td>
+<td>worker_id</td>
+<td>users</td>
+<td>id</td>
+<td>SET NULL</td>
+<td>CASCADE</td>
+<td>bookings_worker_id_fkey</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>payments</td>
+<td>booking_id</td>
+<td>bookings</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>payments_booking_id_fkey</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>payments</td>
+<td>user_id</td>
+<td>users</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>payments_user_id_fkey</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>reviews</td>
+<td>booking_id</td>
+<td>bookings</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>reviews_booking_id_fkey</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>reviews</td>
+<td>reviewer_id</td>
+<td>users</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>reviews_reviewer_id_fkey</td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>reviews</td>
+<td>reviewee_id</td>
+<td>users</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>reviews_reviewee_id_fkey</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>messages</td>
+<td>booking_id</td>
+<td>bookings</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>messages_booking_id_fkey</td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td>messages</td>
+<td>sender_id</td>
+<td>users</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>messages_sender_id_fkey</td>
+</tr>
+<tr>
+<td align="right">10</td>
+<td>messages</td>
+<td>receiver_id</td>
+<td>users</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>messages_receiver_id_fkey</td>
+</tr>
+<tr>
+<td align="right">11</td>
+<td>support_tickets</td>
+<td>user_id</td>
+<td>users</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>support_tickets_user_id_fkey</td>
+</tr>
+<tr>
+<td align="right">12</td>
+<td>notifications</td>
+<td>user_id</td>
+<td>users</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>notifications_user_id_fkey</td>
+</tr>
+<tr>
+<td align="right">13</td>
+<td>files</td>
+<td>user_id</td>
+<td>users</td>
+<td>id</td>
+<td>RESTRICT</td>
+<td>CASCADE</td>
+<td>files_user_id_fkey</td>
+</tr>
+<tr>
+<td align="right">14</td>
+<td>password_reset_tokens</td>
+<td>user_id</td>
+<td>users</td>
+<td>id</td>
+<td>CASCADE</td>
+<td>CASCADE</td>
+<td>password_reset_tokens_user_id_fkey</td>
+</tr>
+<tr>
+<td align="right">15</td>
+<td>favorites</td>
+<td>user_id</td>
+<td>users</td>
+<td>id</td>
+<td>CASCADE</td>
+<td>CASCADE</td>
+<td>favorites_user_id_fkey</td>
+</tr>
+<tr>
+<td align="right">16</td>
+<td>favorites</td>
+<td>worker_id</td>
+<td>users</td>
+<td>id</td>
+<td>CASCADE</td>
+<td>CASCADE</td>
+<td>favorites_worker_id_fkey</td>
+</tr>
+<tr>
+<td align="right">17</td>
+<td>credit_cards</td>
+<td>user_id</td>
+<td>users</td>
+<td>id</td>
+<td>CASCADE</td>
+<td>CASCADE</td>
+<td>credit_cards_user_id_fkey</td>
+</tr>
+<tr>
+<td align="right">18</td>
+<td>worker_unavailable_slots</td>
+<td>worker_id</td>
+<td>users</td>
+<td>id</td>
+<td>CASCADE</td>
+<td>CASCADE</td>
+<td>worker_unavailable_slots_worker_id_fkey</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2>3. 一意制約に伴うカーディナリティ（Prisma / DB）</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>テーブル</th>
+<th>列</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>users</td>
+<td>email</td>
+<td>1 メール 1 ユーザー</td>
+</tr>
+<tr>
+<td>payments</td>
+<td>booking_id</td>
+<td><strong>1 予約に対し決済レコードは高々 1 件</strong>（0 件可）</td>
+</tr>
+<tr>
+<td>reviews</td>
+<td>booking_id</td>
+<td><strong>1 予約に対しレビューは高々 1 件</strong></td>
+</tr>
+<tr>
+<td>password_reset_tokens</td>
+<td>user_id</td>
+<td><strong>1 ユーザーに対しトークン行は高々 1 件</strong></td>
+</tr>
+<tr>
+<td>password_reset_tokens</td>
+<td>token</td>
+<td>トークン文字列の一意</td>
+</tr>
+<tr>
+<td>favorites</td>
+<td>(user_id, worker_id)</td>
+<td>同一ペアの重複不可</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2>4. Prisma スキーマ上のリレーション（Entity 対応）</h2>
+<p><code>schema.prisma</code> の <code>fields</code> / <code>references</code> と一致。線なしは <strong>スカラー列のみ</strong>（FK 未定義）。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>モデル</th>
+<th>リレーション名（概念）</th>
+<th>相手モデル</th>
+<th>DB FK</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>User</td>
+<td>bookingsAsCustomer</td>
+<td>Booking[]</td>
+<td>customer_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>bookingsAsWorker</td>
+<td>Booking[]</td>
+<td>worker_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>payments</td>
+<td>Payment[]</td>
+<td>user_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>reviewsGiven / reviewsReceived</td>
+<td>Review[]</td>
+<td>reviewer_id / reviewee_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>messagesSent / messagesReceived</td>
+<td>Message[]</td>
+<td>sender_id / receiver_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>supportTickets</td>
+<td>SupportTicket[]</td>
+<td>user_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>notifications</td>
+<td>Notification[]</td>
+<td>user_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>files</td>
+<td>File[]</td>
+<td>user_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>passwordResetToken</td>
+<td>PasswordResetToken?</td>
+<td>user_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>favorites / favoritedBy</td>
+<td>Favorite[]</td>
+<td>user_id / worker_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>creditCards</td>
+<td>CreditCard[]</td>
+<td>user_id</td>
+</tr>
+<tr>
+<td>User</td>
+<td>workerUnavailableSlots</td>
+<td>WorkerUnavailableSlot[]</td>
+<td>worker_id</td>
+</tr>
+<tr>
+<td>Booking</td>
+<td>customer / worker</td>
+<td>User / User?</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>Booking</td>
+<td>payment / review</td>
+<td>Payment? / Review?</td>
+<td>あり（子側 UNIQUE で 0..1）</td>
+</tr>
+<tr>
+<td>Booking</td>
+<td>messages</td>
+<td>Message[]</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>Payment</td>
+<td>booking / user</td>
+<td>Booking / User</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>Review</td>
+<td>booking / reviewer / reviewee</td>
+<td>Booking / User / User</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>Message</td>
+<td>booking / sender / receiver</td>
+<td>Booking / User / User</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>SupportTicket</td>
+<td>user</td>
+<td>User</td>
+<td>user_id のみ。<strong>admin_id → User は Prisma 未定義</strong></td>
+</tr>
+<tr>
+<td>Notification</td>
+<td>user</td>
+<td>User</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>File</td>
+<td>user</td>
+<td>User</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>Favorite</td>
+<td>user / worker</td>
+<td>User / User</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>CreditCard</td>
+<td>user</td>
+<td>User</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>WorkerUnavailableSlot</td>
+<td>worker</td>
+<td>User</td>
+<td>あり</td>
+</tr>
+<tr>
+<td>ServiceMenu / Area / SystemSettings</td>
+<td>（なし）</td>
+<td>—</td>
+<td><strong>他モデルから FK なし</strong></td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2>5. コード上の <code>include</code> ナビゲーション（サービス別）</h2>
+<p>「API やバッチがどのグラフを読み込むか」の保守用一覧。<strong>ここにない結合は行っていない</strong>（同一リクエスト内）。</p>
+<h3>5.1 予約 <code>bookingService.js</code></h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>操作</th>
+<th>include / 関連の読み方</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一覧 <code>getBookings</code></td>
+<td><code>customer</code>（id,name,email,phone）, <code>worker</code>（＋<code>files</code> で <code>PROFILE_IMAGE</code> 最新 1 件）</td>
+</tr>
+<tr>
+<td>詳細 <code>getBookingById</code></td>
+<td>上記に加え <code>review.reviewer</code>, <code>payment</code>（一部 select）</td>
+</tr>
+<tr>
+<td>作成／更新後</td>
+<td><code>customer</code>, <code>worker</code>（＋プロフィール画像用 <code>files</code>）</td>
+</tr>
+</tbody></table></div>
+<p><strong>補足</strong>: ワーカーのプロフィール画像は <strong><code>files</code> テーブル</strong>を <code>User</code> 経由でネスト取得（<code>WORKER_PROFILE_FILES</code> 定数）。<strong><code>bookings</code> から <code>files</code> への直接 FK はない</strong>。</p>
+<h3>5.2 決済 <code>paymentService.js</code> / <code>receiptService.js</code></h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>操作</th>
+<th>include</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一覧・処理後の取得</td>
+<td><code>booking</code> → <code>customer</code>, <code>worker</code>（worker に <code>files</code> プロフィール）, <code>user</code></td>
+</tr>
+<tr>
+<td>領収書 <code>generateReceiptPDF</code></td>
+<td>同上構成で予約・顧客・ワーカー名等を PDF に使用</td>
+</tr>
+</tbody></table></div>
+<h3>5.3 メッセージ <code>messageService.js</code></h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>操作</th>
+<th>include</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一覧</td>
+<td><code>sender</code>, <code>receiver</code>（id,name,email）</td>
+</tr>
+<tr>
+<td>送信前検証</td>
+<td><code>booking</code> に <code>customer: true</code>, <code>worker: true</code>（完全オブジェクト）</td>
+</tr>
+<tr>
+<td>作成後</td>
+<td><code>sender</code>, <code>receiver</code></td>
+</tr>
+</tbody></table></div>
+<h3>5.4 レビュー <code>reviewService.js</code></h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>操作</th>
+<th>include</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>作成（トランザクション内）</td>
+<td><code>reviewer</code>, <code>booking</code>（id, serviceType, scheduledDate）</td>
+</tr>
+<tr>
+<td>ワーカー別一覧</td>
+<td><code>reviewer</code>, <code>booking</code>（id, serviceType, scheduledDate）</td>
+</tr>
+<tr>
+<td>ワーカー詳細内 <code>getWorkerById</code></td>
+<td>同上パターンで最新 10 件</td>
+</tr>
+</tbody></table></div>
+<h3>5.5 サポート <code>supportService.js</code></h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>操作</th>
+<th>include</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一覧・詳細・管理者更新後</td>
+<td><code>user</code>（id, name, email, role）のみ。<strong><code>admin_id</code> の User は include していない</strong></td>
+</tr>
+</tbody></table></div>
+<h3>5.6 お気に入り <code>favoriteService.js</code></h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>操作</th>
+<th>include</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一覧・追加後</td>
+<td><code>worker</code>（プロフィール表示用の複数列）のみ。<strong><code>user</code>（依頼者）側の include は未使用</strong></td>
+</tr>
+</tbody></table></div>
+<h3>5.7 その他</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>主な Prisma 操作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>authService.js</code></td>
+<td><code>passwordResetToken</code> で <code>include: { user: true }</code>（リセットフロー）</td>
+</tr>
+<tr>
+<td><code>uploadService.js</code></td>
+<td><code>file.create</code> / <code>findMany</code> / <code>delete</code>（<code>userId</code> のみ。親 User の include は用途次第）</td>
+</tr>
+<tr>
+<td><code>cardService.js</code></td>
+<td><code>creditCard</code> のみ（親 user include なしの箇所が多い）</td>
+</tr>
+<tr>
+<td><code>workerUnavailableSlotService.js</code></td>
+<td><code>workerUnavailableSlot</code> の CRUD（<code>workerId</code> は JWT のユーザーと一致チェック）</td>
+</tr>
+<tr>
+<td><code>notificationService.js</code></td>
+<td><code>notification</code> の一覧は <strong>include なし</strong>（関連エンティティは <code>relatedId</code> 参照のみ）</td>
+</tr>
+<tr>
+<td><code>adminService.js</code></td>
+<td><code>systemSettings</code>, <code>serviceMenu</code>, <code>area</code>, <code>user</code>, <code>booking</code>, <code>payment</code> を個別クエリで利用（一覧は <code>select</code> 中心）</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2>6. 論理関連・業務参照（DB に FK なし／コード根拠）</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">ID</th>
+<th>説明</th>
+<th>根拠コード</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">L1</td>
+<td><strong>サービス削除時</strong>、<code>bookings.service_type</code> が <code>service_menus.name</code> と <strong>文字列一致</strong>する予約件数を数え、1 件以上なら削除拒否</td>
+<td><code>adminService.js</code> <code>deleteServiceMenu</code> 内 <code>prisma.booking.count({ where: { serviceType: service.name } })</code></td>
+<td><strong>コード上の関連</strong>。DB は FK で保証しない。</td>
+</tr>
+<tr>
+<td align="right">L2</td>
+<td><strong>エリアマスタ <code>areas</code></strong> と <code>bookings</code> / <code>users</code> には <strong>FK なし</strong>。エリア削除時の予約整合チェックも <strong>未実装</strong>（コメントで「address と照合する必要があるかも」）</td>
+<td><code>adminService.js</code> <code>deleteArea</code> 付近コメント</td>
+<td>運用上のギャップ。</td>
+</tr>
+<tr>
+<td align="right">L3</td>
+<td>ワーカー検索のクエリ <code>area</code> は <strong><code>users.address</code> の部分一致</strong>であり、<code>areas</code> テーブルとは結合しない</td>
+<td><code>workerService.js</code> <code>getWorkers</code>：<code>where.address = { contains: area }</code></td>
+<td>マスタ <code>areas</code> は主に管理画面用。</td>
+</tr>
+<tr>
+<td align="right">L4</td>
+<td><code>support_tickets.admin_id</code> は管理者更新時に <strong>認証済み <code>adminId</code> を格納</strong>。Prisma の <code>User</code> リレーションは <strong>未定義</strong></td>
+<td><code>supportService.js</code> <code>updateSupportTicket</code></td>
+<td><strong>コード上の関連から推測</strong>。参照整合は DB では担保されない。</td>
+</tr>
+<tr>
+<td align="right">L5</td>
+<td><code>notifications.related_id</code> / <code>related_type</code> は <strong>ポリモーフィック</strong>。作成箇所で <code>BOOKING</code> / <code>MESSAGE</code> / <code>PAYMENT</code> / <code>REVIEW</code> 等をセット</td>
+<td><code>bookingService</code>, <code>paymentService</code>, <code>messageService</code>, <code>reviewService</code>, <code>notificationService</code> 等</td>
+<td>FK なし。</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2>7. 区分値（アプリでバリデーションされているもの）</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>対象</th>
+<th>定義場所</th>
+<th>値</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>決済手段 <code>payments.payment_method</code></td>
+<td><code>paymentService.js</code> <code>processPayment</code></td>
+<td><code>credit_card</code>, <code>bank_transfer</code>, <code>cash</code></td>
+</tr>
+<tr>
+<td>通知種別 <code>notifications.type</code></td>
+<td><code>notificationService.js</code> <code>createNotification</code></td>
+<td><code>MESSAGE</code>, <code>BOOKING_UPDATE</code>, <code>BOOKING_CREATED</code>, <code>BOOKING_CANCELLED</code>, <code>REVIEW</code>, <code>PAYMENT</code>, <code>PAYMENT_FAILED</code>, <code>SYSTEM</code>, <code>WORKER_APPROVED</code>, <code>WORKER_REJECTED</code></td>
+</tr>
+<tr>
+<td>口座種別 <code>users.account_type</code>（更新時）</td>
+<td><code>workerService.js</code> <code>updateWorkerProfile</code></td>
+<td>正規化後 <code>ordinary</code> / <code>checking</code>（入力は日本語 <code>普通</code>/<code>当座</code> も可）</td>
+</tr>
+</tbody></table></div>
+<p>ENUM 型（PostgreSQL）の一覧は <a href="./table_definition.html">table_definition.md</a> 付録と一致するが、<strong>上記の <code>payment_method</code> は TEXT</strong> のため DB ENUM ではない点に注意。</p>
+<hr>
+<h2>8. テーブル分類（スキーマ上）</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>テーブル</th>
+<th>分類</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>users</td>
+<td>コア</td>
+<td>3 ロール単一テーブル</td>
+</tr>
+<tr>
+<td>bookings</td>
+<td>トランザクション</td>
+<td>予約の中核</td>
+</tr>
+<tr>
+<td>payments / reviews / messages</td>
+<td>トランザクション</td>
+<td>予約またはユーザーにぶら下がる</td>
+</tr>
+<tr>
+<td>support_tickets / notifications</td>
+<td>トランザクション／通知</td>
+<td></td>
+</tr>
+<tr>
+<td>files / credit_cards / password_reset_tokens</td>
+<td>参照・マスタ補助</td>
+<td>ユーザーに紐づく補助データ</td>
+</tr>
+<tr>
+<td>favorites</td>
+<td>中間</td>
+<td>ユーザー×ワーカー</td>
+</tr>
+<tr>
+<td>worker_unavailable_slots</td>
+<td>参照（スケジュール）</td>
+<td>ワーカーに依存</td>
+</tr>
+<tr>
+<td>service_menus / areas</td>
+<td>マスタ</td>
+<td><strong>他テーブルから FK なし</strong></td>
+</tr>
+<tr>
+<td>system_settings</td>
+<td>設定</td>
+<td><strong>FK なし</strong></td>
+</tr>
+</tbody></table></div>
+<p><strong>履歴専用・ワーク専用・監査ログ専用テーブル</strong>はスキーマに存在しない（日時・ステータス列で表現）。</p>
+<hr>
+<h2>9. 変更時のチェックリスト（レビュー用）</h2>
+<ol>
+<li><code>schema.prisma</code> を変更したら <strong>マイグレーション SQL</strong> と本書 §2 の <strong>整合</strong>を取る。  </li>
+<li><code>include</code> を増やしたら §5 に追記し、<strong>N+1 や権限漏れ</strong>（特に <code>bookingId</code> 経由）を確認。  </li>
+<li><code>service_menus</code> の <strong><code>name</code> 変更</strong>は <code>bookings.service_type</code> のデータと <strong>不整合</strong>になり得る（FK がないため）。  </li>
+<li><code>admin_id</code> を参照する UI を追加する場合、<strong>FK 追加を検討</strong>（現状は整合性がアプリ依存）。</li>
+</ol>
+</main>
+<footer class="doc-footer">KAJISHIFT データベース設計書（HTML版） / ソースは親ディレクトリの Markdown</footer>
+
+</body>
+</html>

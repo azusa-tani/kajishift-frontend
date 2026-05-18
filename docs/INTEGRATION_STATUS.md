@@ -1,8 +1,14 @@
 # フロントエンド・バックエンド連携状況
 
-最終更新日: 2026年4月8日（最新）
+最終更新日: 2026年5月12日（最新）
 
 ## 📋 更新履歴
+
+- **2026年5月12日**: 本番スモークの記録を `docs/RELEASE_TEST_RESULTS.md` に反映（API 向き先・静的配信・Socket 接続・HTTPS/証明書の一部。詳細・判定は当該ドキュメントおよび `docs/RELEASE_DEFECT_LIST.md` を参照）
+- **2026年5月1日**: 依頼者予約詳細の決済フロー・レビュー星UI、バックエンド予約詳細の `payment` 同梱
+  - ✅ `customer/booking-detail.html` + `js/booking-detail.js` … 予約 `COMPLETED` かつ未決済時に「決済を確定する」（`api.processPayment`：`bookingId` + `paymentMethod`）。決済済みで領収書（`api.downloadReceipt`）。支払い方法はクレジット／銀行振込／現金のセレクト。モバイル固定バーにも同導線。レビューモーダルは `input[name="rating"]:checked` のまま、星表示を CSS（`#reviewModal .rating-input`）で直感化
+  - ✅ `css/style.css` … 決済ブロック用レイアウト、レビュー星レーティング用スタイル
+  - ✅ バックエンド（別リポジトリ `kajishift-backend`）… `getBookingById` のレスポンスに `payment`（`id` / `status` 等）を同梱。作業完了時の `completedAt` 用に Prisma `Booking.completedAt`（`completed_at`）をスキーマに追加（DB は `npx prisma db push` 等で反映）
 
 - **2026年4月8日**: カレンダーAPI連携の日付整合、設計ドキュメント・本番タスク整理
   - ✅ `worker/calendar.html` … 予約取得の `startDate` / `endDate` とグリッドの `data-date` を**ローカル暦日**で統一（UTC ずれによる誤マッピングを解消）。詳細は `README.md` / `IMPLEMENTATION_STATUS.md` の同日記載
@@ -88,7 +94,7 @@
 | 新規登録 | `customer/register.html` | ✅ 連携済み・テスト完了 | バリデーション実装済み |
 | ダッシュボード | `customer/dashboard.html` | ✅ 連携済み・テスト完了 | ユーザー情報、予約一覧、通知数取得 |
 | 予約一覧 | `customer/bookings.html` | ✅ 連携済み・テスト完了 | 今後の予約・過去の予約表示、キャンセル機能 |
-| 予約詳細 | `customer/booking-detail.html` | ✅ 連携済み・テスト完了 | 予約情報、ワーカー情報、キャンセル機能 |
+| 予約詳細 | `customer/booking-detail.html` | ✅ 連携済み・テスト完了 | 予約・ワーカー・キャンセル、**完了後決済**（`processPayment`＋支払い方法）、領収書、レビュー投稿（星UI）。`GET /bookings/:id` で `payment` が返る前提（2026-05-01） |
 | 予約作成/更新 | `customer/booking.html` | ✅ 連携済み・テスト完了 | 新規作成・更新対応 |
 | ワーカー選択 | `customer/select-worker.html` | ✅ 連携済み・テスト完了 | ワーカー一覧、選択、予約確定、プロフィール表示、チャット機能 |
 | チャット | `customer/chat.html` | ✅ 連携済み・テスト完了 | メッセージ一覧、送信、WebSocket（リアルタイム）、画像添付、メニュー機能追加（2026年2月27日） |

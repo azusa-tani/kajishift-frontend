@@ -1,0 +1,2867 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>テーブル定義書 — DB設計書</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <h1 class="doc-title"><a href="index.html">テーブル定義書</a></h1>
+    
+<nav class="doc-nav">
+  <a href="index.html">一覧</a>
+  <a href="table_definition.html">テーブル定義書</a>
+  <a href="er_diagram.html">ER図</a>
+  <a href="relations.html">リレーション一覧</a>
+  <a href="questions.html">不明点・確認事項</a>
+</nav>
+  </div>
+</header>
+<main class="content">
+<h1>テーブル定義書</h1>
+<p>Excel で一覧確認する場合は、UTF-8 BOM 付きの <strong><a href="../table_definition_for_excel.csv">table_definition_for_excel.csv</a></strong> を開いてください（<strong>区分</strong>列で概要／カラム／インデックス／制約／備考／補足／ENUM を切り替えられます）。Markdown から再生成する場合は <code>node docs/database/scripts/table-definition-md-to-csv.mjs</code> を実行します。</p>
+<h2>ER 図・リレーションとの対応</h2>
+<ul>
+<li><strong>全テーブル・属性付きの ER 図</strong>（Mermaid）: <a href="./er_diagram.html">er_diagram.md</a></li>
+<li><strong>DB FK / Prisma リレーション / サービス層 include / 論理参照（コード根拠）</strong>（保守の主ドキュメント）: <a href="./relations.html">relations.md</a></li>
+<li>本書の <strong>物理カラム名（スネークケース）・データ型</strong> は Prisma／マイグレーションに準拠しており、ER 図の属性名と対応します。ER 図側は Mermaid の表記の都合で型を <code>string</code> / <code>datetime</code> 等に集約している場合があります（厳密型は本書のカラム定義を優先）。</li>
+</ul>
+<h3>区分値（DB ENUM とアプリバリデーション）</h3>
+<ul>
+<li><strong>PostgreSQL ENUM</strong> の値は本書末尾の「付録」および <code>prisma/migrations</code> の <code>CREATE TYPE</code> に従います。</li>
+<li><strong><code>payments.payment_method</code></strong> は DB 上 <strong>TEXT</strong> のため、許容値は <strong>アプリコード</strong>が正（<code>relations.md</code> の「7. 区分値」: <code>credit_card</code>, <code>bank_transfer</code>, <code>cash</code>）。</li>
+<li><strong><code>notifications.type</code></strong> は DB 上 ENUM だが、作成時は <strong><code>notificationService.js</code> の配列</strong>でも検証される（付録の型値と揃えること）。</li>
+</ul>
+<p>対象データベース: PostgreSQL（Prisma <code>datasource</code> より）。物理名はマイグレーション SQL のスネークケースに準拠しています。<br>列挙値は <code>prisma/migrations</code> の <code>CREATE TYPE</code> および <code>schema.prisma</code> の <code>enum</code> に基づきます。</p>
+<hr>
+<h2>テーブル名：users</h2>
+<h3>概要</h3>
+<p>依頼者（CUSTOMER）、ワーカー（WORKER）、管理者（ADMIN）を単一テーブルで表現するアカウント。ロールにより使用するカラム群が異なります（ワーカー用の口座・本人確認 URL 等）。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID 文字列（主キー）</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>email</td>
+<td>メールアドレス</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ログイン用。一意制約あり</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>password</td>
+<td>パスワードハッシュ</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>bcrypt 等でハッシュ化された値（平文ではない）</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>name</td>
+<td>氏名</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>表示名</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>phone</td>
+<td>電話番号</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>任意</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>role</td>
+<td>ロール</td>
+<td>UserRole</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>CUSTOMER</td>
+<td>CUSTOMER / WORKER / ADMIN</td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>status</td>
+<td>アカウント状態</td>
+<td>UserStatus</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>ACTIVE</td>
+<td>ACTIVE / INACTIVE / SUSPENDED</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>address</td>
+<td>住所</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>依頼者向け想定</td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td>bio</td>
+<td>自己紹介</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ワーカー向け想定</td>
+</tr>
+<tr>
+<td align="right">10</td>
+<td>hourly_rate</td>
+<td>時給（円）</td>
+<td>integer</td>
+<td align="right"></td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ワーカー向け</td>
+</tr>
+<tr>
+<td align="right">11</td>
+<td>service_area_text</td>
+<td>対応エリア（自由記述）</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>改行区切り等。<code>20260417183000</code> マイグレーション追加</td>
+</tr>
+<tr>
+<td align="right">12</td>
+<td>availability_text</td>
+<td>利用可能時間（自由記述）</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>同上マイグレーション追加</td>
+</tr>
+<tr>
+<td align="right">13</td>
+<td>rating</td>
+<td>平均評価</td>
+<td>double precision</td>
+<td align="right"></td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td>0</td>
+<td>0〜5 想定（コメント）。ワーカー向け集計</td>
+</tr>
+<tr>
+<td align="right">14</td>
+<td>review_count</td>
+<td>レビュー件数</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>0</td>
+<td>ワーカー向け</td>
+</tr>
+<tr>
+<td align="right">15</td>
+<td>approval_status</td>
+<td>ワーカー審査状態</td>
+<td>WorkerApprovalStatus</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>PENDING</td>
+<td>PENDING / APPROVED / REJECTED</td>
+</tr>
+<tr>
+<td align="right">16</td>
+<td>bank_name</td>
+<td>銀行名</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ワーカー用</td>
+</tr>
+<tr>
+<td align="right">17</td>
+<td>branch_name</td>
+<td>支店名</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ワーカー用</td>
+</tr>
+<tr>
+<td align="right">18</td>
+<td>account_type</td>
+<td>口座種別</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>アプリコメント上 ordinary / checking。DB 制約なし</td>
+</tr>
+<tr>
+<td align="right">19</td>
+<td>account_number</td>
+<td>口座番号</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ワーカー用</td>
+</tr>
+<tr>
+<td align="right">20</td>
+<td>account_name</td>
+<td>口座名義</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ワーカー用</td>
+</tr>
+<tr>
+<td align="right">21</td>
+<td>id_document_url</td>
+<td>本人確認書類 URL</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ワーカー用</td>
+</tr>
+<tr>
+<td align="right">22</td>
+<td>notification_prefs</td>
+<td>通知プリファレンス</td>
+<td>jsonb</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td><code>20260417200000</code> マイグレーション追加。構造は別途確認</td>
+</tr>
+<tr>
+<td align="right">23</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">24</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code>（アプリ更新で維持）</td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>users_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>users_email_key</td>
+<td>email</td>
+<td>Yes</td>
+<td>メール一意</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>users_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>users_email_key</td>
+<td>UNIQUE</td>
+<td>email</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li>1 テーブルで 3 ロールを扱うため、NULL 可能列が多くロール別の業務ルールはアプリケーション側に寄りやすい。</li>
+<li><code>account_type</code> の許容値は <strong>スキーマコメントからの推測</strong>であり DB ENUM ではない。</li>
+</ul>
+<hr>
+<h2>テーブル名：bookings</h2>
+<h3>概要</h3>
+<p>家事代行の予約。依頼者とワーカー（未確定時は NULL）、日時・サービス種別・住所・ステータス・金額を保持する。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>customer_id</td>
+<td>依頼者ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>依頼者ユーザー</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>worker_id</td>
+<td>ワーカーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>未割当時 NULL。ON DELETE SET NULL</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>service_type</td>
+<td>サービス種別</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>例: 掃除・清掃。<code>service_menus</code> との整合は FK では保証されない</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>scheduled_date</td>
+<td>予定日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>予約枠の基準日時</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>start_time</td>
+<td>開始時刻</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>HH:mm 形式想定（コメント）</td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>duration</td>
+<td>所要時間</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>時間数（整数）</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>address</td>
+<td>訪問先住所</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td>notes</td>
+<td>メモ</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>依頼者メモ</td>
+</tr>
+<tr>
+<td align="right">10</td>
+<td>status</td>
+<td>予約ステータス</td>
+<td>BookingStatus</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>PENDING</td>
+<td>PENDING / CONFIRMED / IN_PROGRESS / COMPLETED / CANCELLED</td>
+</tr>
+<tr>
+<td align="right">11</td>
+<td>total_amount</td>
+<td>合計金額（円）</td>
+<td>integer</td>
+<td align="right"></td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">12</td>
+<td>completed_at</td>
+<td>完了日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td><code>schema.prisma</code> に存在。<strong>リポジトリ内マイグレーション SQL には当該列の追加が見当たらない</strong>（README は本番同期言及）。詳細は <code>questions.md</code></td>
+</tr>
+<tr>
+<td align="right">13</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">14</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>bookings_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キーのみ（マイグレーション上、セカンダリインデックスなし）</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>bookings_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>bookings_customer_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>customer_id → users(id)</td>
+</tr>
+<tr>
+<td>bookings_worker_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>worker_id → users(id)</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li><code>completed_at</code> については <strong>スキーマとマイグレーション履歴の差異</strong>があり、物理 DB の確定は環境依存。不明点は <code>questions.md</code> を参照。</li>
+</ul>
+<hr>
+<h2>テーブル名：payments</h2>
+<h3>概要</h3>
+<p>予約に紐づく決済レコード。<code>booking_id</code> は一意（1 予約 1 決済を想定）。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>booking_id</td>
+<td>予約ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>bookings(id)</td>
+<td></td>
+<td>UNIQUE。支払対象予約</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>user_id</td>
+<td>支払者ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>依頼者想定</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>amount</td>
+<td>金額（円）</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>payment_method</td>
+<td>決済手段</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>アプリでは <code>credit_card</code> / <code>bank_transfer</code> / <code>cash</code>（<code>paymentService.js</code>）。DB ENUM ではない</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>status</td>
+<td>決済状態</td>
+<td>PaymentStatus</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>PENDING</td>
+<td>PENDING / COMPLETED / FAILED / REFUNDED</td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>transaction_id</td>
+<td>外部トランザクションID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>外部決済システム連携用</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>payments_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>payments_booking_id_key</td>
+<td>booking_id</td>
+<td>Yes</td>
+<td>予約ごとに高々 1 件</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>payments_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>payments_booking_id_key</td>
+<td>UNIQUE</td>
+<td>booking_id</td>
+</tr>
+<tr>
+<td>payments_booking_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>booking_id → bookings(id)</td>
+</tr>
+<tr>
+<td>payments_user_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>user_id → users(id)</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li>許容値は <strong><code>paymentService.js</code> でホワイトリスト</strong>（<code>credit_card</code>, <code>bank_transfer</code>, <code>cash</code>）。DB 上は自由 TEXT のため、バイパス経路に注意。</li>
+</ul>
+<hr>
+<h2>テーブル名：reviews</h2>
+<h3>概要</h3>
+<p>完了した予約に対するレビュー。<code>booking_id</code> で予約と 1:1。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>booking_id</td>
+<td>予約ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>bookings(id)</td>
+<td></td>
+<td>UNIQUE</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>reviewer_id</td>
+<td>レビュアーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>依頼者想定</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>reviewee_id</td>
+<td>被評価者ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>ワーカー想定</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>rating</td>
+<td>評価</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>1〜5</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>comment</td>
+<td>コメント</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>reviews_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>reviews_booking_id_key</td>
+<td>booking_id</td>
+<td>Yes</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>reviews_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>reviews_booking_id_key</td>
+<td>UNIQUE</td>
+<td>booking_id</td>
+</tr>
+<tr>
+<td>reviews_booking_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>booking_id → bookings(id)</td>
+</tr>
+<tr>
+<td>reviews_reviewer_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>reviewer_id → users(id)</td>
+</tr>
+<tr>
+<td>reviews_reviewee_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>reviewee_id → users(id)</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li>reviewer / reviewee のロール整合は <strong>アプリケーションロジック依存</strong>（DB CHECK なし）。</li>
+</ul>
+<hr>
+<h2>テーブル名：messages</h2>
+<h3>概要</h3>
+<p>予約単位のチャットメッセージ。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>booking_id</td>
+<td>予約ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>bookings(id)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>sender_id</td>
+<td>送信者ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>receiver_id</td>
+<td>受信者ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>content</td>
+<td>本文</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>is_read</td>
+<td>既読</td>
+<td>boolean</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>false</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td>更新カラムなし（Prisma モデルにも updatedAt なし）</td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>messages_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キーのみ</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>messages_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>messages_booking_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>booking_id → bookings(id)</td>
+</tr>
+<tr>
+<td>messages_sender_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>sender_id → users(id)</td>
+</tr>
+<tr>
+<td>messages_receiver_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>receiver_id → users(id)</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li>送信者・受信者が当該予約の依頼者・ワーカーであることの保証は <strong>DB ではなくアプリ側</strong>。</li>
+</ul>
+<hr>
+<h2>テーブル名：support_tickets</h2>
+<h3>概要</h3>
+<p>ユーザーからの問い合わせ・サポートチケット。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>user_id</td>
+<td>起票ユーザーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>subject</td>
+<td>件名</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>content</td>
+<td>本文</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>status</td>
+<td>チケット状態</td>
+<td>SupportStatus</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>OPEN</td>
+<td>OPEN / IN_PROGRESS / CLOSED</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>admin_response</td>
+<td>管理者返信</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>admin_id</td>
+<td>対応管理者ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td><strong>users への FK はマイグレーションにない</strong>（<strong>コード上の関連から推測</strong>: 管理者ユーザーの ID）。<code>questions.md</code> 参照</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>support_tickets_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キーのみ</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>support_tickets_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>support_tickets_user_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>user_id → users(id)</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li><code>admin_id</code> は <strong>DB 外部キーなし</strong>。参照先・整合性は要確認。</li>
+</ul>
+<hr>
+<h2>テーブル名：notifications</h2>
+<h3>概要</h3>
+<p>アプリ内通知（ユーザー宛）。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>user_id</td>
+<td>宛先ユーザーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>type</td>
+<td>通知種別</td>
+<td>NotificationType</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>下記 ENUM 参照</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>title</td>
+<td>タイトル</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>content</td>
+<td>本文</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>is_read</td>
+<td>既読</td>
+<td>boolean</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>false</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>related_id</td>
+<td>関連エンティティID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ポリモーフィック用</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>related_type</td>
+<td>関連エンティティ種別</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>例: BOOKING, MESSAGE。正式な列挙は要確認</td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>NotificationType（PostgreSQL ENUM）の値</strong></p>
+<p>MESSAGE, BOOKING_UPDATE, BOOKING_CREATED, BOOKING_CANCELLED, REVIEW, PAYMENT, PAYMENT_FAILED, SYSTEM, WORKER_APPROVED, WORKER_REJECTED</p>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>notifications_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>notifications_user_id_is_read_idx</td>
+<td>user_id, is_read</td>
+<td>No</td>
+<td>一覧・未読フィルタ用</td>
+</tr>
+<tr>
+<td>notifications_user_id_created_at_idx</td>
+<td>user_id, created_at</td>
+<td>No</td>
+<td>時系列取得用</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>notifications_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>notifications_user_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>user_id → users(id)</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li><code>related_id</code> / <code>related_type</code> の組合せによる参照は <strong>FK では保証されない</strong>。</li>
+</ul>
+<hr>
+<h2>テーブル名：files</h2>
+<h3>概要</h3>
+<p>ユーザーに紐づくアップロードファイルのメタデータ。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>user_id</td>
+<td>所有者ユーザーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>file_path</td>
+<td>保存パス</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>ストレージ上のパス</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>original_name</td>
+<td>元ファイル名</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>mime_type</td>
+<td>MIME タイプ</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>file_size</td>
+<td>サイズ（バイト）</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>file_type</td>
+<td>ファイル種別</td>
+<td>FileType</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>GENERAL</td>
+<td>PROFILE_IMAGE / ID_DOCUMENT / GENERAL</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>files_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>files_user_id_file_type_idx</td>
+<td>user_id, file_type</td>
+<td>No</td>
+<td></td>
+</tr>
+<tr>
+<td>files_user_id_created_at_idx</td>
+<td>user_id, created_at</td>
+<td>No</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>files_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>files_user_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>user_id → users(id)</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li>物理ファイルの所在は <code>file_path</code> に依存。</li>
+</ul>
+<hr>
+<h2>テーブル名：password_reset_tokens</h2>
+<h3>概要</h3>
+<p>パスワードリセット用のワンタイムトークン。ユーザーごとに高々 1 件（<code>user_id</code> UNIQUE）。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>user_id</td>
+<td>ユーザーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>UNIQUE。ユーザー削除時 CASCADE</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>token</td>
+<td>トークン</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>UNIQUE</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>expires_at</td>
+<td>有効期限</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>password_reset_tokens_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>password_reset_tokens_user_id_key</td>
+<td>user_id</td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td>password_reset_tokens_token_key</td>
+<td>token</td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td>password_reset_tokens_token_idx</td>
+<td>token</td>
+<td>No</td>
+<td>検索用（UNIQUE と併存）</td>
+</tr>
+<tr>
+<td>password_reset_tokens_expires_at_idx</td>
+<td>expires_at</td>
+<td>No</td>
+<td>期限切れ掃除等に利用想定</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>password_reset_tokens_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>password_reset_tokens_user_id_key</td>
+<td>UNIQUE</td>
+<td>user_id</td>
+</tr>
+<tr>
+<td>password_reset_tokens_token_key</td>
+<td>UNIQUE</td>
+<td>token</td>
+</tr>
+<tr>
+<td>password_reset_tokens_user_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>user_id → users(id) ON DELETE CASCADE</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li><code>token</code> にユニークインデックスと非ユニークインデックスが両方ある（マイグレーション定義どおり）。</li>
+</ul>
+<hr>
+<h2>テーブル名：favorites</h2>
+<h3>概要</h3>
+<p>依頼者がワーカーをお気に入り登録した関係。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>user_id</td>
+<td>依頼者ユーザーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>お気に入りした側</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>worker_id</td>
+<td>ワーカーユーザーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>お気に入りされた側</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>favorites_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>favorites_user_id_idx</td>
+<td>user_id</td>
+<td>No</td>
+<td></td>
+</tr>
+<tr>
+<td>favorites_worker_id_idx</td>
+<td>worker_id</td>
+<td>No</td>
+<td></td>
+</tr>
+<tr>
+<td>favorites_user_id_worker_id_key</td>
+<td>user_id, worker_id</td>
+<td>Yes</td>
+<td>同一ペアの重複禁止</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>favorites_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>favorites_user_id_worker_id_key</td>
+<td>UNIQUE</td>
+<td>(user_id, worker_id)</td>
+</tr>
+<tr>
+<td>favorites_user_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>user_id → users(id) ON DELETE CASCADE</td>
+</tr>
+<tr>
+<td>favorites_worker_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>worker_id → users(id) ON DELETE CASCADE</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li>依頼者・ワーカーのロールは <strong>DB では強制されない</strong>（<code>users.role</code> との整合はアプリ側）。</li>
+</ul>
+<hr>
+<h2>テーブル名：service_menus</h2>
+<h3>概要</h3>
+<p>提供サービスメニューのマスタ（名称・説明・基準価格・表示順など）。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>name</td>
+<td>サービス名</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>description</td>
+<td>説明</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>base_price</td>
+<td>基本料金（円）</td>
+<td>integer</td>
+<td align="right"></td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>is_active</td>
+<td>有効フラグ</td>
+<td>boolean</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>true</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>display_order</td>
+<td>表示順</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>service_menus_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>service_menus_is_active_idx</td>
+<td>is_active</td>
+<td>No</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>service_menus_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li><code>bookings.service_type</code> との関係は <strong>FK なし</strong>（名称一致など <strong>コード上の関連から推測</strong> される程度）。</li>
+</ul>
+<hr>
+<h2>テーブル名：areas</h2>
+<h3>概要</h3>
+<p>対応エリアのマスタ。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>name</td>
+<td>エリア名</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>prefecture</td>
+<td>都道府県</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>postal_code</td>
+<td>郵便番号</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>範囲表現の可能性（コメント）</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>is_active</td>
+<td>有効フラグ</td>
+<td>boolean</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>true</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>display_order</td>
+<td>表示順</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>areas_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>areas_is_active_idx</td>
+<td>is_active</td>
+<td>No</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>areas_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li>ユーザー・予約テーブルからの FK は <strong>なし</strong>（エリア選択は別テーブル化されていない）。</li>
+</ul>
+<hr>
+<h2>テーブル名：system_settings</h2>
+<h3>概要</h3>
+<p>システム全体のキー・値設定。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>key</td>
+<td>設定キー</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>UNIQUE</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>value</td>
+<td>設定値</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>JSON 文字列格納可能（コメント）</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>description</td>
+<td>説明</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>category</td>
+<td>カテゴリ</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>例: general / payment / notification（コメント）</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>system_settings_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>system_settings_key_key</td>
+<td>key</td>
+<td>Yes</td>
+<td>キー一意</td>
+</tr>
+<tr>
+<td>system_settings_category_idx</td>
+<td>category</td>
+<td>No</td>
+<td></td>
+</tr>
+<tr>
+<td>system_settings_key_idx</td>
+<td>key</td>
+<td>No</td>
+<td>ユニーク索引に加え通常索引あり</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>system_settings_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>system_settings_key_key</td>
+<td>UNIQUE</td>
+<td>key</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li><code>value</code> のパース方針（純文字 vs JSON）は <strong>利用コード側の確認</strong>が必要。</li>
+</ul>
+<hr>
+<h2>テーブル名：credit_cards</h2>
+<h3>概要</h3>
+<p>顧客のクレジットカード情報のメタデータおよび外部決済トークン（PAN は保持しない想定）。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>user_id</td>
+<td>所有者ユーザーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>ユーザー削除時 CASCADE</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>last_4</td>
+<td>下4桁</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>brand</td>
+<td>ブランド</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>visa 等。ENUM ではない</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>expiry_month</td>
+<td>有効期限（月）</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>expiry_year</td>
+<td>有効期限（年）</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td>cardholder_name</td>
+<td>名義</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td>is_default</td>
+<td>デフォルトカード</td>
+<td>boolean</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>false</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td>is_active</td>
+<td>有効フラグ</td>
+<td>boolean</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>true</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">10</td>
+<td>token</td>
+<td>外部トークン</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>Yes</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Stripe 等</td>
+</tr>
+<tr>
+<td align="right">11</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">12</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>credit_cards_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>credit_cards_user_id_idx</td>
+<td>user_id</td>
+<td>No</td>
+<td></td>
+</tr>
+<tr>
+<td>credit_cards_user_id_is_default_idx</td>
+<td>user_id, is_default</td>
+<td>No</td>
+<td>デフォルトカード参照用</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>credit_cards_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>credit_cards_user_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>user_id → users(id) ON DELETE CASCADE</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li>「デフォルトは 1 枚」の排他は <strong>ユニーク制約では表現されていない</strong>（<code>questions.md</code> 参照）。</li>
+</ul>
+<hr>
+<h2>テーブル名：worker_unavailable_slots</h2>
+<h3>概要</h3>
+<p>ワーカー本人が登録する「利用不可」の 30 分スロット（JST の暦日 <code>local_date</code> と <code>slot_index</code> 0〜47）。</p>
+<h3>カラム定義</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">No</th>
+<th>カラム名</th>
+<th>論理名</th>
+<th>データ型</th>
+<th align="right">桁数</th>
+<th>NULL許可</th>
+<th>主キー</th>
+<th>外部キー</th>
+<th>デフォルト値</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td>id</td>
+<td>ID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td>PK</td>
+<td></td>
+<td></td>
+<td>UUID</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td>worker_id</td>
+<td>ワーカーID</td>
+<td>text</td>
+<td align="right">可変</td>
+<td>No</td>
+<td></td>
+<td>users(id)</td>
+<td></td>
+<td>ON DELETE CASCADE</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td>local_date</td>
+<td>暦日（JST）</td>
+<td>varchar</td>
+<td align="right">10</td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>YYYY-MM-DD</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td>slot_index</td>
+<td>スロット番号</td>
+<td>integer</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>0=00:00-00:29 … 47=23:30-23:59（スキーマコメント）</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td>created_at</td>
+<td>作成日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td>now()</td>
+<td></td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td>updated_at</td>
+<td>更新日時</td>
+<td>timestamp(3)</td>
+<td align="right"></td>
+<td>No</td>
+<td></td>
+<td></td>
+<td></td>
+<td>Prisma <code>@updatedAt</code></td>
+</tr>
+</tbody></table></div>
+<h3>インデックス</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>インデックス名</th>
+<th>カラム</th>
+<th>一意制約</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>worker_unavailable_slots_pkey</td>
+<td>id</td>
+<td>Yes</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>worker_unavailable_slots_worker_id_local_date_slot_index_key</td>
+<td>worker_id, local_date, slot_index</td>
+<td>Yes</td>
+<td>同一枠の重複禁止</td>
+</tr>
+<tr>
+<td>worker_unavailable_slots_worker_id_local_date_idx</td>
+<td>worker_id, local_date</td>
+<td>No</td>
+<td>日付範囲クエリ用</td>
+</tr>
+</tbody></table></div>
+<h3>制約</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>制約名</th>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>worker_unavailable_slots_pkey</td>
+<td>PRIMARY KEY</td>
+<td>id</td>
+</tr>
+<tr>
+<td>worker_unavailable_slots_worker_id_local_date_slot_index_key</td>
+<td>UNIQUE</td>
+<td>(worker_id, local_date, slot_index)</td>
+</tr>
+<tr>
+<td>worker_unavailable_slots_worker_id_fkey</td>
+<td>FOREIGN KEY</td>
+<td>worker_id → users(id) ON DELETE CASCADE</td>
+</tr>
+</tbody></table></div>
+<h3>備考</h3>
+<ul>
+<li><code>worker_id</code> が実際に <code>WORKER</code> ロールであることは <strong>DB では保証されない</strong>。</li>
+</ul>
+<hr>
+<h2>付録：PostgreSQL ENUM 型一覧（マイグレーションより）</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>型名</th>
+<th>値</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>UserRole</td>
+<td>CUSTOMER, WORKER, ADMIN</td>
+</tr>
+<tr>
+<td>UserStatus</td>
+<td>ACTIVE, INACTIVE, SUSPENDED</td>
+</tr>
+<tr>
+<td>WorkerApprovalStatus</td>
+<td>PENDING, APPROVED, REJECTED</td>
+</tr>
+<tr>
+<td>BookingStatus</td>
+<td>PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED</td>
+</tr>
+<tr>
+<td>PaymentStatus</td>
+<td>PENDING, COMPLETED, FAILED, REFUNDED</td>
+</tr>
+<tr>
+<td>SupportStatus</td>
+<td>OPEN, IN_PROGRESS, CLOSED</td>
+</tr>
+<tr>
+<td>NotificationType</td>
+<td>MESSAGE, BOOKING_UPDATE, BOOKING_CREATED, BOOKING_CANCELLED, REVIEW, PAYMENT, PAYMENT_FAILED, SYSTEM, WORKER_APPROVED, WORKER_REJECTED</td>
+</tr>
+<tr>
+<td>FileType</td>
+<td>PROFILE_IMAGE, ID_DOCUMENT, GENERAL</td>
+</tr>
+</tbody></table></div>
+</main>
+<footer class="doc-footer">KAJISHIFT データベース設計書（HTML版） / ソースは親ディレクトリの Markdown</footer>
+
+</body>
+</html>

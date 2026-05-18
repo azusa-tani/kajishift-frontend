@@ -41,6 +41,8 @@
 - [ ] ブラウザから **Socket.IO が `connect` 成功するか**（`connected` / `unread-count` が届くか）を本番でスモークテストする（`kajishift-backend/tests/test-socket.js` を本番 URL 向けに実行する、または実機で DevTools 確認）。
 - [ ] **WSS / プロキシ**（Railway の公開 URL とフロントの `SOCKET_SERVER_URL` / `API_BASE_URL`）の組み合わせが一致しているか確認する。
 
+**進捗（2026-05-12）** … `docs/RELEASE_TEST_RESULTS.md` の TC-E-001・TC-E-003・TC-N-001 で、本番向き先・REST/WebSocket の CORS 応答・Socket WebSocket（101）と接続ログをブラウザで確認済み。Railway ダッシュボード上の `CORS_ORIGIN` 直確認、全 API の網羅、切断時再接続の手順化は未完了（同ドキュメント・`docs/RELEASE_DEFECT_LIST.md` の PEND-006 / PEND-014 参照）。
+
 ---
 
 ## 高（バックエンド push 済み／API あり → フロントで受ける・見せる）

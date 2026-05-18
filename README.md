@@ -14,6 +14,7 @@ kajishift-frontend/
 ├── images/             # 画像ファイル
 ├── docs/               # ドキュメント
 │   ├── HANDOVER.md
+│   ├── HANDOVER_PROMPT.md            # Cursor 新規チャット用・引継ぎプロンプト
 │   ├── IMPLEMENTATION_STATUS.md
 │   ├── INTEGRATION_STATUS.md
 │   ├── INTEGRATION_COMPLETE.md
@@ -74,6 +75,7 @@ npx --yes http-server -p 5500
 ### 主要ドキュメント
 
 - **[引継ぎメモ](docs/HANDOVER.md)** - プロジェクト概要、構造、認証システム
+- **[引継ぎプロンプト（Cursor用）](docs/HANDOVER_PROMPT.md)** - 新規チャットに貼る前提・パス・注意事項
 - **[実装状況](docs/IMPLEMENTATION_STATUS.md)** - フロントエンド・バックエンドの実装状況
 - **[連携状況](docs/INTEGRATION_STATUS.md)** - フロントエンド・バックエンド連携状況
 - **[連携完了](docs/INTEGRATION_COMPLETE.md)** - 連携完了時の設定方法
@@ -172,7 +174,15 @@ window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app'
 
 ---
 
-**最終更新**: 2026年4月
+**最終更新**: 2026年5月
+
+### 2026年5月1日の更新内容
+
+- ✅ **依頼者 予約詳細**（`customer/booking-detail.html` + `js/booking-detail.js` + `css/style.css`）
+  - 予約が **完了（`COMPLETED`）** かつ **未決済** のとき「決済を確定する」→ `api.processPayment`（`bookingId` + `paymentMethod`：`credit_card` / `bank_transfer` / `cash`）。決済済みは **領収書ダウンロード**（`api.downloadReceipt`）
+  - 支払い方法セレクトとモバイル下部固定バー（`#fixedActionBar`）の導線。`GET /bookings/:id` の **`booking.payment`** で表示を分岐（バックエンド `getBookingById` が `payment` を返す前提）
+- ✅ **レビュー投稿モーダル**（`#reviewModal`）の **スターレーティング UI**（ラジオは `input[name="rating"]` のまま、見た目のみ CSS で改善）
+- ✅ **バックエンド（別リポジトリ `kajishift-backend`）** … 上記に合わせ `Booking` に **`completedAt`**（`completed_at`）を Prisma に追加、予約詳細 API で **`payment`** を同梱（詳細は `docs/INTEGRATION_STATUS.md` / `docs/IMPLEMENTATION_STATUS.md`）
 
 ### 2026年4月8日の更新内容
 
@@ -185,8 +195,6 @@ window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app'
   - `docs/TASKS_REALTIME_PRODUCTION.md` … 本番のリアルタイム表示ギャップと優先度（バックエンド Socket 前提の整理）
 - ✅ **リポジトリ運用**
   - `.gitignore` に `.vercel` を追加（Vercel CLI リンク情報のコミット防止）
-
-### 2026年3月の更新内容
 
 ### 2026年3月27日の更新内容
 

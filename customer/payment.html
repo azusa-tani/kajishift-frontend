@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../css/style.css" />
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/config.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
   <script src="../js/socket.js" defer></script>
@@ -103,42 +104,14 @@
     <h2 id="cardModalTitle">クレジットカードを追加</h2>
     <form class="card-form" id="cardForm" onsubmit="handleCardSubmit(event)">
       <div class="form-group">
-        <label>カード番号 <span class="required">必須</span></label>
-        <input type="text" id="cardNumber" class="form-input" placeholder="1234 5678 9012 3456" maxlength="19" required />
-        <p class="form-hint">数字のみ入力してください</p>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>有効期限 <span class="required">必須</span></label>
-          <div class="form-row">
-            <select id="expiryMonth" class="form-select" required>
-              <option value="">月</option>
-              <option value="01">01</option>
-              <option value="02">02</option>
-              <option value="03">03</option>
-              <option value="04">04</option>
-              <option value="05">05</option>
-              <option value="06">06</option>
-              <option value="07">07</option>
-              <option value="08">08</option>
-              <option value="09">09</option>
-              <option value="10">10</option>
-              <option value="11">11</option>
-              <option value="12">12</option>
-            </select>
-            <select id="expiryYear" class="form-select" required>
-              <option value="">年</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>セキュリティコード <span class="required">必須</span></label>
-          <input type="text" id="securityCode" class="form-input" placeholder="123" maxlength="4" required />
-        </div>
+        <label>カード名義人 <span class="required">必須</span></label>
+        <input type="text" id="cardholderName" class="form-input" placeholder="YAMADA TARO" autocomplete="cc-name" required />
       </div>
       <div class="form-group">
-        <label>カード名義人 <span class="required">必須</span></label>
-        <input type="text" id="cardholderName" class="form-input" placeholder="YAMADA TARO" required />
+        <label>カード情報 <span class="required">必須</span></label>
+        <div id="stripeCardElement" class="stripe-card-element"></div>
+        <p id="stripeCardErrors" class="form-error" role="alert"></p>
+        <p class="form-hint">カード番号はKAJISHIFTのサーバーへ送信・保存されません。β版ではStripeテストカードのみ使用してください。</p>
       </div>
       <div class="form-group">
         <label class="checkbox-label">
@@ -225,6 +198,8 @@
 // グローバル変数
 let allPayments = [];
 let selectedMonth = null;
+let stripe = null;
+let cardElement = null;
 
   // ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
@@ -239,8 +214,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 有効期限の年を生成
   initExpiryYear();
   
-  // カード番号の自動フォーマット
-  setupCardNumberFormat();
+  // Stripe Elementsを初期化
+  initStripeElements();
   
   // データを読み込み
   await loadPayments();
@@ -454,6 +429,38 @@ function initExpiryYear() {
   });
 }
 
+function initStripeElements() {
+  const publishableKey = window.STRIPE_PUBLISHABLE_KEY;
+  const errorEl = document.getElementById('stripeCardErrors');
+
+  if (!window.Stripe || !publishableKey || publishableKey === 'pk_test_replace_me') {
+    if (errorEl) {
+      errorEl.textContent = 'Stripe公開キーが未設定です。管理者に連絡してください。';
+    }
+    return;
+  }
+
+  stripe = window.Stripe(publishableKey);
+  const elements = stripe.elements();
+  cardElement = elements.create('card', {
+    hidePostalCode: true,
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#2C3E50',
+        '::placeholder': { color: '#8A95A5' }
+      },
+      invalid: { color: '#dc3545' }
+    }
+  });
+  cardElement.mount('#stripeCardElement');
+  cardElement.on('change', (event) => {
+    if (errorEl) {
+      errorEl.textContent = event.error ? event.error.message : '';
+    }
+  });
+}
+
 // カード一覧を読み込む
 async function loadCards() {
   try {
@@ -544,23 +551,11 @@ function closeModal(modalId) {
 // カード追加・更新
 async function handleCardSubmit(event) {
   event.preventDefault();
-  
-  const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
-  const expiryMonth = document.getElementById('expiryMonth').value;
-  const expiryYear = document.getElementById('expiryYear').value;
   const cardholderName = document.getElementById('cardholderName').value;
-  const securityCode = document.getElementById('securityCode').value;
   const isDefault = document.getElementById('isDefault').checked;
 
-  // カード番号のバリデーション
-  if (!/^\d{13,19}$/.test(cardNumber)) {
-    showError('カード番号が無効です（13-19桁の数字）');
-    return;
-  }
-
-  // セキュリティコードのバリデーション
-  if (!/^\d{3,4}$/.test(securityCode)) {
-    showError('セキュリティコードが無効です（3-4桁の数字）');
+  if (!stripe || !cardElement) {
+    showError('カード入力の初期化に失敗しました。画面を再読み込みしてください。');
     return;
   }
 
@@ -569,17 +564,35 @@ async function handleCardSubmit(event) {
     submitBtn.disabled = true;
     submitBtn.textContent = '追加中...';
 
-    await api.addCard({
-      cardNumber,
-      expiryMonth: parseInt(expiryMonth),
-      expiryYear: parseInt(expiryYear),
-      cardholderName,
-      securityCode,
-      isDefault
+    const setupResponse = await api.createCardSetupIntent();
+    const clientSecret = setupResponse.data?.clientSecret || setupResponse.clientSecret;
+    if (!clientSecret) {
+      throw new Error('カード登録の準備に失敗しました');
+    }
+
+    const result = await stripe.confirmCardSetup(clientSecret, {
+      payment_method: {
+        card: cardElement,
+        billing_details: {
+          name: cardholderName
+        }
+      }
     });
+
+    if (result.error) {
+      throw new Error(result.error.message || 'カード認証に失敗しました');
+    }
+
+    const paymentMethodId = result.setupIntent?.payment_method;
+    if (!paymentMethodId) {
+      throw new Error('カード情報の取得に失敗しました');
+    }
+
+    await api.addStripeCard(paymentMethodId, isDefault);
 
     showSuccess('カードを追加しました');
     closeCardModal();
+    cardElement.clear();
     await loadCards();
   } catch (error) {
     console.error('カード追加エラー:', error);

@@ -1013,3 +1013,14 @@
   - `docs/TASKS_REALTIME_PRODUCTION.md` … 本番におけるリアルタイム表示のギャップ一覧。`kajishift-backend` の Socket／通知実装を踏まえた優先度（最優先・高・中・低）
 - ✅ **その他**
   - `.gitignore` に `.vercel` を追加（CLI 連携時のローカル設定をリポジトリ外に保つ）
+
+### 2026年5月1日の更新内容
+
+- ✅ **依頼者 予約詳細**（`customer/booking-detail.html` + `js/booking-detail.js` + `css/style.css`）
+  - 予約ステータス `COMPLETED` かつ決済未完了時に「決済を確定する」→ `api.processPayment({ bookingId, paymentMethod })`（`credit_card` / `bank_transfer` / `cash`）。二重送信時はボタン・セレクトを `disabled`
+  - 決済完了後は「領収書をダウンロード」→ `api.downloadReceipt(paymentId)`
+  - モバイル下部固定バー（`#fixedActionBar`）にも決済導線と支払い方法セレクト（メインと `change` で同期）
+  - レビュー投稿モーダル（`#reviewModal`）の評価入力をスターレーティング化（ラジオは value 5→1 の DOM 順 + `row-reverse` と後続兄弟セレクタで左から 1〜N 星が点灯）。`input[name="rating"]:checked` の取得ロジックは変更なし
+- ✅ **バックエンド連携前提**（リポジトリ `kajishift-backend`）
+  - `GET /bookings/:id` が `payment` を含むこと（`bookingService.getBookingById` の `include`）
+  - ワーカー作業完了 API が更新する `completedAt` に対応するため、Prisma `Booking` に `completedAt DateTime? @map("completed_at")` を追加（本番 DB は `prisma db push` / migrate で反映）
