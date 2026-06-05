@@ -528,6 +528,11 @@ function displayCards(cards) {
 let currentEditCardId = null;
 
 function openCardModal() {
+  if (window.KajishiftOps && (!window.KajishiftOps.canCreateSetupIntents() || !window.KajishiftOps.canWriteCards())) {
+    showError(window.KajishiftOps.getMessage() || '現在、カード登録を一時停止しています。');
+    window.KajishiftOps.renderPausedPanel();
+    return;
+  }
   document.getElementById('cardForm').reset();
   document.getElementById('cardModalTitle').textContent = 'クレジットカードを追加';
   document.getElementById('cardSubmitBtn').textContent = '追加する';
@@ -551,6 +556,10 @@ function closeModal(modalId) {
 // カード追加・更新
 async function handleCardSubmit(event) {
   event.preventDefault();
+  if (window.KajishiftOps && (!window.KajishiftOps.canCreateSetupIntents() || !window.KajishiftOps.canWriteCards())) {
+    showError(window.KajishiftOps.getMessage() || '現在、カード登録を一時停止しています。');
+    return;
+  }
   const cardholderName = document.getElementById('cardholderName').value;
   const isDefault = document.getElementById('isDefault').checked;
 
@@ -601,6 +610,7 @@ async function handleCardSubmit(event) {
     const submitBtn = document.getElementById('cardSubmitBtn');
     submitBtn.disabled = false;
     submitBtn.textContent = '追加する';
+    if (window.KajishiftOps) window.KajishiftOps.applyPageGuards();
   }
 }
 
@@ -634,6 +644,10 @@ async function editCard(cardId) {
 // カード更新
 async function handleCardUpdate(event) {
   event.preventDefault();
+  if (window.KajishiftOps && !window.KajishiftOps.canWriteCards()) {
+    showError(window.KajishiftOps.getMessage() || '現在、カード管理を一時停止しています。');
+    return;
+  }
 
   const cardId = document.getElementById('editCardId').value;
   const expiryMonth = document.getElementById('editExpiryMonth').value;
@@ -663,11 +677,16 @@ async function handleCardUpdate(event) {
     const submitBtn = document.getElementById('editCardSubmitBtn');
     submitBtn.disabled = false;
     submitBtn.textContent = '更新する';
+    if (window.KajishiftOps) window.KajishiftOps.applyPageGuards();
   }
 }
 
 // カード削除
 async function deleteCard(cardId) {
+  if (window.KajishiftOps && !window.KajishiftOps.canWriteCards()) {
+    showError(window.KajishiftOps.getMessage() || '現在、カード管理を一時停止しています。');
+    return;
+  }
   if (!confirm('このカードを削除しますか？')) {
     return;
   }
@@ -684,6 +703,10 @@ async function deleteCard(cardId) {
 
 // デフォルトカードに設定
 async function setDefaultCard(cardId) {
+  if (window.KajishiftOps && !window.KajishiftOps.canWriteCards()) {
+    showError(window.KajishiftOps.getMessage() || '現在、カード管理を一時停止しています。');
+    return;
+  }
   try {
     await api.updateCard(cardId, { isDefault: true });
     showSuccess('デフォルトカードに設定しました');

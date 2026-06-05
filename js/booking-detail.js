@@ -57,6 +57,7 @@ function isPayableBookingPaymentIncomplete(booking) {
  * 「Stripe決済」API を呼べる状態（バックエンドは PENDING 中の再実行を拒否するため除外）
  */
 function canCustomerSubmitPaymentConfirmation(booking) {
+  if (window.KajishiftOps && !window.KajishiftOps.canCreatePaymentIntents()) return false;
   if (!isPayableBookingPaymentIncomplete(booking)) return false;
   const st = booking.payment && booking.payment.status;
   if (st === 'PENDING') return false;
@@ -66,6 +67,10 @@ function canCustomerSubmitPaymentConfirmation(booking) {
 let paymentProcessLocked = false;
 
 async function startPaymentProcess() {
+  if (window.KajishiftOps && !window.KajishiftOps.canCreatePaymentIntents()) {
+    showError(window.KajishiftOps.getMessage() || '現在、決済受付を一時停止しています。');
+    return;
+  }
   if (!canCustomerSubmitPaymentConfirmation(currentBooking)) return;
   if (paymentProcessLocked) return;
 
@@ -75,6 +80,10 @@ async function startPaymentProcess() {
 }
 
 async function submitStripePayment() {
+  if (window.KajishiftOps && !window.KajishiftOps.canCreatePaymentIntents()) {
+    showError(window.KajishiftOps.getMessage() || '現在、決済受付を一時停止しています。');
+    return;
+  }
   if (!canCustomerSubmitPaymentConfirmation(currentBooking)) return;
   if (!stripe || !paymentCardElement) {
     showError('カード入力の初期化に失敗しました。画面を再読み込みしてください。');
@@ -116,6 +125,7 @@ async function submitStripePayment() {
       btn.disabled = false;
       btn.removeAttribute('aria-busy');
     });
+    if (window.KajishiftOps) window.KajishiftOps.applyPageGuards();
   }
 }
 
@@ -619,6 +629,10 @@ let currentCancelBookingId = null;
 
 function openCancelModal() {
   if (!currentBooking) return;
+  if (window.KajishiftOps && !window.KajishiftOps.canMutateBookings()) {
+    showError(window.KajishiftOps.getMessage() || '現在、予約変更・キャンセルを一時停止しています。');
+    return;
+  }
   
   currentCancelBookingId = currentBooking.id;
   
@@ -732,6 +746,10 @@ function displayReviewForm(booking) {
 
 // レビューモーダルを開く
 function openReviewModal(bookingId) {
+  if (window.KajishiftOps && !window.KajishiftOps.canCreateReviews()) {
+    showError(window.KajishiftOps.getMessage() || '現在、レビュー投稿を一時停止しています。');
+    return;
+  }
   currentReviewBookingId = bookingId;
   document.getElementById('reviewForm').reset();
   document.getElementById('reviewModal').classList.add('is-open');
@@ -742,6 +760,11 @@ let currentReviewBookingId = null;
 // レビューフォーム送信
 document.getElementById('reviewForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  if (window.KajishiftOps && !window.KajishiftOps.canCreateReviews()) {
+    showError(window.KajishiftOps.getMessage() || '現在、レビュー投稿を一時停止しています。');
+    return;
+  }
 
   if (!currentReviewBookingId) {
     showError('予約IDが取得できません');

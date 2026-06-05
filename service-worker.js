@@ -3,8 +3,8 @@
  * オフライン対応とキャッシュ戦略を実装
  */
 
-const CACHE_NAME = 'kajishift-v1';
-const RUNTIME_CACHE = 'kajishift-runtime-v1';
+const CACHE_NAME = 'kajishift-v2-24h-auto-ops';
+const RUNTIME_CACHE = 'kajishift-runtime-v2-24h-auto-ops';
 
 // キャッシュするリソース
 const STATIC_CACHE_URLS = [
@@ -75,6 +75,13 @@ self.addEventListener('fetch', (event) => {
 
   // クロスオリジンのリクエストはスキップ
   if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+  const noStorePaths = ['/js/api.js', '/js/config.js', '/service-worker.js'];
+  if (noStorePaths.includes(requestUrl.pathname)) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }
 

@@ -245,6 +245,10 @@ function setupChatMenu() {
 function setupEventListeners() {
   // 画像添付
   document.getElementById('attachBtn').addEventListener('click', function() {
+    if (window.KajishiftOps && !window.KajishiftOps.canUploadFiles()) {
+      showError(window.KajishiftOps.getMessage() || '現在、画像添付を一時停止しています。');
+      return;
+    }
     document.getElementById('fileInput').click();
   });
 
@@ -411,6 +415,11 @@ function displayMessages(messages) {
 
 // メッセージを送信
 async function sendMessage() {
+  if (window.KajishiftOps && !window.KajishiftOps.canSendMessages()) {
+    showError(window.KajishiftOps.getMessage() || '現在、メッセージ送信を一時停止しています。');
+    return;
+  }
+
   const input = document.getElementById('messageInput');
   const text = input.value.trim();
   
@@ -481,6 +490,11 @@ async function sendMessage() {
 
 // 画像メッセージを送信
 async function sendImageMessage(file) {
+  if (window.KajishiftOps && (!window.KajishiftOps.canUploadFiles() || !window.KajishiftOps.canSendMessages())) {
+    showError(window.KajishiftOps.getMessage() || '現在、画像送信を一時停止しています。');
+    return;
+  }
+
   if (!bookingId) {
     alert('予約IDが取得できません');
     return;

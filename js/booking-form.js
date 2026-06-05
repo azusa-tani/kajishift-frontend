@@ -117,6 +117,19 @@ async function loadBookingForEdit(bookingId) {
 // フォーム送信時のバリデーションとAPI連携
 document.getElementById('booking-wizard').addEventListener('submit', async function(e) {
   e.preventDefault();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const bookingId = urlParams.get('id');
+  if (window.KajishiftOps) {
+    if (!bookingId && !window.KajishiftOps.canCreateBookings()) {
+      showError(window.KajishiftOps.getMessage() || '現在、新規予約の受付を一時停止しています。');
+      return;
+    }
+    if (bookingId && !window.KajishiftOps.canMutateBookings()) {
+      showError(window.KajishiftOps.getMessage() || '現在、予約変更を一時停止しています。');
+      return;
+    }
+  }
   
   const validations = {
     'booking-date': (value) => Validators.dateRange(value, 3),
@@ -195,9 +208,6 @@ document.getElementById('booking-wizard').addEventListener('submit', async funct
   
   try {
     // URLパラメータから予約IDを取得（更新の場合）
-    const urlParams = new URLSearchParams(window.location.search);
-    const bookingId = urlParams.get('id');
-    
     let response;
     if (bookingId) {
       // 予約更新

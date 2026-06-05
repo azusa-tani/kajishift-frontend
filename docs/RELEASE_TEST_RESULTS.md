@@ -41,6 +41,8 @@
 
 2026-05-18 更新: Stripe βフローをProduction URLで確認。PaymentIntent作成、Stripeテスト決済、Webhook反映、領収書PDF、レビュー投稿、チャット、通知既読、管理者ログインをAPIスモークで確認した。Vercel本番デプロイは詰まっていたQueued/Initializingを整理後、`https://kajishift-frontend.vercel.app` へReady反映済み。`js/config.js` は `2026-05-18-stripe-beta`、`BETA_MODE=true`、本番API URLを返す。
 
+2026-06-03 更新: 24h Auto Ops対応として、`GET /api/public/status` 連動の停止バナー、`OPERATION_PAUSED` 503専用パネル、予約/決済/カード/チャット/レビュー/登録導線の事前抑止、代替連絡先表示、60秒ポーリング + focus再取得、Service Workerの `api.js` / `config.js` キャッシュ除外を実装した。静的確認 `node tests\test-ops-ui-static.js` はPASS。
+
 2026-05-12 更新: TC-E-001〜E-004、TC-SEC-001、TC-N-001 を反映（詳細は6章）。同日、主要ログイン3画面のブラウザ表示・HTTPS（鍵アイコン）をスクショで追記。
 
 | 分類 | 総件数 | OK | NG | 保留 | 対象外 | 未実施 | リリース必須Yes件数 | リリース必須YesのNG/未実施件数 | 備考 |
@@ -162,6 +164,10 @@
 | TC-O-001 | - | 運用・切り戻し | リリース前バックアップ取得確認 | 運用 | 高 | Yes | 本番DB運用担当が確認可能 | バックアップ取得履歴/スナップショットを確認 | バックアップID/時刻 | リリース直前の復旧可能バックアップが存在 |  | 未実施 | － | － |  |  | 依存:運用、依存:インフラ、リリース不可候補 |
 | TC-O-002 | - | 運用・切り戻し | 切り戻し手順書レビュー確認 | 運用 | 高 | Yes | `docs/ROLLBACK_PROCEDURE.md` 最新化済み | 実施者・承認者・手順の妥当性レビュー | なし | 手順書に不足がなく、当日連絡体制が確認済み |  | 未実施 | － | － |  |  | 依存:運用、リリース不可候補 |
 | TC-O-003 | - | 運用・切り戻し | DBマイグレーションあり時の復旧方針確認 | 複合 | 高 | Yes | 今回リリースでDB変更有無を判定済み | DB変更ありの場合、復旧方針（リストア/フォワード修復）を事前承認 | migration有無/方針 | 復旧フロー・責任者・判断条件が定義済み |  | 未実施 | － | － |  |  | 依存:バックエンド、依存:インフラ、依存:運用、要確認:実環境手順、リリース不可候補 |
+| TC-OPS-001 | OPS01 | 運用ガード | 停止バナー表示 | フロントエンド | 高 | Yes | `/api/public/status` が `payment_paused` または `maintenance` を返す | 任意ページを開く | mode/message/resumeAt | 全ページ上部に運用モードバナー、状態再確認、代替連絡先が表示される | 共通 `KajishiftOps.renderBanner()` で実装 | OK | `node tests\test-ops-ui-static.js` | － | GPT-5.5 | 2026-06-03 | 実ブラウザでの表示確認は公開直前に実施 |
+| TC-OPS-002 | OPS02 | 運用ガード | 書き込みボタン事前抑止 | フロントエンド | 高 | Yes | `payment_paused` / `maintenance` | 予約・決済・カード・チャット・レビュー操作 | 該当操作 | APIに弾かれる前にUIで無効化または送信前停止 | `resolveOpsOperation` / `ensureOperationAllowed` / 個別submit前チェックを実装 | OK | `node tests\test-ops-ui-static.js` | － | GPT-5.5 | 2026-06-03 | プロフィール/管理者更新はAPIクライアント事前ガードで停止 |
+| TC-OPS-003 | OPS03 | 運用ガード | 503 OPERATION_PAUSED専用表示 | フロントエンド | 高 | Yes | APIが503 `OPERATION_PAUSED` を返す | 書き込み操作を実行 | 503 JSON | operationLabel/message/resumeAt/連絡先を専用パネル表示 | `kajishiftOpsPausedPanel` を実装 | OK | `node tests\test-ops-ui-static.js` | － | GPT-5.5 | 2026-06-03 | 実API 503のブラウザ確認は公開直前に実施 |
+| TC-OPS-004 | OPS04 | 運用ガード | Service Workerキャッシュ対策 | フロントエンド | 高 | Yes | SW登録済み | 更新後に `api.js` / `config.js` を取得 | なし | 古い停止ガード設定をキャッシュしない | `service-worker.js` で `api.js` / `config.js` を no-store | OK | `node tests\test-ops-ui-static.js` | － | GPT-5.5 | 2026-06-03 | Vercelデプロイ後にApplicationタブで再確認 |
 
 ## 7. NG・保留・対象外の一覧
 
@@ -191,7 +197,8 @@
 | 重要度高の保留 | あり | TC-E-002、TC-E-003、TC-N-001、TC-SEC-001 が保留 | Socket.io本番WebSocket接続とREST/Socket CORS応答は確認済み。Railway管理画面のCORS_ORIGIN、Socket切断時再接続、カスタムドメインHTTPS確認が未完了。 |
 | 重大不具合 | 未確認 | `RELEASE_DEFECT_LIST.md` と突合が必要 | 現時点で本書上のNG登録はなし |
 | 切り戻し確認 | 未確認 | TC-O-001〜003 が未実施 | バックアップ、手順レビュー、DB復旧方針が未確認 |
-| 総合判定 | Hold | 一部外部連携確認は進んだが、リリース必須Yesの未実施・保留が残る | 認証・権限・予約・決済のP1確認へ進む |
+| 運用停止UI | 条件付きOK | 静的テストはPASS。実ブラウザでの3モード表示・ボタン抑止・503表示は公開直前に確認する | TC-OPS-001〜004 |
+| 総合判定 | Hold | 一部外部連携確認は進んだが、リリース必須Yesの未実施・保留が残る | 認証・権限・予約・決済のP1確認、運用停止UIの実ブラウザ確認へ進む |
 
 ## 9. 要確認事項
 
@@ -215,6 +222,7 @@
 | 日付 | 内容 |
 |---|---|
 | 2026-05-18 | Vercel本番デプロイReadyを確認。主要ページ `customer/login.html`、`customer/payment.html`、`customer/booking-detail.html`、`worker/jobs.html`、`admin/users.html` が200、Stripe Elements導線を確認。 |
+| 2026-06-03 | 24h Auto Ops停止UI、503専用パネル、事前ボタン抑止、Service Workerキャッシュ除外を追加。`node tests\test-ops-ui-static.js` PASS。 |
 | 2026-05-18 | Stripe βフローのProduction APIスモーク結果を追記。`PaymentIntent=pi_3TYKXpFX94mMTqKm15d0ewBK`、`bookingId=bbb1ebf4-3111-4dcb-919b-db31952763a0`、Webhook後 `Payment.status=COMPLETED` を確認。 |
 | 2026-05-12 | TC-E-001 / TC-E-003 / TC-N-001: ブラウザDevToolsでのAPI Request URL、REST/Socket CORS応答、Socket.io WebSocket 101接続の確認結果と証跡画像を追加。TC-E-003、TC-N-001 は残確認事項があるため保留を維持。 |
 | 2026-05-12 | TC-SEC-001: Vercel本番URLの証明書詳細確認結果を追記し、証跡画像 `TC-SEC-001_certificate-vercelapp-valid.png` を追加。カスタムドメイン確認は保留として維持。 |
