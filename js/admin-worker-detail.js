@@ -472,8 +472,7 @@ function displayActionButtons(vm) {
   const sticky = document.getElementById('workerActionsSticky');
 
   const htmlPending = `
-    <button type="button" class="btn btn--primary btn-action btn--lg admin-worker-btn-primary" data-action="approve" data-status="APPROVED">承認する</button>
-    <button type="button" class="btn btn-danger btn-action btn--lg" data-action="approve" data-status="REJECTED">却下する</button>
+    <a href="worker-test-submissions.html?status=needs_review,ai_reviewed,test_submitted" class="btn btn--primary btn-action btn--lg admin-worker-btn-primary">テスト審査キューで最終判定する</a>
   `;
   const htmlSuspend = `
     <button type="button" class="btn btn-danger btn-action btn--lg" data-action="suspend">アカウントを停止</button>

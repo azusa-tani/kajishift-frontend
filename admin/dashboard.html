@@ -37,6 +37,7 @@ if (typeof checkAuth === 'function') {
       <a href="dashboard.html" class="active" aria-current="page">ダッシュボード</a>
       <a href="users.html">利用者管理</a>
       <a href="workers.html">ワーカー管理</a>
+      <a href="worker-test-submissions.html">テスト審査</a>
       <a href="bookings.html">予約管理</a>
       <a href="payments.html">決済・売上</a>
       <a href="support.html">問い合わせ</a>
@@ -170,6 +171,31 @@ if (typeof checkAuth === 'function') {
       </div>
     </section>
 
+    <section class="section admin-section admin-card section-block card-standard">
+      <div class="section-header">
+        <h2 class="section-title">ワーカーテスト審査待ち</h2>
+        <a href="worker-test-submissions.html?status=needs_review,ai_reviewed,test_submitted" class="link-more">すべて見る →</a>
+      </div>
+      <div class="admin-table-container">
+        <table class="admin-table admin-dashboard-table">
+          <thead>
+            <tr>
+              <th>提出日</th>
+              <th>氏名</th>
+              <th>状態</th>
+              <th>AI判定</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="pendingWorkerTestsTable">
+            <tr>
+              <td colspan="5" class="loading-message">読み込み中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </div>
 </main>
 
@@ -225,10 +251,59 @@ async function loadDashboardData() {
     displayTodayBookings(todayBookings);
     displayPendingWorkers(pendingWorkers);
     displayPendingInquiries(pendingInquiries);
+    await loadPendingWorkerTests();
   } catch (error) {
     console.error('ダッシュボードデータの読み込みエラー:', error);
     showError('ダッシュボードデータの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
   }
+}
+
+async function loadPendingWorkerTests() {
+  try {
+    const response = await api.getAdminWorkerTestSubmissions({
+      status: 'needs_review,ai_reviewed,test_submitted',
+      limit: 5
+    });
+    displayPendingWorkerTests(response);
+  } catch (error) {
+    console.warn('ワーカーテスト審査待ちの読み込みに失敗しました', error);
+    const tbody = document.getElementById('pendingWorkerTestsTable');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="5" class="error-message">テスト審査待ちの読み込みに失敗しました</td></tr>';
+    }
+  }
+}
+
+function displayPendingWorkerTests(response) {
+  const tbody = document.getElementById('pendingWorkerTestsTable');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const raw = unwrapApiPayload(response);
+  const submissions = raw?.submissions ?? [];
+
+  if (!submissions.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-message">テスト審査待ちはありません</td></tr>';
+    return;
+  }
+
+  submissions.forEach((submission) => {
+    const createdAt = new Date(submission.createdAt);
+    const dateStr = Number.isNaN(createdAt.getTime())
+      ? '-'
+      : createdAt.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const worker = submission.worker || {};
+    const row = `
+      <tr>
+        <td>${dateStr}</td>
+        <td>${escapeHtml(worker.name || '-')}</td>
+        <td><span class="status-badge pending">${escapeHtml(getWorkerTestStatusText(submission.status))}</span></td>
+        <td>${escapeHtml(getAiDecisionText(submission.aiInitialDecision))}</td>
+        <td><a href="worker-test-submission-detail.html?id=${encodeURIComponent(submission.id)}" class="btn-link btn-action-link">確認</a></td>
+      </tr>
+    `;
+    tbody.insertAdjacentHTML('beforeend', row);
+  });
 }
 
 /** getAdminStats の値でKPIを上書き（フィールドが取れたものだけ） */
@@ -452,6 +527,36 @@ function getBookingStatusClass(status) {
     case 'CANCELLED': return 'cancelled';
     default: return '';
   }
+}
+
+function getWorkerTestStatusText(status) {
+  switch (status) {
+    case 'test_submitted': return 'AI判定待ち';
+    case 'ai_reviewed': return 'AI判定済み';
+    case 'needs_review': return '要確認';
+    case 'admin_passed': return '合格確定';
+    case 'admin_failed': return '不合格確定';
+    default: return status || '-';
+  }
+}
+
+function getAiDecisionText(decision) {
+  switch (decision) {
+    case 'pass_candidate': return '合格候補';
+    case 'fail_candidate': return '不合格候補';
+    case 'needs_review': return '要確認';
+    default: return '未判定';
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[char]));
 }
 
 function getMonthStart() {
