@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ワーカーテスト詳細｜KAJISHIFT管理画面</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
+  <script src="../js/admin-worker-test-submission-detail.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+if (typeof checkAuth === 'function') {
+  checkAuth('admin');
+} else if (!localStorage.getItem('token')) {
+  window.location.href = 'login.html';
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="worker-test-submissions.html" class="active">テスト審査</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <button type="button" class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    <section class="admin-page-header">
+      <div class="flex justify-between items-center flex-wrap gap-4">
+        <div>
+          <h1>ワーカーテスト詳細</h1>
+          <a href="worker-test-submissions.html" class="btn-action-link mt-sm inline-block">← テスト審査一覧に戻る</a>
+        </div>
+      </div>
+    </section>
+
+    <div id="submissionDetailFlash" class="error-message" role="status" aria-live="polite"></div>
+    <div id="detailLoading" class="loading-message text-center p-8">提出内容を読み込み中...</div>
+
+    <div id="detailContent" class="is-hidden">
+      <section class="admin-section">
+        <h2 class="section-title">ワーカー情報</h2>
+        <div class="admin-card">
+          <dl class="admin-def-list" id="workerInfoList"></dl>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <h2 class="section-title">回答本文</h2>
+        <div class="admin-card">
+          <pre id="testAnswer" class="admin-code-block"></pre>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <h2 class="section-title">AI一次判定（参考情報）</h2>
+        <div class="admin-card">
+          <p class="text-muted">AI判定だけでは合否確定されません。管理者が必ず最終判定してください。</p>
+          <dl class="admin-def-list" id="aiReviewList"></dl>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <h2 class="section-title">管理者最終判定</h2>
+        <div class="admin-card">
+          <dl class="admin-def-list" id="adminReviewStatus"></dl>
+          <div id="finalReviewForm">
+            <div class="form-group">
+              <label for="adminComment" class="form-label">管理者コメント</label>
+              <textarea id="adminComment" class="form-input" rows="5" maxlength="5000" placeholder="判定理由や補足事項を入力してください。"></textarea>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <button type="button" id="passBtn" class="btn btn--primary btn-action">合格にする</button>
+              <button type="button" id="failBtn" class="btn btn-danger btn-action">不合格にする</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+</body>
+</html>

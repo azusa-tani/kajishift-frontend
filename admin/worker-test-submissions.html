@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ワーカーテスト審査｜KAJISHIFT管理画面</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
+  <script src="../js/admin-worker-test-submissions.js" defer></script>
+</head>
+<body class="admin-page">
+<script>
+if (typeof checkAuth === 'function') {
+  checkAuth('admin');
+} else if (!localStorage.getItem('token')) {
+  window.location.href = 'login.html';
+}
+</script>
+
+<header class="admin-header">
+  <div class="admin-header-inner">
+    <div class="admin-logo">KAJISHIFT 管理画面</div>
+    <nav class="admin-nav">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="users.html">利用者管理</a>
+      <a href="workers.html">ワーカー管理</a>
+      <a href="worker-test-submissions.html" class="active">テスト審査</a>
+      <a href="bookings.html">予約管理</a>
+      <a href="payments.html">決済・売上</a>
+      <a href="support.html">問い合わせ</a>
+      <a href="settings.html">設定</a>
+    </nav>
+    <div class="admin-user-info">
+      <span class="admin-role">システム管理者</span>
+      <button type="button" class="btn-icon" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="admin-container">
+    <section class="admin-page-header">
+      <h1>ワーカーテスト審査</h1>
+      <p class="text-muted">AI一次判定は参考情報です。最終的な合否は管理者が確認して確定してください。</p>
+    </section>
+
+    <div id="screeningListFlash" class="error-message" role="status" aria-live="polite"></div>
+
+    <section class="admin-filter-section">
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label for="submission-status-filter">ステータス</label>
+            <select id="submission-status-filter" class="form-select">
+              <option value="needs_review,ai_reviewed,test_submitted">未確定すべて</option>
+              <option value="needs_review">要確認</option>
+              <option value="ai_reviewed">AI判定済み</option>
+              <option value="test_submitted">AI判定待ち</option>
+              <option value="admin_passed">合格確定</option>
+              <option value="admin_failed">不合格確定</option>
+              <option value="">すべて</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <button type="button" id="reloadSubmissionsBtn" class="btn btn-primary">再読み込み</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-section">
+      <div class="section-header">
+        <h2 class="section-title">提出一覧（全<span id="submissionTotal">-</span>件）</h2>
+      </div>
+      <div class="admin-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>提出日時</th>
+              <th>ワーカー</th>
+              <th>状態</th>
+              <th>AI一次判定</th>
+              <th>AI点数</th>
+              <th>最終判定</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="submissionTableBody">
+            <tr><td colspan="7" class="loading-message">読み込み中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="submissionPagination"></div>
+    </section>
+  </div>
+</main>
+</body>
+</html>
