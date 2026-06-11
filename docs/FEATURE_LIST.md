@@ -3,6 +3,8 @@
 本書は **kajishift-frontend**（バニラ JS / 静的 HTML）および **kajishift-backend**（Express / Prisma / PostgreSQL）をソースに、機能・画面・API・実装ファイルを対応づけたものです。  
 REST のパスはバックエンド `src/index.js` のマウントと各 `src/routes/*.js` に基づき **`/api` プレフィックス付き**で記載しています。
 
+> 2026年6月11日確認: 本書は過去のバックエンド確認結果を含みます。現行コード上の新機能やβ運用中の決済については、フロントの呼び出し元とバックエンドルートを突合してから判断してください。
+
 **リリース対象か**: 本番で利用想定の画面または API を原則 **対象**。運用専用・デバッグは **対象（運用／制限付き）**。フロントとバックで矛盾があるものは **要修正** と記載します。
 
 ---
@@ -28,16 +30,17 @@ REST のパスはバックエンド `src/index.js` のマウントと各 `src/ro
 | ユーザー | 参照 | ユーザー詳細（ID） | UUID でユーザー取得（認証必須） | 管理者など | `admin/user-detail.html` | `GET /api/users/:id` | `userController.js` | 対象 | 管理者画面から利用 |
 | ワーカー | 検索 | ワーカー一覧・詳細（公開） | キーワード・エリア・時給・評価・**approvalStatus**（デフォルト APPROVED 想定） | 未ログイン・依頼者 | `customer/select-worker.html`, `index.html` 等 | `GET /api/workers`, `GET /api/workers/:id` | `routes/workers.js`, `workerController.js`, `workerService.js` | 対象 | `GET /workers` は **認証不要**（ルートコメント明記） |
 | ワーカー | プロフィール | ワーカー本人プロフィール更新 | bio・hourlyRate 等 | ワーカー | `worker/profile.html` | `PUT /api/workers/me` | `routes/workers.js` | 対象 | |
+| ワーカー | 審査テスト | 審査テスト提出・状態確認 | 現行コード上、ワーカー本人が審査テスト回答を確認・提出する画面が存在 | ワーカー | `worker/screening-test.html` | `GET/POST /api/workers/me/screening-test` | `workerTestSubmissions.js` 等 | 対象（要確認） | AI判定・再提出可否・承認フローはバックエンド現行実装との突合が必要 |
 | ワーカー | スケジュール | 利用不可スロット | JST 30 分スロット（`localDate` + `slotIndex`）の一覧・作成・同期・削除 | ワーカー | `worker/calendar.html` | `GET/POST /api/workers/me/unavailable-slots`, `PUT .../sync`, `DELETE ...`, `DELETE .../:id` | `routes/workerUnavailableSlots.js`, `workerUnavailableSlotService.js`, `utils/jstSlot.js` | 対象 | `index.js` で `/api/workers/me/unavailable-slots` に **authenticate + authorize(WORKER)** を先行マウント |
 | 予約 | CRUD | 予約一覧 | ロール別スコープ。**`available=true` かつ WORKER** で未割当 PENDING 案件 | 依頼者・ワーカー・管理者 | `customer/bookings.html`, `worker/jobs.html`, `admin/bookings.html` 等 | `GET /api/bookings` | `routes/bookings.js`, `bookingService.js` | 対象 | クエリ: `status`, `serviceType`, `startDate`, `endDate`, `available`, `page`, `limit` |
 | 予約 | CRUD | 予約作成・詳細・更新・キャンセル | 作成は **CUSTOMER のみ**（403）。詳細は関係者のみ | 主に依頼者 | `customer/booking.html`, `booking-detail.html`, `admin/booking-detail.html` | `POST/GET/PUT/DELETE /api/bookings`, `GET/PUT /api/bookings/:id` | `bookingController.js`, `bookingService.js` | 対象 | |
 | 予約 | ワークフロー | 承諾・拒否・完了 | 完了時 **`completed_at` 設定** + `COMPLETED`。拒否・完了で通知 | ワーカー | `worker/job-detail.html`, `worker/jobs.html` | `POST /api/bookings/:id/accept`, `POST .../reject`, `POST .../complete` | `bookingService.js` | 対象 | `completeBooking` は `completedAt: new Date()`（`schema.prisma` の `completed_at`） |
-| 予約 | データモデル | Booking・Payment 整合 | 予約 1 件に Payment 最大 1（unique）。完了後に決済フロー | — | `booking-detail.js` 等 | （サービス層） | `prisma/schema.prisma`, `paymentService.js` | 対象 | 決済は `booking.status`・金額計算と連動（`processPayment`） |
+| 予約 | データモデル | Booking・Payment 整合 | 予約 1 件に Payment 最大 1（unique）。決済フローはβ運用中のStripe実装を含む | — | `booking-detail.js` 等 | （サービス層） | `prisma/schema.prisma`, `paymentService.js` | 対象（要確認） | 過去記録では `processPayment` 前提。現行コード上は Stripe / PaymentIntent 系の確認が必要 |
 | レビュー | 評価 | レビュー投稿・一覧 | 依頼者のみ投稿。**ワーカー別一覧は認証不要** | 依頼者・全員（一覧） | `booking-detail.js`, `select-worker.js` 等 | `POST /api/reviews`, `GET /api/reviews/:workerId` | `routes/reviews.js`, `reviewService.js` | 対象 | |
 | チャット | メッセージ | 取得・送信 | 予約に紐づくメッセージ。送信後 Socket でプッシュ | 依頼者・ワーカー | `customer/chat.html`, `worker/chat.html` | `GET /api/messages/:bookingId`, `POST /api/messages` | `routes/messages.js`, `messageService.js` | 対象 | |
-| 決済 | 決済 | 履歴・実行 | **CUSTOMER**: 自分の決済。**ADMIN**: 全件。**WORKER**: サービス層で拒否（エラー） | 依頼者・管理者 | `customer/payment.html`, `admin/payments.html`（一覧はダミー） | `GET /api/payments`, `POST /api/payments` | `routes/payments.js`, `paymentService.js` | 対象 | **要修正**: `worker/rewards.html` が `GET /api/payments` を呼ぶとバックエンドが WORKER を許可せず失敗する設計 |
+| 決済 | 決済 | 履歴・実行 | **CUSTOMER**: 自分の決済。**ADMIN**: 全件。**WORKER**: サービス層で拒否される可能性あり | 依頼者・管理者 | `customer/payment.html`, `admin/payments.html`（一覧は要確認） | `GET /api/payments`, `POST /api/payments`, Stripe関連API（要確認） | `routes/payments.js`, `paymentService.js` | 対象（β運用中・要確認） | 現行コード上は Stripe β / PaymentIntent 系の実装が存在。`worker/rewards.html` と権限の整合は要確認 |
 | 決済 | 領収書 | PDF 領収書 | PDFKit + **Noto Sans JP**（`assets/fonts`） | 依頼者（支払者） | `customer/payment.html`, `booking-detail.js` | `GET /api/payments/:id/receipt` | `paymentController.js`, `receiptService.js` | 対象 | フォント未配置時は明示エラー |
-| 決済 | カード | 登録カード CRUD | トークン化ではなく **検証用フィールドを保存する実装**（Swagger 参照） | 依頼者 | `customer/payment.html` | `GET/POST/PUT/DELETE /api/cards` | `routes/cards.js`, `cardService.js` | 対象 | **推測**: 本番決済ゲートウェイ連携は別途の要件 |
+| 決済 | カード | 登録カード CRUD | 現行コード上は Stripe SetupIntent 系の導線を含むため要確認 | 依頼者 | `customer/payment.html` | `GET/POST/PUT/DELETE /api/cards`, Stripe関連API（要確認） | `routes/cards.js`, `cardService.js` | 対象（β運用中・要確認） | 本番決済ゲートウェイ、トークン保存方針、テスト/本番キーは要確認 |
 | ファイル | アップロード | ファイル保存・一覧・DL・削除 | プロフィール・本人確認・チャット添付等 | ログイン済み | `worker/register.html`, `customer/chat.html`, `worker/chat.html` | `POST /api/upload`, `GET /api/upload`, `GET /api/upload/:id`, `GET /api/upload/:id/download`, `DELETE /api/upload/:id` | `routes/upload.js`, `uploadController.js` | 対象 | **整合性注意**: フロント `api.uploadFile` は FormData に **`category`** を付与。バックエンドは **`req.body.fileType`** のみ参照 → 未送信時は **`GENERAL` 固定**（チャットの `MESSAGE` は現状反映されない可能性）。ワーカー登録は `idDocument` の fieldname で `ID_DOCUMENT` 判定 |
 | お気に入り | 一覧 | お気に入り CRUD・確認 | ワーカー単位 | 依頼者 | `customer/favorites.html`, `select-worker.html` | `GET/POST /api/favorites`, `DELETE /api/favorites/:id`, `DELETE /api/favorites/worker/:workerId`, `GET /api/favorites/check/:workerId` | `routes/favorites.js`, `favoriteService.js` | 対象 | |
 | 通知 | アプリ内 | 通知一覧・未読数・既読・削除 | タイプフィルタ・ページネーション | 全ロール | `customer/notifications.html`, `worker/notifications.html`, `dashboard.html` | `GET /api/notifications`, `GET /api/notifications/unread-count`, `PUT /api/notifications/read-all`, `PUT /api/notifications/:id/read`, `DELETE /api/notifications/:id` | `routes/notifications.js`, `notificationService.js` | 対象 | |
@@ -45,6 +48,7 @@ REST のパスはバックエンド `src/index.js` のマウントと各 `src/ro
 | サポート | チケット（管理） | 更新・削除 | ステータス・管理者返信 | 管理者 | `admin/support.html` | `PUT /api/admin/support/:id`, `DELETE /api/admin/support/:id` | `routes/admin.js`, `supportController.js` | 対象 | |
 | 管理者 | ユーザー | 一覧・更新・削除 | ロール・ステータスフィルタ | 管理者 | `admin/users.html`, `admin/user-detail.html` | `GET /api/admin/users`, `PUT /api/admin/users/:id`, `DELETE /api/admin/users/:id` | `adminService.js` | 対象 | |
 | 管理者 | ワーカー | 一覧・詳細・承認・更新・削除 | 審査 **APPROVED/REJECTED** | 管理者 | `admin/workers.html`, `admin/worker-detail.html` | `GET /api/admin/workers`, `GET /api/admin/workers/:id`, `PUT /api/admin/workers/:id/approve`, `PUT /api/admin/workers/:id`, `DELETE /api/admin/workers/:id` | `adminService.js` | 対象 | フロント `getAdminWorkerById` はここ。フォールバック `GET /api/workers/:id` |
+| 管理者 | ワーカーテスト審査 | 提出一覧・詳細・最終判定 | 現行コード上、審査テスト提出の一覧・詳細・管理者最終判定画面が存在 | 管理者 | `admin/worker-test-submissions.html`, `admin/worker-test-submission-detail.html` | `GET /api/admin/worker-test-submissions`, `GET /api/admin/worker-test-submissions/:id`, `POST .../final-review` | `workerTestSubmissionService.js` 等 | 対象（要確認） | 承認フロー・AI一次判定・最終判定ステータスはバックエンド現行実装を確認 |
 | 管理者 | レポート | 予約・売上・ユーザー・ワーカー統計 | JSON サマリー | 管理者 | `admin/dashboard.html` | `GET /api/admin/reports/bookings`, `…/revenue`, `…/users`, `…/workers` | `adminService.js`, `exportService.js` | 対象 | |
 | 管理者 | レポート | CSV / Excel エクスポート | 各レポート種別 | 管理者 | `admin/users.html`, `admin/bookings.html`, `admin/payments.html`, `admin/workers.html` | `GET /api/admin/reports/{bookings,revenue,users,workers}/export/csv`, 同 `…/excel` | `adminController.js`, `exportService.js` | 対象 | |
 | 管理者 | レポート | グラフ・比較・カスタム | chart / comparison / custom | 管理者 | （ダッシュボードはプレースホルダ） | `GET /api/admin/reports/chart/:reportType`, `GET …/comparison/:reportType`, `POST …/reports/custom` | `adminController.js` | 対象（API） | フロントは Chart 未接続 |
@@ -78,4 +82,5 @@ REST のパスはバックエンド `src/index.js` のマウントと各 `src/ro
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-11 | ドキュメント整理。ワーカー審査テスト関連画面を追加し、決済・カードはβ運用中 / 要確認の表現に更新 |
 | 2026-05-08 | **kajishift-backend**（`src/routes`, `services`, `prisma`）を反映し、フロントとの対応・ギャップ（`/admin/stats`、ワーカー×管理者 API、`upload` の category/fileType 等）を追記 |

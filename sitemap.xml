@@ -7,17 +7,33 @@
   <!-- トップページ -->
   <url>
     <loc>https://kajishift.jp/</loc>
-    <lastmod>2024-01-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
-  
-  <!-- エラーページ（検索エンジンにインデックスさせない） -->
+
+  <!-- 公開ページ -->
   <url>
-    <loc>https://kajishift.jp/404.html</loc>
-    <lastmod>2024-01-01</lastmod>
+    <loc>https://kajishift.jp/flow.html</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.1</priority>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://kajishift.jp/terms.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://kajishift.jp/privacy.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://kajishift.jp/legal.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
   </url>
   
 </urlset>

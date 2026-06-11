@@ -2,9 +2,11 @@
 
 最終更新日: 2026年2月24日
 
+> 2026年6月11日追記: この文書は旧Netlify資料です。現行運用は Vercel 移行後の構成を前提としているため、通常は `README.md`、`docs/VERCEL_DEPLOY.md`、実際の Vercel / Railway 設定を優先してください。`netlify.toml` と `_redirects` は Vercel移行前の参考資料として残しています。
+
 ## 📋 概要
 
-このドキュメントは、KAJISHIFTフロントエンドをNetlifyにデプロイする手順を説明します。
+このドキュメントは、KAJISHIFTフロントエンドをNetlifyにデプロイしていた時期の手順を説明します。現行運用でNetlifyを再利用する場合は、CORS、リダイレクト、配信URLを改めて要確認です。
 
 ---
 

@@ -1,5 +1,7 @@
 # KAJISHIFT リリース判定用 テスト結果記録表
 
+> 2026年6月11日追記: 本書は過去のテスト結果記録を含みます。`js/config.js` のバージョンや決済フローは記録時点の情報であり、現行コード上の値・本番デプロイ済み内容とは異なる可能性があります。未確認の項目は「要確認」として扱ってください。
+
 ## 1. 文書の目的
 
 - 本書は、KAJISHIFTのリリース前テスト結果を記録するための資料である。
@@ -42,6 +44,8 @@
 2026-05-18 更新: Stripe βフローをProduction URLで確認。PaymentIntent作成、Stripeテスト決済、Webhook反映、領収書PDF、レビュー投稿、チャット、通知既読、管理者ログインをAPIスモークで確認した。Vercel本番デプロイは詰まっていたQueued/Initializingを整理後、`https://kajishift-frontend.vercel.app` へReady反映済み。`js/config.js` は `2026-05-18-stripe-beta`、`BETA_MODE=true`、本番API URLを返す。
 
 2026-06-03 更新: 24h Auto Ops対応として、`GET /api/public/status` 連動の停止バナー、`OPERATION_PAUSED` 503専用パネル、予約/決済/カード/チャット/レビュー/登録導線の事前抑止、代替連絡先表示、60秒ポーリング + focus再取得、Service Workerの `api.js` / `config.js` キャッシュ除外を実装した。静的確認 `node tests\test-ops-ui-static.js` はPASS。
+
+2026-06-11 ドキュメント整理: 現行コード上の `js/config.js` は `2026-06-03-24h-auto-ops` のバージョン表記を持つため、2026-05-18 の記録は当時の証跡として扱う。ワーカー審査テスト関連のリリース判定は未整理のため要確認。
 
 2026-05-12 更新: TC-E-001〜E-004、TC-SEC-001、TC-N-001 を反映（詳細は6章）。同日、主要ログイン3画面のブラウザ表示・HTTPS（鍵アイコン）をスクショで追記。
 

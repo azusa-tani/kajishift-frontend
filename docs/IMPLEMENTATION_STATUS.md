@@ -1,5 +1,7 @@
 # KAJISHIFT プロジェクト実装状況
 
+> 2026年6月11日確認: 本書は過去の実装履歴を含みます。現行コード上のファイル構成・API連携と一致しない箇所があるため、未確認の内容は断定せず、該当ファイルとバックエンドルートを確認してください。特に決済、認証、ワーカー審査テスト、管理画面の一部集計は要確認です。
+
 ## 📊 実装状況サマリー
 
 - **フロントエンド**: ✅ 完了（静的HTMLサイト・Vercel本番環境デプロイ済み）
@@ -8,6 +10,7 @@
 - **インフラ**: ✅ 完了（開発環境完了、本番環境デプロイ済み：バックエンドはRailway、フロントエンドはVercel）
 - **セキュリティ**: ✅ 完了（Helmet、Rate Limiting、入力値検証など）
 - **テスト**: ⚠️ 部分実装（APIテストスクリプト完了、ユニットテスト未実装）
+- **補足**: 上記は過去時点の総括を含みます。現行コード上の追加画面（例: ワーカー審査テスト）やβ運用中の決済は、最新のテスト結果と環境設定を要確認です。
 
 ---
 
@@ -30,7 +33,7 @@
     - 「洗濯・アイロン」→「洗濯」
     - 「買い物代行」→「買い物代行（日用品・食材）」
 
-- ✅ **依頼者（customer）向けページ**（9ファイル）
+- ✅ **依頼者（customer）向けページ**（現行コード上は12ファイル）
   - `dashboard.html` - マイページ（認証必須）
   - `login.html` - ログイン画面
   - `register.html` - 登録画面
@@ -40,8 +43,11 @@
   - `select-worker.html` - ワーカー選択
   - `payment.html` - 決済・履歴管理
   - `chat.html` - チャット機能
+  - `favorites.html` - お気に入り
+  - `notifications.html` - 通知一覧
+  - `customer-profile.html` - 依頼者プロフィール
 
-- ✅ **ワーカー（worker）向けページ**（8ファイル）
+- ✅ **ワーカー（worker）向けページ**（現行コード上は13ファイル）
   - `dashboard.html` - ダッシュボード（認証必須）
   - `login.html` - ログイン画面
   - `register.html` - 登録画面
@@ -50,8 +56,13 @@
   - `calendar.html` - カレンダー表示
   - `rewards.html` - 報酬管理
   - `profile.html` - プロフィール管理
+  - `notifications.html` - 通知一覧
+  - `notification-settings.html` - 通知設定
+  - `screening-test.html` - 審査テスト
+  - `chat.html` - チャット
+  - `password-change.html` - 旧導線（プロフィールへリダイレクト）
 
-- ✅ **運営者（admin）向けページ**（9ファイル）
+- ✅ **運営者（admin）向けページ**（現行コード上は14ファイル）
   - `login.html` - ログイン画面（セキュリティ強化：新規登録リンク削除、2026年2月24日）
   - `register.html` - 管理者登録画面（2026年2月18日追加、2026年2月24日以降は使用停止：既存管理者は`users.html`から登録）
   - `dashboard.html` - ダッシュボード（KPI表示、認証必須）
@@ -61,6 +72,11 @@
   - `payments.html` - 決済・売上管理（レポート、認証必須）
   - `support.html` - 問い合わせ管理（認証必須）
   - `settings.html` - マスタ・設定管理（サービス、エリア、システム設定、認証必須）
+  - `user-detail.html` - 利用者詳細
+  - `worker-detail.html` - ワーカー詳細
+  - `booking-detail.html` - 予約詳細
+  - `worker-test-submissions.html` - ワーカーテスト審査一覧
+  - `worker-test-submission-detail.html` - ワーカーテスト審査詳細
 
 - ✅ **エラーページ**（3ファイル）
   - `errors/404.html` - ページが見つからない場合
@@ -77,7 +93,8 @@
 
 #### 認証システム
 - ✅ **クライアントサイド認証**
-  - `sessionStorage`を使用した簡易認証
+  - 現行コード上は JWT / `localStorage` を中心に、`js/auth.js` の `checkAuth(role)` と `js/api.js` のトークン処理を使用
+  - 一部ページでは互換・画面制御のため `sessionStorage` を併用している可能性あり
   - 依頼者: `customerLoggedIn`
   - ワーカー: `workerLoggedIn`
   - 運営者: `adminLoggedIn`
@@ -417,9 +434,10 @@
 ### 2. 外部サービス連携
 
 #### 決済サービス
-- ❌ 決済ゲートウェイ連携
-  - Stripe、PayPal、Squareなど
-- ❌ 実際の決済処理実装
+- ⚠️ 決済ゲートウェイ連携（要確認）
+  - 現行コード上は Stripe β / PaymentIntent 系の実装が存在します
+  - 実課金、本番キー、Webhook、PSP側の冪等性は要確認
+- ⚠️ 実際の決済処理実装（β運用中。最終仕様は要確認）
 - ❌ 返金処理の実装
 
 #### プッシュ通知
@@ -735,7 +753,7 @@
 1. **外部サービス連携**
    - ✅ メール送信機能（パスワードリセット）完了
    - ⚠️ メール通知機能の拡張（予約確認、通知など）未実装
-   - ❌ 決済ゲートウェイ連携（Stripe、PayPalなど）
+   - ⚠️ 決済ゲートウェイ連携（現行コード上は Stripe β / PaymentIntent 系の実装あり。本番運用は要確認）
 
 2. **監視・ログ**
    - ✅ ログ管理（Winston）完了
@@ -1017,7 +1035,7 @@
 ### 2026年5月1日の更新内容
 
 - ✅ **依頼者 予約詳細**（`customer/booking-detail.html` + `js/booking-detail.js` + `css/style.css`）
-  - 予約ステータス `COMPLETED` かつ決済未完了時に「決済を確定する」→ `api.processPayment({ bookingId, paymentMethod })`（`credit_card` / `bank_transfer` / `cash`）。二重送信時はボタン・セレクトを `disabled`
+  - 当時の記録では予約ステータス `COMPLETED` かつ決済未完了時に `api.processPayment({ bookingId, paymentMethod })`（`credit_card` / `bank_transfer` / `cash`）を使う前提でした。現行コード上は Stripe β / PaymentIntent 系の実装が存在するため、決済仕様は `js/booking-detail.js`、`js/api.js`、バックエンド決済ルートを確認してください。
   - 決済完了後は「領収書をダウンロード」→ `api.downloadReceipt(paymentId)`
   - モバイル下部固定バー（`#fixedActionBar`）にも決済導線と支払い方法セレクト（メインと `change` で同期）
   - レビュー投稿モーダル（`#reviewModal`）の評価入力をスターレーティング化（ラジオは value 5→1 の DOM 順 + `row-reverse` と後続兄弟セレクタで左から 1〜N 星が点灯）。`input[name="rating"]:checked` の取得ロジックは変更なし

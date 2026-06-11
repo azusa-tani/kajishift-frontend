@@ -14,6 +14,8 @@
 - **利用者**: 依頼者 `customer/`、ワーカー `worker/`、運営 `admin/` の各サブディレクトリにページがある。
 - **バックエンド**: 別リポジトリ **kajishift-backend**（Node / Express / Prisma / PostgreSQL）。本番は Railway 等。フロントは `js/config.js` の `window.API_BASE_URL` と `js/api.js` の `ApiClient` で REST と通信する。
 - **認証**: JWT を `localStorage` に保存。`js/auth.js` の `checkAuth('customer'|'worker'|'admin')` でガード。`js/api.js` の `token` / `getUser()` / `setUser()` と連動。**`docs/HANDOVER.md` などで sessionStorage のみと書いてある記述は古い。`auth.js` と各ページを正とする。**
+- **β運用・決済**: 現行コード上は Stripe β / PaymentIntent 系の実装が存在する。実課金、本番キー、Webhook、二重決済防止はバックエンド現行コードと環境設定を確認する。
+- **ワーカー審査テスト**: 現行コード上は `worker/screening-test.html`、`admin/worker-test-submissions.html`、`admin/worker-test-submission-detail.html` が存在する。AI判定や管理者最終判定はバックエンドルートと突合すること。
 
 ### このリポジトリ（フロント）で触る主なファイル
 
@@ -57,7 +59,7 @@
 
 ### 依頼者 UI メモ（要コード確認）
 
-- **`customer/booking-detail.html` + `js/booking-detail.js`**: 予約 `COMPLETED` かつ決済未完了なら「決済を確定する」→ `api.processPayment`（`bookingId` + **`paymentMethod` 必須** … `credit_card` / `bank_transfer` / `cash`）。済みなら `api.downloadReceipt`。`GET /bookings/:id` の **`booking.payment`**（`status` 等）で UI 分岐。モバイルは `#fixedActionBar`。レビューモーダル `#reviewModal` の星は **`input[name="rating"]:checked`** のまま、マークアップは value **5→1** 順 + CSS `#reviewModal .rating-input`（`row-reverse` と `~`）で左から 1〜N 星表示。
+- **`customer/booking-detail.html` + `js/booking-detail.js`**: 決済導線は過去記録に `api.processPayment` + `paymentMethod` 前提の記述があるが、現行コード上は Stripe β / PaymentIntent 系の実装が存在する。決済まわりを触る前に `js/booking-detail.js`、`js/api.js`、バックエンド決済ルート、Webhook設定を確認する。`GET /bookings/:id` の **`booking.payment`**（`status` 等）で UI 分岐する前提は要確認。レビューモーダル `#reviewModal` の星は **`input[name="rating"]:checked`** のまま、マークアップは value **5→1** 順 + CSS `#reviewModal .rating-input`（`row-reverse` と `~`）で左から 1〜N 星表示。
 - **`customer/notifications.html`**: 通知はカード型 UI。HTML は **`buildNotificationCardHTML()`** で生成。スタイルは `css/style.css` の **Customer notifications** 付近（`.customer-page .notification-card` 等）。空一覧は `.notifications-empty`。
 
 ### ユーザーからの要望（会話スタイル）
@@ -91,4 +93,5 @@ customer/booking-detail.html のワーカー画像が出ない。Network と api
 
 - 大きな機能追加・デプロイ先変更・認証方式の変更があったら、上記ブロック内の該当箇所を更新する。
 - `HANDOVER.md` の記述と矛盾したら **コードと INTEGRATION_STATUS を正** とし、本プロンプト側を直す。
+- Netlify 関連資料は Vercel 移行前の参考資料として扱う。現行運用は README、`docs/VERCEL_DEPLOY.md`、実際の Vercel / Railway 設定を確認する。
 - 長いタスク全文（画面単位の仕様書）は **このファイルに貼りすぎず**、必要なら `docs/` に別ファイルを切るか、チケットに残す。コピー用ブロック末尾は常に **「（ここに具体的な依頼を書く）」** のプレースホルダに戻す。

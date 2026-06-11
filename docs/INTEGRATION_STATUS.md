@@ -1,12 +1,18 @@
 # フロントエンド・バックエンド連携状況
 
-最終更新日: 2026年5月12日（最新）
+最終更新日: 2026年6月11日（ドキュメント整理）
+
+> 2026年6月11日確認: 本書には過去の連携・テスト記録が含まれます。現行コード上の画面・APIクライアントと一致しない可能性があるため、未確認の内容は「要確認」として扱ってください。特に決済、管理KPI、ワーカー審査テスト、Netlify関連の記述は最新コードとバックエンドルートの確認が必要です。
 
 ## 📋 更新履歴
 
+- **2026年6月11日**: 実装挙動に影響しない範囲で、古い断定表現を整理
+  - 現行コード上、ワーカー審査テスト関連画面（`worker/screening-test.html`、`admin/worker-test-submissions.html`、`admin/worker-test-submission-detail.html`）が存在することを追記
+  - 決済については Stripe βフロー / PaymentIntent 系の実装が存在するため、旧 `processPayment` + 支払い方法3種の記述は過去記録として扱うよう注記
+  - Netlify 関連は Vercel 移行前の参考資料として扱う
 - **2026年5月12日**: 本番スモークの記録を `docs/RELEASE_TEST_RESULTS.md` に反映（API 向き先・静的配信・Socket 接続・HTTPS/証明書の一部。詳細・判定は当該ドキュメントおよび `docs/RELEASE_DEFECT_LIST.md` を参照）
 - **2026年5月1日**: 依頼者予約詳細の決済フロー・レビュー星UI、バックエンド予約詳細の `payment` 同梱
-  - ✅ `customer/booking-detail.html` + `js/booking-detail.js` … 予約 `COMPLETED` かつ未決済時に「決済を確定する」（`api.processPayment`：`bookingId` + `paymentMethod`）。決済済みで領収書（`api.downloadReceipt`）。支払い方法はクレジット／銀行振込／現金のセレクト。モバイル固定バーにも同導線。レビューモーダルは `input[name="rating"]:checked` のまま、星表示を CSS（`#reviewModal .rating-input`）で直感化
+  - ✅ `customer/booking-detail.html` + `js/booking-detail.js` … 当時の記録では予約 `COMPLETED` かつ未決済時の `api.processPayment` + `paymentMethod` を前提としていました。現行コード上は Stripe βフロー / PaymentIntent 系の実装が存在するため、決済仕様はフロントとバックエンドの現行コードを確認してください。レビューモーダルは `input[name="rating"]:checked` のまま、星表示を CSS（`#reviewModal .rating-input`）で直感化
   - ✅ `css/style.css` … 決済ブロック用レイアウト、レビュー星レーティング用スタイル
   - ✅ バックエンド（別リポジトリ `kajishift-backend`）… `getBookingById` のレスポンスに `payment`（`id` / `status` 等）を同梱。作業完了時の `completedAt` 用に Prisma `Booking.completedAt`（`completed_at`）をスキーマに追加（DB は `npx prisma db push` 等で反映）
 
@@ -25,6 +31,7 @@
   - ✅ ワーカープロフィールモーダルを追加（チャットページから直接アクセス可能）
   - ✅ チャットメニューのスタイルを追加（`css/style.css`）
   - ✅ 管理者・依頼者・ワーカーのユーザーテスト仕様書を作成
+    - 2026年6月11日確認: 下記 `TEST_SPEC_*` は過去記録です。現行リポジトリ内の存在有無と、ワーカー審査テスト追加後の項目更新は要確認です。
     - `docs/TEST_SPEC_ADMIN.md`: 管理者テスト仕様書（38項目）
     - `docs/TEST_SPEC_CUSTOMER.md`: 依頼者テスト仕様書（35項目）
     - `docs/TEST_SPEC_WORKER.md`: ワーカーテスト仕様書（30項目）
@@ -78,9 +85,9 @@
 
 ## 📊 連携状況サマリー
 
-- **連携済み・テスト完了**: 71項目（全APIエンドポイント実装完了・連携完了）✨ 2026年2月25日更新
-- **連携していない・テスト未実行**: 0項目（バックエンド実装完了）
-- **フロントエンド連携**: ✅ 完了（47ページ/機能実装完了）
+- **連携済み・テスト完了**: 2026年2月時点の記録を含むため、現行コード上は要再確認
+- **連携していない・テスト未実行**: 0項目と記載していた過去記録あり。現行コード上は管理画面・決済・審査テスト関連に要確認項目があります
+- **フロントエンド連携**: 主要画面は実装済み。新規追加画面を含めた最新ページ数・API整合は要確認
 
 ---
 
@@ -94,7 +101,7 @@
 | 新規登録 | `customer/register.html` | ✅ 連携済み・テスト完了 | バリデーション実装済み |
 | ダッシュボード | `customer/dashboard.html` | ✅ 連携済み・テスト完了 | ユーザー情報、予約一覧、通知数取得 |
 | 予約一覧 | `customer/bookings.html` | ✅ 連携済み・テスト完了 | 今後の予約・過去の予約表示、キャンセル機能 |
-| 予約詳細 | `customer/booking-detail.html` | ✅ 連携済み・テスト完了 | 予約・ワーカー・キャンセル、**完了後決済**（`processPayment`＋支払い方法）、領収書、レビュー投稿（星UI）。`GET /bookings/:id` で `payment` が返る前提（2026-05-01） |
+| 予約詳細 | `customer/booking-detail.html` | ✅ 連携済み（決済仕様は要確認） | 予約・ワーカー・キャンセル、領収書、レビュー投稿（星UI）。決済は現行コード上 Stripe βフロー / PaymentIntent 系の実装が存在するため、`js/booking-detail.js` とバックエンド決済ルートを確認 |
 | 予約作成/更新 | `customer/booking.html` | ✅ 連携済み・テスト完了 | 新規作成・更新対応 |
 | ワーカー選択 | `customer/select-worker.html` | ✅ 連携済み・テスト完了 | ワーカー一覧、選択、予約確定、プロフィール表示、チャット機能 |
 | チャット | `customer/chat.html` | ✅ 連携済み・テスト完了 | メッセージ一覧、送信、WebSocket（リアルタイム）、画像添付、メニュー機能追加（2026年2月27日） |
@@ -116,6 +123,7 @@
 | カレンダー | `worker/calendar.html` | ✅ 連携済み・テスト完了 | 割り当て済み予約表示、月次表示 |
 | プロフィール | `worker/profile.html` | ✅ 連携済み・テスト完了 | プロフィール表示・編集、評価、基本情報編集 |
 | 報酬 | `worker/rewards.html` | ✅ 連携済み・テスト完了 | 報酬サマリー、決済履歴、仕事詳細 |
+| 審査テスト | `worker/screening-test.html` | ✅ 現行コード上存在（要確認） | ワーカー審査テスト提出画面。API・AI判定・再提出可否はバックエンド現行実装との突合が必要 |
 
 ### 管理者（Admin）
 
@@ -130,6 +138,8 @@
 | 利用者詳細 | `admin/user-detail.html` | ✅ 連携済み・テスト完了 | 利用者詳細、予約履歴、ステータス管理 |
 | ワーカー管理 | `admin/workers.html` | ✅ 連携済み・テスト完了 | ワーカー一覧、検索・フィルター、停止、削除 |
 | ワーカー詳細 | `admin/worker-detail.html` | ✅ 連携済み・テスト完了 | ワーカー詳細、承認/却下、ステータス管理 |
+| ワーカーテスト審査一覧 | `admin/worker-test-submissions.html` | ✅ 現行コード上存在（要確認） | ワーカー審査テスト提出一覧。バックエンド `worker-test-submissions` 系ルートとの整合確認が必要 |
+| ワーカーテスト審査詳細 | `admin/worker-test-submission-detail.html` | ✅ 現行コード上存在（要確認） | AI一次判定と管理者最終判定の詳細画面。最終判定APIとの整合確認が必要 |
 | 決済・売上管理 | `admin/payments.html` | ✅ 連携済み・テスト完了 | 認証チェック実装済み |
 | 問い合わせ管理 | `admin/support.html` | ✅ 連携済み・テスト完了 | 問い合わせ一覧、アサイン、ステータス更新、詳細表示、チャット閲覧 |
 | 設定 | `admin/settings.html` | ✅ 連携済み・テスト完了 | サービスメニュー・エリア編集、追加、削除 |
@@ -139,7 +149,7 @@
 
 ## ⚠️ UIのみ実装済み（API連携未実装）
 
-現在、すべての機能がAPI連携済みです。
+過去記録ではすべての機能がAPI連携済みとされていましたが、現行コード上は静的表示・プレースホルダ・APIルート未確認の箇所があります。該当画面を変更する場合は、フロントの呼び出し元とバックエンドルートを突合してください。
 
 ---
 

@@ -1,5 +1,7 @@
 # KAJISHIFT リリース判定用 テスト観点一覧
 
+> 2026年6月11日追記: 本書には旧決済フローや過去時点の観点が含まれます。現行コード上は Stripe β / PaymentIntent 系の実装、およびワーカー審査テスト関連画面が存在するため、決済・審査・管理APIの観点はフロントとバックエンドの現行コードを突合してから判定してください。
+
 ## 1. 文書の目的
 
 本書は **リリース判定（Go / No-Go）** に使うための**テスト観点の網羅リスト**である。実施記録は `docs/RELEASE_TEST_RESULTS.md`、不具合は `docs/RELEASE_DEFECT_LIST.md`、合格基準は `docs/RELEASE_CRITERIA.md`、手順は `docs/RELEASE_PROCEDURE.md`、切り戻しは `docs/ROLLBACK_PROCEDURE.md` を**今後作成する資料として併用する**。
@@ -24,6 +26,7 @@
 - 対象は **kajishift-frontend**（本リポジトリ）および **kajishift-backend** とする。**kajishift-backend は別リポジトリとして参照する**（ローカルパスや個人環境に依存する記載は本資料に含めない）。
 - 本番想定は README 上 **Vercel（フロント）** と **Railway（バックエンド）**。
 - **本フロントリポジトリに `package.json` はなく**、**自動テストコード・CI 上のテスト実行設定は検出されていない**（手動または別途作成が前提）。
+- Netlify 関連資料は Vercel移行前の参考資料として扱う。
 
 ### 2.1 ワーカー管理（スタッフ管理）の表記
 

@@ -1,10 +1,12 @@
 # デプロイ前チェックリスト
 
-最終更新日: 2026年2月24日
+最終更新日: 2026年6月11日（ドキュメント整理）
 
 ## 📋 概要
 
 このドキュメントは、KAJISHIFTフロントエンドをWebサーバーにデプロイする前に確認・修正が必要な項目をまとめたものです。
+
+> 2026年6月11日確認: 現行運用は Vercel 配信を前提にした記述を優先してください。Netlify 関連の `netlify.toml`、`_redirects`、`NETLIFY_DEPLOY.md` は削除せず、Vercel移行前の参考資料として扱います。
 
 ---
 
@@ -16,8 +18,8 @@
 - ✅ `js/socket.js`の`serverURL`を環境自動切り替え対応に修正
 - ✅ `service-worker.js`のエラーページパスを`/errors/`に修正
 - ✅ `js/config.js`設定ファイルを作成（デプロイ時の環境変数設定用）
-- ✅ `netlify.toml`作成（Netlifyデプロイ設定、リダイレクトルール、セキュリティヘッダー）
-- ✅ `_redirects`ファイル作成（SPA用リダイレクトルール）
+- ✅ `netlify.toml`作成（旧Netlify資料。Vercel移行前の参考設定として残存）
+- ✅ `_redirects`ファイル作成（旧Netlify資料。Vercel移行前の参考設定として残存）
 
 **更新日**: 2026年2月24日
 
@@ -38,7 +40,7 @@
 
 **デプロイ時に編集が必要**:
 
-本番環境にデプロイする際は、`js/config.js`ファイルを編集して、本番環境のURLを設定してください。
+現行コード上、`js/config.js` はホスト名に応じて API / Socket URL を切り替える実装です。デプロイ時に必ず手編集する前提ではありませんが、運用ドメイン・Vercel URL・Railway URL・バックエンド `CORS_ORIGIN` の整合は要確認です。
 
 ```javascript
 // 本番環境の設定例
@@ -49,11 +51,11 @@ window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app'
 **開発環境**: このファイルを編集する必要はありません（デフォルト値が使用されます）
 
 **確認項目**:
-- [ ] `js/config.js`を本番環境のURLに変更
+- [ ] `js/config.js` の現行値が本番 Railway / 運用ドメインと整合しているか確認
 - [ ] すべてのHTMLファイルで`config.js`を読み込んでいるか確認（`api.js`と`socket.js`の前に読み込む）
 - [ ] HTTPSを使用しているか確認（本番環境では必須）
 
-**注意**: 現在、`config.js`は作成済みですが、各HTMLファイルで読み込む必要があります。既存のHTMLファイルで`config.js`を読み込んでいない場合は、以下のように追加してください：
+**注意**: `config.js` は `api.js` や `socket.js` より前に読み込む必要があります。読み込み順を変更する場合は、対象HTMLの既存実装を確認してください：
 
 ```html
 <!-- config.jsをapi.jsとsocket.jsの前に読み込む -->
@@ -148,7 +150,26 @@ error_page 403 /errors/403.html;
 
 ### 方法1: 静的ホスティングサービス（推奨）
 
-#### Netlify
+#### Vercel（現行運用の優先確認先）
+
+詳細は [Vercelデプロイ手順](VERCEL_DEPLOY.md) を参照してください。
+
+1. **Vercelアカウント作成**
+   - https://vercel.com/ でアカウント作成
+
+2. **プロジェクトをGitHubにプッシュ**
+   - GitHub連携による自動デプロイを想定
+
+3. **Vercelでプロジェクトをインポート**
+   - Vercelダッシュボードで「New Project」を選択
+   - GitHubリポジトリを選択
+   - フレームワーク: **Other**（静的サイト）
+
+4. **環境・接続先の確認**
+   - 現行コード上は静的な `js/config.js` が主です
+   - `API_BASE_URL` / `SOCKET_SERVER_URL` とバックエンド `CORS_ORIGIN` の整合は要確認
+
+#### Netlify（旧Netlify資料・Vercel移行前の参考）
 
 **詳細は[Netlifyデプロイ手順](NETLIFY_DEPLOY.md)を参照してください。**
 
@@ -182,24 +203,6 @@ error_page 403 /errors/403.html;
 6. **カスタムドメイン設定**（オプション）
    - Site settings → Domain management
    - カスタムドメインを追加
-
-#### Vercel
-
-1. **Vercelアカウント作成**
-   - https://vercel.com/ でアカウント作成
-
-2. **プロジェクトをGitHubにプッシュ**
-   - 上記と同じ手順
-
-3. **Vercelでプロジェクトをインポート**
-   - Vercelダッシュボードで「New Project」を選択
-   - GitHubリポジトリを選択
-   - フレームワーク: **Other**（静的サイト）
-
-4. **環境変数の設定**（オプション）
-   - Project settings → Environment Variables
-   - `API_BASE_URL`: `https://kajishift-backend-production.up.railway.app/api`
-   - `SOCKET_SERVER_URL`: `https://kajishift-backend-production.up.railway.app`
 
 #### GitHub Pages
 
@@ -260,9 +263,9 @@ error_page 403 /errors/403.html;
 - [x] `js/api.js`の環境自動切り替え対応（実装済み・localhost判定で自動設定）
 - [x] `js/socket.js`の環境自動切り替え対応（実装済み）
 - [x] `service-worker.js`のエラーページパス修正（実装済み）
-- [x] `netlify.toml`作成（実装済み）
-- [x] `_redirects`ファイル作成（実装済み）
-- [ ] バックエンドのCORS設定を更新（Netlify URLを許可）
+- [x] `netlify.toml`作成（旧Netlify資料として残存）
+- [x] `_redirects`ファイル作成（旧Netlify資料として残存）
+- [ ] バックエンドのCORS設定を更新（現行運用の Vercel URL / 独自ドメインを許可。Netlify URLは旧運用を再利用する場合のみ）
 - [ ] HTTPSが使用可能か確認
 - [ ] エラーページのサーバー設定を確認
 - [ ] robots.txtとsitemap.xmlを確認

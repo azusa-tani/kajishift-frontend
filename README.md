@@ -2,6 +2,14 @@
 
 家事代行マッチングサービス「KAJISHIFT」のフロントエンドプロジェクトです。
 
+## 現行コード上の注意（2026年6月確認）
+
+- 本リポジトリはバニラ HTML / CSS / JavaScript の静的サイトです。フロントエンド本番配信は Vercel、バックエンドは Railway を想定していますが、独自ドメインや CORS の最終設定は運用環境で要確認です。
+- `js/config.js` は現行コード上、`localhost` とそれ以外のホストで API / Socket の接続先を切り替える実装です。本番デプロイ時に必ず手編集する前提の古い記述が残っている場合は、この節を優先してください。
+- 決済まわりは β運用中の Stripe テストモードを含む実装が存在します。実課金・本番キー・PSP 側の冪等性などは要確認です。
+- ワーカー審査テスト関連の画面（`worker/screening-test.html`、`admin/worker-test-submissions.html`、`admin/worker-test-submission-detail.html`）が現行コード上存在します。
+- `manifest.json` の PWA アイコンは、参照先画像がリポジトリ内に存在しないため未設定です。PWA アイコンを有効化する場合は、実ファイルを追加してから manifest に参照を追加してください。
+
 ## 📁 プロジェクト構造
 
 ```
@@ -123,10 +131,10 @@ npx --yes http-server -p 5500
 
 ### 本番環境へのデプロイ
 
-本番環境にデプロイする際は、`js/config.js`ファイルを編集して、本番環境のURLを設定してください：
+現行コード上、`js/config.js` はホスト名に応じて接続先を切り替えます。通常は本番デプロイのたびに手編集する前提ではありませんが、運用ドメイン、Vercel の配信URL、バックエンドの `CORS_ORIGIN`、Railway の API / Socket URL が一致しているかは必ず確認してください。
 
 ```javascript
-// js/config.js
+// js/config.js（現行コード上の本番向け値の例）
 window.API_BASE_URL = 'https://kajishift-backend-production.up.railway.app/api';
 window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app';
 ```
@@ -174,13 +182,19 @@ window.SOCKET_SERVER_URL = 'https://kajishift-backend-production.up.railway.app'
 
 ---
 
-**最終更新**: 2026年5月
+**最終更新**: 2026年6月
+
+### 2026年6月11日のドキュメント更新
+
+- 現行コード上の Vercel / Railway 構成、`js/config.js` の自動切り替え、β運用中の Stripe テストモード、ワーカー審査テスト関連画面の存在を README に追記
+- PWA アイコン参照について、実ファイルが存在しないため `manifest.json` ではアイコン未設定であることを明記
+- 実装挙動に影響する JavaScript / HTML / Service Worker は変更せず、説明のみ更新
 
 ### 2026年5月1日の更新内容
 
 - ✅ **依頼者 予約詳細**（`customer/booking-detail.html` + `js/booking-detail.js` + `css/style.css`）
-  - 予約が **完了（`COMPLETED`）** かつ **未決済** のとき「決済を確定する」→ `api.processPayment`（`bookingId` + `paymentMethod`：`credit_card` / `bank_transfer` / `cash`）。決済済みは **領収書ダウンロード**（`api.downloadReceipt`）
-  - 支払い方法セレクトとモバイル下部固定バー（`#fixedActionBar`）の導線。`GET /bookings/:id` の **`booking.payment`** で表示を分岐（バックエンド `getBookingById` が `payment` を返す前提）
+  - 当時の記録では完了予約の決済導線として `api.processPayment` と支払い方法セレクトを記載していました。現行コード上は Stripe βフロー / PaymentIntent 系の実装が存在するため、決済仕様を扱う場合は `js/booking-detail.js`、`js/api.js`、バックエンドの決済ルートを確認してください。
+  - `GET /bookings/:id` の **`booking.payment`** で表示を分岐する前提は残っていますが、最終的な決済ステータス・Webhook 反映・二重決済防止は要確認です。
 - ✅ **レビュー投稿モーダル**（`#reviewModal`）の **スターレーティング UI**（ラジオは `input[name="rating"]` のまま、見た目のみ CSS で改善）
 - ✅ **バックエンド（別リポジトリ `kajishift-backend`）** … 上記に合わせ `Booking` に **`completedAt`**（`completed_at`）を Prisma に追加、予約詳細 API で **`payment`** を同梱（詳細は `docs/INTEGRATION_STATUS.md` / `docs/IMPLEMENTATION_STATUS.md`）
 

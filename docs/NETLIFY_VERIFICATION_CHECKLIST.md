@@ -3,6 +3,8 @@
 **作成日**: 2026年3月2日  
 **Netlify URL**: `https://stellar-phoenix-fa7d94.netlify.app`
 
+> 2026年6月11日追記: この文書は旧Netlify資料です。現行運用は Vercel 移行後の構成を前提としているため、通常は `README.md`、`docs/VERCEL_DEPLOY.md`、`docs/RELEASE_TEST_RESULTS.md`、実際の Vercel / Railway 設定を優先してください。Netlify URL の確認項目は Vercel移行前の参考として残しています。
+
 ## 📋 確認項目
 
 ### 1. 基本表示確認

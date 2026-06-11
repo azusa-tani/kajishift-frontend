@@ -2,6 +2,8 @@
 
 解析ソースは `kajishift-backend` の `prisma/schema.prisma`、`prisma/migrations/**/*.sql`、`prisma/seed.js`、`README.md`、および **src/services 配下の JavaScript（Prisma 利用箇所）**です。リポジトリ外の本番 DB には直接アクセスしていません。コードと DB の対応表は [relations.md](./relations.md) を参照してください。
 
+> 2026年6月11日追記: 本書は過去時点の確認事項です。現行バックエンドでワーカー審査テスト提出や Stripe β / PaymentIntent 系の実装が追加されている場合、決済手段・新規テーブル・マイグレーション履歴は再確認してください。
+
 ## スキーマとマイグレーションの乖離
 
 | No | 項目 | 内容 |

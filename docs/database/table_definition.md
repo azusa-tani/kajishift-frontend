@@ -2,6 +2,8 @@
 
 Excel で一覧確認する場合は、UTF-8 BOM 付きの **[table_definition_for_excel.csv](./table_definition_for_excel.csv)** を開いてください（**区分**列で概要／カラム／インデックス／制約／備考／補足／ENUM を切り替えられます）。Markdown から再生成する場合は `node docs/database/scripts/table-definition-md-to-csv.mjs` を実行します。
 
+> 2026年6月11日追記: 本書は過去時点のバックエンドスキーマ確認結果を含みます。現行バックエンドで `WorkerTestSubmission` などの新規モデルや Stripe β / PaymentIntent 系の決済実装が追加されている場合、本書・CSV・HTML版の再生成が必要です。`payments.payment_method` の値は旧 `processPayment` 前提の記述を含むため、現行コードと要確認です。
+
 ## ER 図・リレーションとの対応
 
 - **全テーブル・属性付きの ER 図**（Mermaid）: [er_diagram.md](./er_diagram.md)
