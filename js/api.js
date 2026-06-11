@@ -38,6 +38,7 @@ function resolveOpsOperation(endpoint, method = 'GET') {
   if (path.startsWith('/upload/')) return 'deleteFile';
   if (path === '/favorites' || path.startsWith('/favorites/')) return 'favoriteWrite';
   if (path === '/users/me' || path === '/users/me/password' || path === '/workers/me') return 'profileWrite';
+  if (path === '/workers/me/screening-test') return 'profileWrite';
   if (path.startsWith('/workers/me/unavailable-slots')) return 'workerAvailabilityWrite';
   if (path.startsWith('/notifications/')) return 'notificationWrite';
   if (path.startsWith('/admin/ops/')) return null;
@@ -502,6 +503,23 @@ class ApiClient {
     return this.request('/workers/me', {
       method: 'PUT',
       body: data,
+    });
+  }
+
+  /**
+   * ワーカー本人のテスト回答状況を取得
+   */
+  async getWorkerScreeningTest() {
+    return this.request('/workers/me/screening-test');
+  }
+
+  /**
+   * ワーカー本人のテスト回答を送信
+   */
+  async submitWorkerScreeningTest(testAnswer) {
+    return this.request('/workers/me/screening-test', {
+      method: 'POST',
+      body: { testAnswer },
     });
   }
 
@@ -985,6 +1003,35 @@ class ApiClient {
    */
   async getAdminWorkerById(workerId) {
     return this.request(`/admin/workers/${encodeURIComponent(workerId)}`);
+  }
+
+  /**
+   * 管理者: ワーカーテスト回答一覧を取得
+   */
+  async getAdminWorkerTestSubmissions(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/admin/worker-test-submissions${queryString ? `?${queryString}` : ''}`;
+    return this.request(endpoint);
+  }
+
+  /**
+   * 管理者: ワーカーテスト回答詳細を取得
+   */
+  async getAdminWorkerTestSubmission(id) {
+    return this.request(`/admin/worker-test-submissions/${encodeURIComponent(id)}`);
+  }
+
+  /**
+   * 管理者: ワーカーテスト回答の最終判定を保存
+   */
+  async finalizeWorkerTestSubmission(id, finalDecision, adminComment = '') {
+    return this.request(`/admin/worker-test-submissions/${encodeURIComponent(id)}/final-review`, {
+      method: 'POST',
+      body: {
+        adminFinalDecision: finalDecision,
+        adminComment
+      },
+    });
   }
 
   /**
