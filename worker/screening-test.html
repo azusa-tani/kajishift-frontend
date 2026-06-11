@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ワーカーテスト｜KAJISHIFT</title>
+  <meta name="description" content="KAJISHIFTのワーカー審査テスト回答ページです。" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://kajishift.jp/worker/screening-test.html" />
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
+  <script src="../js/worker-notification-badge.js" defer></script>
+  <script src="../js/worker-screening-test.js" defer></script>
+</head>
+<body class="worker-page worker-screening-test-page">
+<script>
+if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token')) {
+  window.location.href = 'login.html';
+}
+</script>
+
+<header class="worker-header" role="banner">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav" role="navigation" aria-label="メインナビゲーション">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="screening-test.html" class="active" aria-current="page">審査テスト</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
+        <span aria-hidden="true">通知</span>
+      </a>
+      <a href="profile.html" class="avatar" aria-label="プロフィールページへ移動">プロフィール</a>
+      <button class="btn-icon" onclick="logout()" aria-label="ログアウト" title="ログアウト">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main" id="main-content" role="main">
+  <div class="container">
+    <section class="welcome-section">
+      <h1>ワーカー審査テスト</h1>
+      <p class="text-muted">回答内容はAIが一次判定し、管理者が必ず最終判定します。AIだけで合否が確定することはありません。</p>
+    </section>
+
+    <div id="screeningFlash" class="error-message" role="status" aria-live="polite"></div>
+
+    <section class="section-block card-standard">
+      <h2 class="section-title">現在の状態</h2>
+      <div id="submissionStatus" class="loading-message">提出状況を読み込み中...</div>
+    </section>
+
+    <section class="section-block card-standard">
+      <h2 class="section-title">設問</h2>
+      <p class="text-muted">以下の内容について、具体的に回答してください。</p>
+      <div class="form-note">
+        利用者宅で家事代行を行う際に、作業前の確認、安全配慮、個人情報や鍵の扱い、事故・体調不良・物損など緊急時の対応をどのように行うか説明してください。
+      </div>
+      <p class="form-hint text-muted">目安: 300文字以上。氏名・電話番号・メールアドレスなど不要な個人情報は入力しないでください。</p>
+    </section>
+
+    <section id="answerSection" class="section-block card-standard">
+      <h2 class="section-title">回答</h2>
+      <form id="screeningForm" novalidate>
+        <div class="form-group">
+          <label for="testAnswer" class="form-label">回答内容 <span class="required">必須</span></label>
+          <textarea id="testAnswer" class="form-input" rows="12" maxlength="20000" required placeholder="作業前に確認すること、安全面で気をつけること、緊急時の対応を具体的に記入してください。"></textarea>
+          <p class="form-hint text-muted"><span id="answerLength">0</span> / 20000文字</p>
+        </div>
+        <button type="submit" id="submitScreeningBtn" class="btn btn--primary btn-action">回答を送信する</button>
+      </form>
+    </section>
+
+    <section id="submittedAnswerSection" class="section-block card-standard is-hidden">
+      <h2 class="section-title">提出済み回答</h2>
+      <pre id="submittedAnswer" class="admin-code-block"></pre>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="../terms.html">利用規約</a>
+      <a href="../privacy.html">プライバシーポリシー</a>
+      <a href="../legal.html">特定商取引法に基づく表記</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+</body>
+</html>

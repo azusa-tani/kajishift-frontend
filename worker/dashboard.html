@@ -30,6 +30,7 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
     <div class="logo">KAJISHIFT</div>
     <nav class="nav" role="navigation" aria-label="メインナビゲーション">
       <a href="dashboard.html" class="active" aria-current="page">ダッシュボード</a>
+      <a href="screening-test.html">審査テスト</a>
       <a href="jobs.html">仕事を探す</a>
       <a href="calendar.html">カレンダー</a>
       <a href="rewards.html">報酬</a>
@@ -57,6 +58,12 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
       <p class="text-muted" id="welcomeMessage">今日もお疲れ様です。データを読み込み中です。</p>
     </section>
 
+    <section id="screeningTestBanner" class="section-block card-standard is-hidden" aria-live="polite">
+      <h2 class="section-title">ワーカー審査テスト</h2>
+      <p id="screeningTestBannerText" class="text-muted">審査テストの提出状況を確認してください。</p>
+      <a href="screening-test.html" class="btn btn--primary btn-action">審査テストへ進む</a>
+    </section>
+
     <!-- クイックアクション -->
     <section class="quick-actions">
       <h2 class="section-title">クイックアクション</h2>
@@ -80,6 +87,11 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
           <div class="action-icon">⚙️</div>
           <h3>プロフィール</h3>
           <p class="text-muted">設定を変更</p>
+        </a>
+        <a href="screening-test.html" class="action-card">
+          <div class="action-icon">審査</div>
+          <h3>審査テスト</h3>
+          <p class="text-muted">回答状況を確認</p>
         </a>
       </div>
     </section>
@@ -165,6 +177,7 @@ async function loadDashboardData() {
     const payments = [];
 
     renderWelcome(user, pendingBookings.length);
+    await renderScreeningTestBanner(user);
     renderPendingJobs(pendingBookings);
     renderTodaySchedule(todayBookings);
     renderRewardSummary(payments);
@@ -174,6 +187,32 @@ async function loadDashboardData() {
     document.getElementById('welcomeMessage').textContent = 'データの読み込みに失敗しました。時間をおいて再度お試しください。';
     document.getElementById('jobRequestList').innerHTML = '<div class="error-message">仕事依頼の読み込みに失敗しました</div>';
     document.getElementById('todayTimelineList').innerHTML = '<div class="error-message">本日の予定の読み込みに失敗しました</div>';
+  }
+}
+
+async function renderScreeningTestBanner(user) {
+  const banner = document.getElementById('screeningTestBanner');
+  const text = document.getElementById('screeningTestBannerText');
+  if (!banner || !text || user.approvalStatus !== 'PENDING') {
+    return;
+  }
+
+  try {
+    const response = await api.getWorkerScreeningTest();
+    const submission = response?.data || null;
+
+    if (!submission) {
+      text.textContent = 'ワーカー審査を進めるため、審査テストに回答してください。';
+      banner.classList.remove('is-hidden');
+      return;
+    }
+
+    if (['test_submitted', 'ai_reviewed', 'needs_review'].includes(submission.status)) {
+      text.textContent = '審査テストは提出済みです。管理者の最終判定をお待ちください。';
+      banner.classList.remove('is-hidden');
+    }
+  } catch (error) {
+    console.warn('審査テスト状況の取得に失敗しました', error);
   }
 }
 
