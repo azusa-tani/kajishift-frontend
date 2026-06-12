@@ -91,14 +91,19 @@
       ${defRow('判定者', data.reviewedByAdmin?.name || data.reviewedByAdminId || '-')}
     `;
 
+    const isFinalized = FINAL_STATUSES.has(data.status);
+    const formEl = document.getElementById('finalReviewForm');
     const commentEl = document.getElementById('adminComment');
     if (commentEl && data.adminComment && !commentEl.value) {
       commentEl.value = data.adminComment;
     }
 
-    setButtonsDisabled(FINAL_STATUSES.has(data.status));
-    if (FINAL_STATUSES.has(data.status)) {
-      document.getElementById('adminComment').disabled = true;
+    setButtonsDisabled(isFinalized);
+    if (formEl) {
+      formEl.classList.toggle('is-hidden', isFinalized);
+    }
+    if (commentEl) {
+      commentEl.disabled = isFinalized;
     }
   }
 

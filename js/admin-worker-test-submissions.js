@@ -78,7 +78,7 @@
           <td>${escapeHtml(getAiDecisionLabel(submission.aiInitialDecision))}</td>
           <td>${submission.aiScore == null ? '-' : escapeHtml(String(submission.aiScore))}</td>
           <td>${escapeHtml(getFinalDecisionLabel(submission.adminFinalDecision))}</td>
-          <td><a href="worker-test-submission-detail.html?id=${encodeURIComponent(submission.id)}" class="btn-link btn-action-link">詳細</a></td>
+          <td><a href="worker-test-submission-detail?id=${encodeURIComponent(submission.id)}" class="btn-link btn-action-link">詳細</a></td>
         </tr>
       `;
       tbody.insertAdjacentHTML('beforeend', row);
