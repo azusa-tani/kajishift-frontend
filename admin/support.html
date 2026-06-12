@@ -291,35 +291,33 @@ function displaySupportTickets(tickets) {
     const createdAt = new Date(ticket.createdAt);
     const dateStr = createdAt.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
     const timeStr = createdAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-    const priorityClass = ticket.priority === 'URGENT' ? 'urgent' : '';
-    const priorityText = ticket.priority === 'URGENT' ? '緊急' : '';
+    const ticketContent = ticket.content || '';
     const statusText = getTicketStatusText(ticket.status);
     const statusClass = getTicketStatusClass(ticket.status);
 
     const item = `
-      <div class="inquiry-item ${priorityClass}">
+      <div class="inquiry-item">
         <div class="inquiry-header">
           <div class="inquiry-meta">
             <span class="inquiry-id">#${ticket.id.substring(0, 8)}</span>
             <span class="inquiry-type">${ticket.type || '問い合わせ'}</span>
-            ${priorityText ? `<span class="inquiry-priority">${priorityText}</span>` : ''}
           </div>
           <div class="inquiry-date">${dateStr} ${timeStr}</div>
         </div>
         <div class="inquiry-content">
           <h4>${ticket.subject || '件名なし'}</h4>
           <p><strong>利用者:</strong> ${ticket.user?.name || '不明'} ${ticket.bookingId ? `/ <strong>予約ID:</strong> #${ticket.bookingId.substring(0, 8)}` : ''}</p>
-          <p class="inquiry-text">${ticket.message || ''}</p>
+          <p class="inquiry-text">${ticketContent || '本文なし'}</p>
         </div>
         <div class="inquiry-footer">
           <div class="inquiry-status">
             <span class="status-badge ${statusClass}">${statusText}</span>
-            <span class="inquiry-assignee">${ticket.assignedTo ? `担当: ${ticket.assignedTo.name || '不明'}` : '未アサイン'}</span>
+            <span class="inquiry-assignee">${ticket.adminId ? '担当あり' : '未アサイン'}</span>
           </div>
           <div class="inquiry-actions">
             <button class="btn btn-primary btn-small" onclick="openInquiryDetail('${ticket.id}')">対応する</button>
             ${ticket.bookingId ? `<button class="btn btn-outline btn-small" onclick="viewChat('${ticket.bookingId}')">チャット閲覧</button>` : ''}
-            ${!ticket.assignedTo ? `<button class="btn btn-outline btn-small" onclick="assignToMe('${ticket.id}')">自分にアサイン</button>` : ''}
+            ${!ticket.adminId ? `<button class="btn btn-outline btn-small" onclick="assignToMe('${ticket.id}')">自分にアサイン</button>` : ''}
             ${ticket.status === 'OPEN' ? `<button class="btn btn-outline btn-small" onclick="updateTicketStatus('${ticket.id}', 'IN_PROGRESS')">対応開始</button>` : ''}
             ${ticket.status === 'IN_PROGRESS' ? `<button class="btn btn-outline btn-small" onclick="updateTicketStatus('${ticket.id}', 'CLOSED')">完了</button>` : ''}
             <button class="btn btn-danger btn-small" onclick="deleteTicket('${ticket.id}')">削除</button>
@@ -457,7 +455,7 @@ function convertSupportTicketsToCSV(tickets) {
       escapeCSV(ticket.user?.name || ''),
       escapeCSV(ticket.user?.email || ''),
       ticket.bookingId ? ticket.bookingId.substring(0, 8) : '',
-      escapeCSV(ticket.assignedTo?.name || ''),
+      ticket.adminId ? '担当あり' : '',
       createdAt,
       updatedAt,
       escapeCSV(ticket.content || ''),
@@ -523,7 +521,7 @@ async function openInquiryDetail(ticketId) {
 
     const statusText = getTicketStatusText(ticket.status);
     const statusClass = getTicketStatusClass(ticket.status);
-    const priorityText = ticket.priority === 'URGENT' ? '緊急' : '通常';
+    const ticketContent = ticket.content || '';
 
     const content = `
       <div class="admin-card">
@@ -535,10 +533,6 @@ async function openInquiryDetail(ticketId) {
           <div class="info-item">
             <label>タイプ</label>
             <div>${ticket.type || '-'}</div>
-          </div>
-          <div class="info-item">
-            <label>優先度</label>
-            <div>${priorityText}</div>
           </div>
           <div class="info-item">
             <label>ステータス</label>
@@ -560,7 +554,7 @@ async function openInquiryDetail(ticketId) {
           ` : ''}
           <div class="info-item">
             <label>担当者</label>
-            <div>${ticket.assignedTo ? ticket.assignedTo.name : '未アサイン'}</div>
+            <div>${ticket.adminId ? '担当あり' : '未アサイン'}</div>
           </div>
         </div>
         <div class="support-modal-field">
@@ -569,7 +563,7 @@ async function openInquiryDetail(ticketId) {
         </div>
         <div class="support-modal-field">
           <label class="support-modal-label">メッセージ</label>
-          <div class="support-modal-box support-modal-box-pre">${ticket.message || '-'}</div>
+          <div class="support-modal-box support-modal-box-pre">${ticketContent || '-'}</div>
         </div>
         <div class="support-modal-actions">
           ${ticket.status !== 'CLOSED' ? `
@@ -577,7 +571,7 @@ async function openInquiryDetail(ticketId) {
             ${ticket.status === 'OPEN' ? '対応開始' : '完了にする'}
           </button>
           ` : ''}
-          ${!ticket.assignedTo ? `
+          ${!ticket.adminId ? `
           <button class="btn btn--outline btn-action" onclick="assignToMeFromModal('${ticket.id}')">自分にアサイン</button>
           ` : ''}
         </div>
@@ -670,7 +664,7 @@ async function assignToMeFromModal(ticketId) {
     }
 
     await api.updateSupportTicket(ticketId, {
-      assignedToId: user.id,
+      adminId: user.id,
       status: 'IN_PROGRESS'
     });
     showSuccess('問い合わせをアサインしました');
@@ -700,7 +694,7 @@ async function assignToMe(ticketId) {
     }
 
     await api.updateSupportTicket(ticketId, {
-      assignedToId: user.id,
+      adminId: user.id,
       status: 'IN_PROGRESS'
     });
     showSuccess('問い合わせをアサインしました');

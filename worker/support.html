@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>お問い合わせ｜KAJISHIFT（ワーカー）</title>
+  <link rel="preload" href="../css/style.css" as="style" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/socket.js" defer></script>
+  <script src="../js/validation.js" defer></script>
+  <script src="../js/worker-notification-badge.js" defer></script>
+</head>
+<body class="worker-page">
+<script>
+if (!localStorage.getItem('token')) {
+  window.location.href = 'login.html';
+}
+</script>
+
+<header class="worker-header" role="banner">
+  <div class="container header-inner">
+    <div class="logo">KAJISHIFT</div>
+    <nav class="nav" role="navigation" aria-label="メインナビゲーション">
+      <a href="dashboard.html">ダッシュボード</a>
+      <a href="screening-test.html">審査テスト</a>
+      <a href="jobs.html">仕事を探す</a>
+      <a href="calendar.html">カレンダー</a>
+      <a href="rewards.html">報酬</a>
+      <a href="profile.html">プロフィール</a>
+    </nav>
+    <div class="header-actions">
+      <a href="notifications.html" class="btn-icon" id="notificationBtn" aria-label="通知">
+        <span class="notification-badge is-hidden" aria-hidden="true">0</span>
+        <span aria-hidden="true">🔔</span>
+      </a>
+      <a href="profile.html" class="avatar" aria-label="プロフィールページへ移動">👤</a>
+      <button class="btn-icon" onclick="logout()" aria-label="ログアウト" title="ログアウト">
+        <span aria-hidden="true">🚪</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="worker-main" id="main-content" role="main">
+  <div class="container">
+    <section class="page-header worker-settings-hero page-header--compact">
+      <h1 class="page-header__title">お問い合わせ</h1>
+      <p class="page-header__subtitle page-header__subtitle--compact">仕事・報酬・アカウントに関するご相談はこちらから送信してください。</p>
+    </section>
+
+    <section class="form-section section-block card-standard">
+      <div id="supportErrorMessage" class="text-error is-hidden" role="alert"></div>
+      <div id="supportSuccessMessage" class="text-error auth-message-success is-hidden" role="status"></div>
+
+      <form id="supportForm" novalidate>
+        <div class="form-group">
+          <label for="subject">件名 <span class="required">*</span></label>
+          <input type="text" id="subject" class="form-input" maxlength="200" required />
+          <small class="form-hint">200文字以内で入力してください</small>
+        </div>
+
+        <div class="form-group">
+          <label for="category">問い合わせ種別 <span class="required">*</span></label>
+          <select id="category" class="form-select" required>
+            <option value="">選択してください</option>
+            <option value="仕事について">仕事について</option>
+            <option value="報酬について">報酬について</option>
+            <option value="スケジュールについて">スケジュールについて</option>
+            <option value="アカウントについて">アカウントについて</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="replyEmail">返信先メールアドレス <span class="required">*</span></label>
+          <input type="email" id="replyEmail" class="form-input" autocomplete="email" required />
+        </div>
+
+        <div class="form-group">
+          <label for="content">本文 <span class="required">*</span></label>
+          <textarea id="content" class="form-textarea" maxlength="4500" required></textarea>
+          <small class="form-hint">4500文字以内で入力してください</small>
+        </div>
+
+        <div class="modal-actions">
+          <a href="dashboard.html" class="btn btn-outline">戻る</a>
+          <button type="submit" class="btn btn-primary" id="submitSupportButton">送信する</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">ヘルプ</a>
+      <a href="../terms.html">利用規約</a>
+      <a href="../privacy.html">プライバシーポリシー</a>
+      <a href="../legal.html">特定商取引法に基づく表記</a>
+      <a href="support.html">お問い合わせ</a>
+    </div>
+    <div class="footer-copy">© KAJISHIFT</div>
+  </div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+  if (!checkAuth('worker')) return;
+
+  const form = document.getElementById('supportForm');
+  const subjectInput = document.getElementById('subject');
+  const categoryInput = document.getElementById('category');
+  const replyEmailInput = document.getElementById('replyEmail');
+  const contentInput = document.getElementById('content');
+  const submitButton = document.getElementById('submitSupportButton');
+  const errorMessage = document.getElementById('supportErrorMessage');
+  const successMessage = document.getElementById('supportSuccessMessage');
+
+  try {
+    const response = await api.getUserMe();
+    if (response.data && response.data.email) {
+      replyEmailInput.value = response.data.email;
+    }
+  } catch (error) {
+    console.warn('ユーザー情報の取得をスキップ:', error);
+  }
+
+  function showMessage(element, message) {
+    element.textContent = message;
+    element.classList.remove('is-hidden');
+  }
+
+  function hideMessages() {
+    errorMessage.classList.add('is-hidden');
+    successMessage.classList.add('is-hidden');
+  }
+
+  function validateSupportForm() {
+    const subject = subjectInput.value.trim();
+    const category = categoryInput.value;
+    const replyEmail = replyEmailInput.value.trim();
+    const content = contentInput.value.trim();
+
+    if (!subject) return { valid: false, message: '件名を入力してください', target: subjectInput };
+    if (subject.length > 200) return { valid: false, message: '件名は200文字以内で入力してください', target: subjectInput };
+    if (!category) return { valid: false, message: '問い合わせ種別を選択してください', target: categoryInput };
+    if (Validators.email(replyEmail)) return { valid: false, message: Validators.email(replyEmail), target: replyEmailInput };
+    if (!content) return { valid: false, message: '本文を入力してください', target: contentInput };
+    if (content.length > 4500) return { valid: false, message: '本文は4500文字以内で入力してください', target: contentInput };
+
+    return { valid: true, subject, category, replyEmail, content };
+  }
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (submitButton.disabled) return;
+    hideMessages();
+
+    const result = validateSupportForm();
+    if (!result.valid) {
+      showMessage(errorMessage, result.message);
+      result.target.focus();
+      return;
+    }
+
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = '送信中...';
+
+    const content = `【問い合わせ種別】${result.category}\n【返信先メールアドレス】${result.replyEmail}\n\n${result.content}`;
+
+    try {
+      await api.createSupportTicket({
+        subject: result.subject,
+        content
+      });
+      showMessage(successMessage, '問い合わせを受け付けました。担当者より順次確認いたします。');
+      form.reset();
+      replyEmailInput.value = result.replyEmail;
+    } catch (error) {
+      showMessage(errorMessage, error.message || '問い合わせの送信に失敗しました。しばらくしてから再度お試しください。');
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
+    }
+  });
+});
+</script>
+</body>
+</html>
