@@ -592,13 +592,16 @@ footer a:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   height: 64px;
 }
 
 .worker-header .nav {
   display: flex;
+  flex: 1 1 auto;
   gap: 8px;
   font-size: 14px;
+  min-width: 0;
 }
 
 .worker-header .nav a {
@@ -620,6 +623,33 @@ footer a:hover {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.worker-header .header-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.worker-header .header-actions .btn-icon,
+.worker-header .header-actions .avatar {
+  flex: 0 0 auto;
+  min-width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.worker-header .header-actions .avatar {
+  width: auto;
+  max-width: 96px;
+  padding: 0 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-icon {
@@ -1308,6 +1338,34 @@ a.btn-icon {
 /* ===== Responsive ===== */
 
 @media (max-width: 768px) {
+
+  .worker-header .header-inner {
+    gap: 8px;
+  }
+
+  .worker-header .header-actions {
+    gap: 6px;
+  }
+
+  .worker-header .header-actions .btn-icon,
+  .worker-header .header-actions .avatar {
+    min-width: 34px;
+    height: 34px;
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+
+  .worker-header .header-actions .avatar {
+    max-width: 76px;
+  }
+
+  .worker-header .logo {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   .nav {
     display: none; /* MVPなので簡易対応 */
@@ -6227,6 +6285,7 @@ a.btn-icon {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   height: 60px;
 }
 
@@ -6235,12 +6294,18 @@ a.btn-icon {
   font-weight: 700;
   color: var(--color-primary);
   margin-right: 32px;
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-nav {
   display: flex;
   gap: 4px;
   flex: 1;
+  min-width: 0;
 }
 
 .admin-nav a {
@@ -6266,8 +6331,19 @@ a.btn-icon {
 .admin-user-info {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   gap: 12px;
   font-size: 13px;
+  white-space: nowrap;
+}
+
+.admin-user-info .btn-icon {
+  flex: 0 0 auto;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .admin-role {
@@ -6763,15 +6839,17 @@ a.btn-icon {
   }
 
   .admin-header-inner {
-    flex-wrap: wrap;
-    height: auto;
-    padding: 12px;
+    flex-wrap: nowrap;
+    height: 60px;
+    padding: 0 12px;
+    gap: 8px;
   }
 
   .admin-user-info {
-    width: 100%;
+    width: auto;
     justify-content: flex-end;
-    margin-top: 8px;
+    margin-top: 0;
+    gap: 8px;
   }
 
   .kpi-summary {
@@ -6799,6 +6877,44 @@ a.btn-icon {
   .admin-table th,
   .admin-table td {
     padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .worker-header .header-inner {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .worker-header .header-actions .btn-icon,
+  .worker-header .header-actions .avatar {
+    max-width: 64px;
+    padding-left: 7px;
+    padding-right: 7px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .admin-logo {
+    font-size: 15px;
+    margin-right: 0;
+  }
+
+  .admin-user-info {
+    gap: 6px;
+  }
+
+  .admin-name {
+    display: none;
+  }
+
+  .admin-role {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .admin-user-info .btn-icon {
+    padding: 7px 8px;
   }
 }
 
