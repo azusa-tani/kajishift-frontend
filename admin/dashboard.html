@@ -149,7 +149,7 @@ if (typeof checkAuth === 'function') {
     <section class="section admin-section admin-card section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">ワーカー審査待ち</h2>
-        <a href="workers.html?status=pending" class="link-more">すべて見る →</a>
+        <a href="workers?status=pending" class="link-more">すべて見る →</a>
       </div>
       <div class="admin-table-container">
         <table class="admin-table admin-dashboard-table">
@@ -174,7 +174,7 @@ if (typeof checkAuth === 'function') {
     <section class="section admin-section admin-card section-block card-standard">
       <div class="section-header">
         <h2 class="section-title">ワーカーテスト審査待ち</h2>
-        <a href="worker-test-submissions.html?status=needs_review,ai_reviewed,test_submitted" class="link-more">すべて見る →</a>
+        <a href="worker-test-submissions?status=needs_review,ai_reviewed,test_submitted" class="link-more">すべて見る →</a>
       </div>
       <div class="admin-table-container">
         <table class="admin-table admin-dashboard-table">
@@ -431,7 +431,7 @@ function displayTodayBookings(response) {
         <td>${serviceType}</td>
         <td>${address}</td>
         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-        <td><a href="booking-detail.html?id=${booking.id}" class="btn-link btn-action-link">詳細</a></td>
+        <td><a href="booking-detail?id=${booking.id}" class="btn-link btn-action-link">詳細</a></td>
       </tr>
     `;
     tbody.insertAdjacentHTML('beforeend', row);
@@ -461,7 +461,7 @@ function displayPendingWorkers(response) {
         <td>${worker.name || '-'}</td>
         <td>${worker.email || '-'}</td>
         <td><span class="status-badge ${worker.idDocumentUrl ? 'active' : 'pending'}">${idDocumentStatus}</span></td>
-        <td><a href="worker-detail.html?id=${worker.id}" class="btn-link btn-action-link">審査</a></td>
+        <td><a href="worker-detail?id=${worker.id}" class="btn-link btn-action-link">審査</a></td>
       </tr>
     `;
     tbody.insertAdjacentHTML('beforeend', row);
@@ -499,7 +499,7 @@ function displayPendingInquiries(response) {
           <p>利用者: ${ticket.user?.name || '不明'} / ID: ${ticket.id}</p>
         </div>
         <div class="inquiry-actions">
-          <a href="support.html?id=${ticket.id}" class="btn btn-primary btn-small btn-action">対応する</a>
+          <a href="support?id=${ticket.id}" class="btn btn-primary btn-small btn-action">対応する</a>
         </div>
       </div>
     `;

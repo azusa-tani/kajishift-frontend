@@ -268,7 +268,7 @@ function renderPendingJobs(bookings) {
         </div>
         <p class="job-request-description">${escapeHtml(booking.notes || '特記事項なし')}</p>
         <div class="job-actions">
-          <a href="job-detail.html?id=${booking.id}" class="btn btn--outline btn-action">詳細を見る</a>
+          <a href="job-detail?id=${booking.id}" class="btn btn--outline btn-action">詳細を見る</a>
           <button class="btn btn-primary btn-action" onclick="acceptJob('${booking.id}')">承諾する</button>
         </div>
       </article>
@@ -339,7 +339,7 @@ function renderTodaySchedule(bookings) {
             </div>
           </div>
           <div class="timeline-actions">
-            <a href="job-detail.html?id=${booking.id}" class="btn btn-small btn--outline btn-action">詳細</a>
+            <a href="job-detail?id=${booking.id}" class="btn btn-small btn--outline btn-action">詳細</a>
           </div>
         </div>
       </div>

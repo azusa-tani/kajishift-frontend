@@ -122,12 +122,12 @@
       if (st === 'COMPLETED' && !booking.reviewed) {
         actionsHtml = `
         <button type="button" class="btn btn-outline" onclick="window.__customerBookings.openReviewModal('${bid}')">レビューを書く</button>
-        <a href="booking-detail.html?id=${bid}" class="btn btn-primary">詳細を見る</a>
+        <a href="booking-detail?id=${bid}" class="btn btn-primary">詳細を見る</a>
       `;
       } else {
         actionsHtml = `
         <span class="reviewed-badge">${booking.reviewed ? 'レビュー済み' : ''}</span>
-        <a href="booking-detail.html?id=${bid}" class="btn btn-primary">詳細を見る</a>
+        <a href="booking-detail?id=${bid}" class="btn btn-primary">詳細を見る</a>
       `;
       }
     } else {
@@ -135,7 +135,7 @@
       <button type="button" class="btn btn--outline btn-action" onclick="window.__customerBookings.goToChangeBooking('${bid}')">予約変更</button>
       <button type="button" class="btn btn--outline btn-action" onclick="window.__customerBookings.openChat('${bid}')">チャット</button>
       <button type="button" class="btn btn--outline btn-action danger" onclick="window.__customerBookings.openCancelModal('${bid}')">キャンセル</button>
-      <a href="booking-detail.html?id=${bid}" class="btn btn-primary">詳細を見る</a>
+      <a href="booking-detail?id=${bid}" class="btn btn-primary">詳細を見る</a>
     `;
     }
 
@@ -231,7 +231,7 @@
       if (typeof showError === 'function') showError('ログイン情報を確認してください');
       return;
     }
-    window.location.href = `booking.html?id=${encodeURIComponent(bookingId)}`;
+    window.location.href = `booking?id=${encodeURIComponent(bookingId)}`;
   }
 
   function openCancelModal(id) {
@@ -241,11 +241,11 @@
   }
 
   function openChat(id) {
-    window.location.href = 'chat.html?booking=' + encodeURIComponent(id);
+    window.location.href = 'chat?booking=' + encodeURIComponent(id);
   }
 
   function openReviewModal(id) {
-    window.location.href = `booking-detail.html?id=${encodeURIComponent(id)}&review=true`;
+    window.location.href = `booking-detail?id=${encodeURIComponent(id)}&review=true`;
   }
 
   function closeModal(modalId) {

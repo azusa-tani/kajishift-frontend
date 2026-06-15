@@ -454,7 +454,7 @@ function displayBookings(status, bookings, pagination) {
           <td>${serviceType}</td>
           <td>${address}</td>
           <td><span class="status-badge pending">ワーカー待ち</span></td>
-          <td><a href="booking-detail.html?id=${booking.id}" class="btn-link">詳細</a></td>
+          <td><a href="booking-detail?id=${booking.id}" class="btn-link">詳細</a></td>
         </tr>
       `;
       tbody.insertAdjacentHTML('beforeend', row);
@@ -467,7 +467,7 @@ function displayBookings(status, bookings, pagination) {
           <td>${workerName}</td>
           <td>¥0</td>
           <td>${booking.cancellationReason || '理由不明'}</td>
-          <td><a href="booking-detail.html?id=${booking.id}" class="btn-link">詳細</a></td>
+          <td><a href="booking-detail?id=${booking.id}" class="btn-link">詳細</a></td>
         </tr>
       `;
       tbody.insertAdjacentHTML('beforeend', row);
@@ -482,7 +482,7 @@ function displayBookings(status, bookings, pagination) {
           <td>${address}</td>
           <td>${amount}</td>
           <td>
-            <a href="booking-detail.html?id=${booking.id}" class="btn-link">詳細</a>
+            <a href="booking-detail?id=${booking.id}" class="btn-link">詳細</a>
             ${status === 'CONFIRMED' ? `<button class="btn-link" onclick="openCancelModal('${booking.id}')">キャンセル</button>` : ''}
           </td>
         </tr>

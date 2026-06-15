@@ -305,7 +305,7 @@ function updateUpcomingBookings(bookings) {
           ${workerRow}
           ${addressHtml}
           <div class="customer-upcoming-card__actions">
-            <a href="booking-detail.html?id=${escapeHtml(booking.id)}" class="btn btn--outline btn-small customer-upcoming-card__btn">詳細を見る</a>
+            <a href="booking-detail?id=${escapeHtml(booking.id)}" class="btn btn--outline btn-small customer-upcoming-card__btn">詳細を見る</a>
           </div>
         </div>
       </div>
@@ -375,13 +375,13 @@ function renderRecentPayments(payments) {
       if (booking && booking.id) {
         if (booking.status === 'COMPLETED' && !booking.reviewed) {
           footer = `<div class="history-card__footer">
-            <a href="booking-detail.html?id=${escapeHtml(booking.id)}&review=true" class="btn btn-small btn--outline">レビュー</a>
+            <a href="booking-detail?id=${escapeHtml(booking.id)}&review=true" class="btn btn-small btn--outline">レビュー</a>
           </div>`;
         } else if (booking.reviewed || booking.review) {
           footer = `<div class="history-card__footer"><span class="reviewed-badge">レビュー済み</span></div>`;
         } else {
           footer = `<div class="history-card__footer">
-            <a href="booking-detail.html?id=${escapeHtml(booking.id)}" class="btn btn-small btn--outline">詳細</a>
+            <a href="booking-detail?id=${escapeHtml(booking.id)}" class="btn btn-small btn--outline">詳細</a>
           </div>`;
         }
       } else {

@@ -500,7 +500,7 @@ async function chatWithWorker(workerId) {
   }
   
   // チャットページに遷移
-  window.location.href = `chat.html?bookingId=${currentBooking.id}`;
+  window.location.href = `chat?bookingId=${currentBooking.id}`;
 }
 
 function closeModal(modalId) {

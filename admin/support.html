@@ -549,7 +549,7 @@ async function openInquiryDetail(ticketId) {
           ${ticket.bookingId ? `
           <div class="info-item">
             <label>関連予約ID</label>
-            <div><a href="booking-detail.html?id=${ticket.bookingId}" class="btn-link">#${ticket.bookingId.substring(0, 8)}</a></div>
+            <div><a href="booking-detail?id=${ticket.bookingId}" class="btn-link">#${ticket.bookingId.substring(0, 8)}</a></div>
           </div>
           ` : ''}
           <div class="info-item">
@@ -624,7 +624,7 @@ async function viewChat(bookingId) {
     const content = `
       <div>
         <div class="support-chat-link-wrap">
-          <a href="booking-detail.html?id=${bookingId}" class="btn-link">予約詳細を見る</a>
+          <a href="booking-detail?id=${bookingId}" class="btn-link">予約詳細を見る</a>
         </div>
         <div class="support-chat-scroll">
           ${messagesHtml}

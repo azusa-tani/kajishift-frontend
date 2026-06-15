@@ -324,7 +324,7 @@ function displayUsers(users) {
         <td>${bookingCount}回</td>
         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
         <td>
-          <a href="user-detail.html?id=${user.id}" class="btn-link">詳細</a>
+          <a href="user-detail?id=${user.id}" class="btn-link">詳細</a>
           ${user.status === 'SUSPENDED' 
             ? `<button class="btn-link" onclick="activateUser('${user.id}')">有効化</button>`
             : `<button class="btn btn-danger btn-small" onclick="suspendUser('${user.id}')">停止</button>`

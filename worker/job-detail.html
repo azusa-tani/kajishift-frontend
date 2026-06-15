@@ -270,7 +270,7 @@ function displayClientInfo(customer) {
   // チャットボタンのイベントリスナー
   document.getElementById('chatButton').addEventListener('click', function() {
     if (currentBooking) {
-      window.location.href = `chat.html?bookingId=${currentBooking.id}`;
+      window.location.href = `chat?bookingId=${currentBooking.id}`;
     }
   });
 }
