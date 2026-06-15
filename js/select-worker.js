@@ -116,20 +116,15 @@ function deriveWorkerListParams(booking) {
 // ワーカー一覧を読み込む
 async function loadWorkers() {
   try {
-    const primary = deriveWorkerListParams(currentBooking);
-    let response = await api.getWorkers(primary);
-    let list = response.data && response.data.workers;
+    let list = null;
 
-    if (!list || list.length === 0) {
-      const fallbackKeyword = { approvalStatus: 'APPROVED', limit: 50 };
-      if (primary.keyword) {
-        response = await api.getWorkers({ ...fallbackKeyword, keyword: primary.keyword });
-        list = response.data && response.data.workers;
-      }
-      if (!list || list.length === 0) {
-        response = await api.getWorkers(fallbackKeyword);
-        list = response.data && response.data.workers;
-      }
+    if (currentBooking && currentBooking.id && typeof api.getAvailableWorkersForBooking === 'function') {
+      const response = await api.getAvailableWorkersForBooking(currentBooking.id);
+      list = response.data && response.data.workers;
+    } else {
+      const primary = deriveWorkerListParams(currentBooking);
+      const response = await api.getWorkers(primary);
+      list = response.data && response.data.workers;
     }
 
     if (!Array.isArray(list)) {
@@ -150,7 +145,7 @@ function displayWorkers(workersList) {
   const container = document.getElementById('workersList');
   
   if (workersList.length === 0) {
-    container.innerHTML = '<div class="error-message">利用可能なワーカーが見つかりませんでした</div>';
+    container.innerHTML = '<div class="error-message">条件に一致するワーカーが見つかりませんでした</div>';
     return;
   }
 
@@ -357,7 +352,14 @@ async function confirmBooking() {
     window.location.href = `booking-detail.html?id=${currentBooking.id}`;
   } catch (error) {
     console.error('予約確定エラー:', error);
-    alert('予約の確定に失敗しました: ' + (error.message || 'エラーが発生しました'));
+    if (error && error.status === 409) {
+      alert('選択したワーカーはこの時間帯に対応できなくなりました。別のワーカーを選択してください。');
+      selectedWorker.checked = false;
+      selectedWorkerId = null;
+      await loadWorkers();
+    } else {
+      alert('予約の確定に失敗しました: ' + (error.message || 'エラーが発生しました'));
+    }
     confirmBtn.disabled = false;
     confirmBtn.textContent = originalText;
   }

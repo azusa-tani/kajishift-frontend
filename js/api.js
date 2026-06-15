@@ -432,6 +432,13 @@ class ApiClient {
   }
 
   /**
+   * 予約条件に合う利用可能ワーカー候補を取得
+   */
+  async getAvailableWorkersForBooking(bookingId) {
+    return this.request(`/bookings/${encodeURIComponent(bookingId)}/available-workers`);
+  }
+
+  /**
    * 予約を更新
    */
   async updateBooking(bookingId, data) {
