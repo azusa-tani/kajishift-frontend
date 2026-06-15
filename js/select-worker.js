@@ -8,7 +8,7 @@ function goBackFromWorkerSelection() {
   const params = new URLSearchParams(window.location.search);
   const reservationId = params.get('id') || params.get('bookingId');
   if (reservationId && reservationId !== 'undefined') {
-    window.location.href = `booking.html?id=${encodeURIComponent(reservationId)}`;
+    window.location.href = `booking?id=${encodeURIComponent(reservationId)}`;
   } else {
     window.location.href = 'bookings.html';
   }
@@ -349,7 +349,7 @@ async function confirmBooking() {
     });
 
     alert('予約が確定しました！');
-    window.location.href = `booking-detail.html?id=${currentBooking.id}`;
+    window.location.href = `booking-detail?id=${encodeURIComponent(currentBooking.id)}`;
   } catch (error) {
     console.error('予約確定エラー:', error);
     if (error && error.status === 409) {
