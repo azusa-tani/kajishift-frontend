@@ -161,11 +161,17 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 未読通知数を取得
   try {
     const notificationResponse = await api.getUnreadNotificationCount();
-    if (notificationResponse.count > 0) {
-      const notificationBadge = document.querySelector('.notification-badge');
-      if (notificationBadge) {
-        notificationBadge.textContent = notificationResponse.count;
+    const unreadCount = typeof parseUnreadNotificationCount === 'function'
+      ? parseUnreadNotificationCount(notificationResponse)
+      : (notificationResponse?.data?.count ?? notificationResponse?.count ?? 0);
+    const notificationBadge = document.querySelector('.notification-badge');
+    if (notificationBadge) {
+      if (unreadCount > 0) {
+        notificationBadge.textContent = String(unreadCount);
         notificationBadge.classList.remove('is-hidden');
+      } else {
+        notificationBadge.textContent = '0';
+        notificationBadge.classList.add('is-hidden');
       }
     }
   } catch (error) {
