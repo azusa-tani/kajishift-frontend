@@ -81,7 +81,7 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
         <a href="rewards.html" class="action-card">
           <div class="action-icon">💰</div>
           <h3>報酬確認</h3>
-          <p class="text-muted">今月の報酬を確認</p>
+          <p class="text-muted">β版での精算案内を確認</p>
         </a>
         <a href="profile.html" class="action-card">
           <div class="action-icon">⚙️</div>
@@ -124,21 +124,21 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
       </div>
     </section>
 
-    <!-- 今月の報酬サマリー -->
+    <!-- 報酬・精算情報 -->
     <section class="reward-summary section-block card-standard">
-      <h2 class="section-title">今月の報酬サマリー</h2>
+      <h2 class="section-title">報酬・精算情報</h2>
       <div class="reward-card reward-summary-card">
         <div class="reward-hero">
-          <span class="reward-hero__label">今月の合計</span>
-          <span class="reward-hero__amount" id="rewardTotalAmount">¥0</span>
+          <span class="reward-hero__label">β版での報酬・精算</span>
+          <span class="reward-hero__amount" id="rewardSummaryStatus">準備中</span>
         </div>
         <div class="reward-item">
-          <span class="reward-label">完了した仕事</span>
+          <span class="reward-label">今月完了した仕事</span>
           <span class="reward-count" id="rewardCompletedCount">0件</span>
         </div>
         <div class="reward-item">
-          <span class="reward-label">次回支払日</span>
-          <span class="reward-date" id="rewardNextPaymentDate">-</span>
+          <span class="reward-label">精算詳細</span>
+          <span class="reward-date" id="rewardSettlementNotice">運営から個別にご案内します</span>
         </div>
         <a href="rewards.html" class="btn btn--outline btn-action">詳細を見る</a>
       </div>
@@ -170,22 +170,28 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function loadDashboardData() {
   try {
-    const [meResponse, bookingResponse, todayBookingResponse] = await Promise.all([
+    const [meResponse, bookingResponse, todayBookingResponse, completedMonthResponse] = await Promise.all([
       api.getMe(),
       api.getBookings({ status: 'PENDING', available: true, limit: 6 }),
-      api.getBookings({ status: 'CONFIRMED,IN_PROGRESS,COMPLETED', limit: 20 })
+      api.getBookings({ status: 'CONFIRMED,IN_PROGRESS,COMPLETED', limit: 20 }),
+      api.getBookings({
+        status: 'COMPLETED',
+        startDate: getMonthStart(),
+        endDate: getMonthEnd(),
+        limit: 100
+      })
     ]);
 
     const user = meResponse.data || {};
     const pendingBookings = bookingResponse.data?.bookings || [];
     const todayBookings = todayBookingResponse.data?.bookings || [];
-    const payments = [];
+    const completedMonthBookings = completedMonthResponse.data?.bookings || [];
 
     renderWelcome(user, pendingBookings.length);
     await renderScreeningTestBanner(user);
     renderPendingJobs(pendingBookings);
     renderTodaySchedule(todayBookings);
-    renderRewardSummary(payments);
+    renderRewardSummary(completedMonthBookings);
   } catch (error) {
     console.error('ダッシュボードデータの読み込みエラー:', error);
     document.getElementById('welcomeName').textContent = 'おかえりなさい';
@@ -347,45 +353,24 @@ function renderTodaySchedule(bookings) {
   }).join('');
 }
 
-function renderRewardSummary(payments) {
+function renderRewardSummary(completedBookings) {
+  document.getElementById('rewardSummaryStatus').textContent = '準備中';
+  document.getElementById('rewardCompletedCount').textContent = `${completedBookings.length}件`;
+  document.getElementById('rewardSettlementNotice').textContent = '運営から個別にご案内します';
+}
+
+function getMonthStart() {
   const now = new Date();
-  const monthPayments = payments.filter((payment) => {
-    if (!payment || !payment.createdAt) return false;
-    const createdAt = new Date(payment.createdAt);
-    return createdAt.getFullYear() === now.getFullYear() && createdAt.getMonth() === now.getMonth();
-  });
-
-  const monthlyTotal = monthPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  const completedCount = getCompletedCountFromPayments(monthPayments);
-  const nextPaymentDate = getNextPaymentDate();
-
-  document.getElementById('rewardTotalAmount').textContent = `¥${monthlyTotal.toLocaleString()}`;
-  document.getElementById('rewardCompletedCount').textContent = `${completedCount}件`;
-  document.getElementById('rewardNextPaymentDate').textContent = nextPaymentDate;
+  return formatLocalDate(new Date(now.getFullYear(), now.getMonth(), 1));
 }
 
-function getCompletedCountFromPayments(payments) {
-  return payments.filter((payment) => payment.status === 'COMPLETED').length;
-}
-
-async function fillCompletedCountFromReport(workerId) {
-  try {
-    const report = await api.getAdminWorkerReport();
-    const workers = report.data?.workers || [];
-    const me = workers.find((worker) => worker.id === workerId);
-    const completedBookings = me?.completedBookings || 0;
-    if (completedBookings > 0) {
-      document.getElementById('rewardCompletedCount').textContent = `${completedBookings}件`;
-    }
-  } catch (error) {
-    console.warn('ワーカー統計レポートの取得をスキップしました:', error?.message || error);
-  }
-}
-
-function getNextPaymentDate() {
+function getMonthEnd() {
   const now = new Date();
-  const target = new Date(now.getFullYear(), now.getMonth() + 1, 5);
-  return target.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+  return formatLocalDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+}
+
+function formatLocalDate(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 function escapeHtml(text) {
