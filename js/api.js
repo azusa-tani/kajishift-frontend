@@ -1151,13 +1151,6 @@ class ApiClient {
     return this.request(endpoint);
   }
 
-  /**
-   * 管理ダッシュボード用KPIサマリー（バックエンドが /admin/stats を実装している場合）
-   */
-  async getAdminStats() {
-    return this.request('/admin/stats');
-  }
-
   // ==================== システム設定API ====================
 
   /**

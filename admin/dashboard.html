@@ -238,16 +238,6 @@ async function loadDashboardData() {
 
     updateKPISummary(userReport, workerReport, bookingReport, revenueReport);
 
-    try {
-      const statsRaw = await api.getAdminStats();
-      const stats = unwrapApiPayload(statsRaw);
-      if (stats && typeof stats === 'object') {
-        applyKpiFromAdminStatsOverlay(stats);
-      }
-    } catch (e) {
-      console.warn('getAdminStats は未実装または失敗しました（レポートAPIのKPIを表示します）', e);
-    }
-
     displayTodayBookings(todayBookings);
     displayPendingWorkers(pendingWorkers);
     displayPendingInquiries(pendingInquiries);
@@ -304,59 +294,6 @@ function displayPendingWorkerTests(response) {
     `;
     tbody.insertAdjacentHTML('beforeend', row);
   });
-}
-
-/** getAdminStats の値でKPIを上書き（フィールドが取れたものだけ） */
-function applyKpiFromAdminStatsOverlay(stats) {
-  const root = stats.summary && typeof stats.summary === 'object' ? stats.summary : stats;
-  const num = (v) => {
-    const x = Number(v);
-    return Number.isFinite(x) ? x : null;
-  };
-
-  const ac = num(root.activeCustomers ?? root.activeUsers ?? root.active_user_count ?? stats.activeCustomers);
-  if (ac != null) {
-    document.getElementById('activeCustomers').textContent = ac.toLocaleString();
-  }
-  const custDelta = num(root.customerChange ?? root.newCustomersThisMonth ?? stats.customerChange);
-  if (custDelta != null) {
-    document.getElementById('customerChange').textContent = `+${custDelta} (今月)`;
-    document.getElementById('customerChange').className = 'kpi-change positive';
-  }
-
-  const aw = num(root.activeWorkers ?? root.active_workers ?? stats.activeWorkers);
-  if (aw != null) {
-    document.getElementById('activeWorkers').textContent = aw.toLocaleString();
-  }
-  const workDelta = num(root.workerChange ?? root.approvedThisMonth ?? stats.workerChange);
-  if (workDelta != null) {
-    document.getElementById('workerChange').textContent = `+${workDelta} (今月)`;
-    document.getElementById('workerChange').className = 'kpi-change positive';
-  }
-
-  const tb = num(root.todayBookings ?? root.today_bookings ?? stats.todayBookings);
-  if (tb != null) {
-    document.getElementById('todayBookings').textContent = tb.toLocaleString();
-  }
-
-  const mr = num(root.monthlyRevenue ?? root.totalRevenue ?? root.total_revenue ?? stats.monthlyRevenue);
-  if (mr != null) {
-    document.getElementById('monthlyRevenue').textContent = `¥${mr.toLocaleString()}`;
-  }
-  const revenueChange = num(root.revenueChangePercent ?? root.comparison?.percentage ?? stats.revenueChangePercent);
-  if (revenueChange != null) {
-    const revEl = document.getElementById('revenueChange');
-    if (revenueChange > 0) {
-      revEl.textContent = `+${revenueChange.toFixed(1)}% (前月比)`;
-      revEl.className = 'kpi-change positive';
-    } else if (revenueChange < 0) {
-      revEl.textContent = `${revenueChange.toFixed(1)}% (前月比)`;
-      revEl.className = 'kpi-change negative';
-    } else {
-      revEl.textContent = '変化なし';
-      revEl.className = 'kpi-change';
-    }
-  }
 }
 
 function updateKPISummary(userReport, workerReport, bookingReport, revenueReport) {
