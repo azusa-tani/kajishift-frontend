@@ -57,39 +57,9 @@ if (typeof checkAuth === 'function') {
     <!-- 検索・フィルター -->
     <section class="admin-filter-section">
       <div class="filter-card">
-        <div class="filter-row">
-          <div class="filter-item">
-            <label>タイプ</label>
-            <select class="form-select">
-              <option value="">すべて</option>
-              <option value="booking">予約に関する質問</option>
-              <option value="complaint">クレーム</option>
-              <option value="account">アカウント関連</option>
-              <option value="payment">決済関連</option>
-              <option value="other">その他</option>
-            </select>
-          </div>
-          <div class="filter-item">
-            <label>状態</label>
-            <select class="form-select">
-              <option value="">すべて</option>
-              <option value="new">新規</option>
-              <option value="in-progress">対応中</option>
-              <option value="completed">完了</option>
-            </select>
-          </div>
-          <div class="filter-item">
-            <label>担当者</label>
-            <select class="form-select">
-              <option value="">すべて</option>
-              <option value="1">管理者 太郎</option>
-              <option value="2">オペレーター 花子</option>
-            </select>
-          </div>
-          <div class="filter-item">
-            <button class="btn btn-primary">検索</button>
-            <button class="btn btn-outline">リセット</button>
-          </div>
+        <div class="notice-box">
+          <p><strong>問い合わせ一覧は実データAPIから読み込みます。</strong></p>
+          <p>タイプ・担当者などの詳細な絞り込みは準備中です。β運用では下の問い合わせ一覧とCSVエクスポートをご確認ください。</p>
         </div>
       </div>
     </section>
@@ -101,80 +71,7 @@ if (typeof checkAuth === 'function') {
         <button class="btn btn-outline btn-small" onclick="exportSupportTickets(this)">CSVエクスポート</button>
       </div>
       <div class="inquiry-list">
-        <div class="inquiry-item urgent">
-          <div class="inquiry-header">
-            <div class="inquiry-meta">
-              <span class="inquiry-id">#T001</span>
-              <span class="inquiry-type">クレーム</span>
-              <span class="inquiry-priority">緊急</span>
-            </div>
-            <div class="inquiry-date">2024年3月15日 09:30</div>
-          </div>
-          <div class="inquiry-content">
-            <h4>予約キャンセルに関する苦情</h4>
-            <p><strong>利用者:</strong> 山田 太郎 / <strong>予約ID:</strong> #12345</p>
-            <p class="inquiry-text">予約をキャンセルした際のキャンセル料について不満があります。48時間以上前にキャンセルしたのに、キャンセル料がかかったのはおかしいです。</p>
-          </div>
-          <div class="inquiry-footer">
-            <div class="inquiry-status">
-              <span class="status-badge pending">対応中</span>
-              <span class="inquiry-assignee">担当: 管理者 太郎</span>
-            </div>
-            <div class="inquiry-actions">
-              <button class="btn btn-primary btn-small" onclick="openInquiryDetail('T001')">対応する</button>
-              <button class="btn btn-outline btn-small" onclick="viewChat('12345')">チャット閲覧</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="inquiry-item">
-          <div class="inquiry-header">
-            <div class="inquiry-meta">
-              <span class="inquiry-id">#T002</span>
-              <span class="inquiry-type">問い合わせ</span>
-            </div>
-            <div class="inquiry-date">2024年3月15日 08:15</div>
-          </div>
-          <div class="inquiry-content">
-            <h4>アカウント登録について</h4>
-            <p><strong>利用者:</strong> 新規登録希望者</p>
-            <p class="inquiry-text">アカウント登録の方法がわかりません。LINEログインはできますか？</p>
-          </div>
-          <div class="inquiry-footer">
-            <div class="inquiry-status">
-              <span class="status-badge pending">新規</span>
-              <span class="inquiry-assignee">未アサイン</span>
-            </div>
-            <div class="inquiry-actions">
-              <button class="btn btn-primary btn-small" onclick="openInquiryDetail('T002')">対応する</button>
-              <button class="btn btn-outline btn-small" onclick="assignToMe('T002')">自分にアサイン</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="inquiry-item">
-          <div class="inquiry-header">
-            <div class="inquiry-meta">
-              <span class="inquiry-id">#T003</span>
-              <span class="inquiry-type">問い合わせ</span>
-            </div>
-            <div class="inquiry-date">2024年3月14日 16:45</div>
-          </div>
-          <div class="inquiry-content">
-            <h4>予約変更について</h4>
-            <p><strong>利用者:</strong> 佐藤 花子 / <strong>予約ID:</strong> #12346</p>
-            <p class="inquiry-text">予約の日時を変更したいのですが、どのようにすればよいですか？</p>
-          </div>
-          <div class="inquiry-footer">
-            <div class="inquiry-status">
-              <span class="status-badge active">完了</span>
-              <span class="inquiry-assignee">担当: オペレーター 花子</span>
-            </div>
-            <div class="inquiry-actions">
-              <button class="btn btn-outline btn-small" onclick="openInquiryDetail('T003')">詳細</button>
-            </div>
-          </div>
-        </div>
+        <div class="loading-message">問い合わせを読み込み中...</div>
       </div>
     </section>
 
@@ -182,42 +79,10 @@ if (typeof checkAuth === 'function') {
     <section class="admin-section">
       <div class="section-header">
         <h2 class="section-title">クレーム・事故対応履歴</h2>
-        <button class="btn btn-outline btn-small" onclick="exportSupportTickets(this)">CSVエクスポート</button>
       </div>
-      <div class="admin-table-container">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>日時</th>
-              <th>種類</th>
-              <th>利用者/ワーカー</th>
-              <th>内容</th>
-              <th>対応結果</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>#C001</td>
-              <td>2024年3月10日</td>
-              <td>クレーム</td>
-              <td>山田 太郎</td>
-              <td>作業品質に関する苦情</td>
-              <td>解決済み</td>
-              <td><a href="#" class="btn-link">詳細</a></td>
-            </tr>
-            <tr>
-              <td>#C002</td>
-              <td>2024年3月5日</td>
-              <td>事故</td>
-              <td>田中 花子（ワーカー）</td>
-              <td>作業中の軽微な事故</td>
-              <td>対応完了</td>
-              <td><a href="#" class="btn-link">詳細</a></td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="notice-box">
+        <p><strong>クレーム・事故対応履歴の専用一覧は準備中です。</strong></p>
+        <p>β運用中は、実データAPIから取得した上の問い合わせ一覧でクレーム・事故関連の内容を確認してください。固定サンプル履歴は誤認防止のため削除しました。</p>
       </div>
     </section>
 
@@ -259,10 +124,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 問い合わせ一覧を読み込む
   await loadSupportTickets();
+  openTicketFromQuery();
 });
 
 // グローバル変数: サポートチケット一覧を保持
 let allSupportTickets = [];
+
+function openTicketFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const ticketId = params.get('id');
+  if (ticketId) {
+    openInquiryDetail(ticketId);
+  }
+}
 
 async function loadSupportTickets() {
   try {
