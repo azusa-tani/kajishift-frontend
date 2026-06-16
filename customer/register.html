@@ -138,66 +138,9 @@
         <!-- 決済方法 -->
         <div class="form-section">
           <h2 class="form-section__title">決済方法</h2>
-          <p class="form-note">クレジットカード情報は安全に管理されます（PCI DSS準拠）</p>
-          
-          <div class="form-group">
-            <label for="card-number" class="form-label">カード番号 <span class="required">必須</span></label>
-            <input 
-              type="text" 
-              id="card-number" 
-              name="card-number" 
-              class="form-input" 
-              required 
-              placeholder="1234 5678 9012 3456" 
-              maxlength="19"
-              aria-required="true"
-              aria-label="カード番号"
-              autocomplete="cc-number" />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="card-expiry" class="form-label">有効期限 <span class="required">必須</span></label>
-              <input 
-                type="text" 
-                id="card-expiry" 
-                name="card-expiry" 
-                class="form-input" 
-                required 
-                placeholder="MM/YY" 
-                maxlength="5"
-                aria-required="true"
-                aria-label="カード有効期限"
-                autocomplete="cc-exp" />
-            </div>
-            <div class="form-group">
-              <label for="card-cvc" class="form-label">セキュリティコード <span class="required">必須</span></label>
-              <input 
-                type="text" 
-                id="card-cvc" 
-                name="card-cvc" 
-                class="form-input" 
-                required 
-                placeholder="123" 
-                maxlength="4"
-                aria-required="true"
-                aria-label="セキュリティコード"
-                autocomplete="cc-csc" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="card-name" class="form-label">カード名義人 <span class="required">必須</span></label>
-            <input 
-              type="text" 
-              id="card-name" 
-              name="card-name" 
-              class="form-input" 
-              required 
-              placeholder="YAMADA TARO"
-              aria-required="true"
-              aria-label="カード名義人"
-              autocomplete="cc-name" />
+          <div class="notice-box">
+            <p><strong>会員登録時点ではカード情報の入力は不要です。</strong></p>
+            <p>カード情報は、予約時またはマイページの支払い設定からStripeの安全な入力画面で登録できます。</p>
           </div>
         </div>
 
@@ -236,14 +179,6 @@
       setupRealTimeValidation(document.getElementById('phone'), Validators.phone);
       setupRealTimeValidation(document.getElementById('password'), Validators.password);
       setupRealTimeValidation(document.getElementById('address-detail'), Validators.required);
-      setupRealTimeValidation(document.getElementById('card-number'), Validators.cardNumber);
-      setupRealTimeValidation(document.getElementById('card-expiry'), Validators.cardExpiry);
-      setupRealTimeValidation(document.getElementById('card-cvc'), (value) => {
-        if (!value) return 'セキュリティコードを入力してください';
-        if (value.length < 3) return 'セキュリティコードは3-4桁で入力してください';
-        return null;
-      });
-      setupRealTimeValidation(document.getElementById('card-name'), Validators.required);
       
       // パスワード確認のバリデーション
       const passwordConfirm = document.getElementById('password-confirm');
@@ -265,12 +200,6 @@
       
       // 電話番号自動フォーマット
       setupPhoneFormat(document.getElementById('phone'));
-      
-      // カード番号自動フォーマット
-      setupCardNumberFormat(document.getElementById('card-number'));
-      
-      // カード有効期限自動フォーマット
-      setupCardExpiryFormat(document.getElementById('card-expiry'));
     });
 
     // フォーム送信時のバリデーションとAPI連携
@@ -288,15 +217,7 @@
         },
         'address-pref': Validators.required,
         'address-city': Validators.required,
-        'address-detail': Validators.required,
-        'card-number': Validators.cardNumber,
-        'card-expiry': Validators.cardExpiry,
-        'card-cvc': (value) => {
-          if (!value) return 'セキュリティコードを入力してください';
-          if (value.length < 3) return 'セキュリティコードは3-4桁で入力してください';
-          return null;
-        },
-        'card-name': Validators.required
+        'address-detail': Validators.required
       };
       
       if (!validateForm(this, validations)) {
@@ -327,7 +248,6 @@
           city: document.getElementById('address-city').value,
           detail: document.getElementById('address-detail').value
         }
-        // カード情報は本番環境では決済ゲートウェイに直接送信するため、ここでは含めない
       };
       
       const submitButton = this.querySelector('button[type="submit"]');
