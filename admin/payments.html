@@ -52,6 +52,10 @@ if (typeof checkAuth === 'function') {
     
     <section class="admin-page-header">
       <h1>決済・売上管理</h1>
+      <div class="notice-box">
+        <p><strong>β版での注意:</strong> この画面の決済一覧・売上KPI・報酬精算・キャンセル料管理は実データ連携前です。</p>
+        <p>β運用中の決済確認は Stripe Dashboard またはCSV/Excel出力で行ってください。返金・キャンセル料・報酬精算の本格管理は今後対応予定です。</p>
+      </div>
     </section>
 
     <!-- タブナビゲーション -->
@@ -68,62 +72,13 @@ if (typeof checkAuth === 'function') {
         <div class="section-header">
           <h2 class="section-title">決済状況一覧</h2>
           <div class="filter-row">
-            <select class="form-select">
-              <option value="">すべて</option>
-              <option value="paid">支払済み</option>
-              <option value="authorized">承認済み</option>
-              <option value="unpaid">未払い</option>
-              <option value="error">決済エラー</option>
-            </select>
             <button class="btn btn-outline btn-small" onclick="exportPayments(this)">CSVエクスポート</button>
           </div>
         </div>
-        <div class="admin-table-container">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>決済ID</th>
-                <th>予約ID</th>
-                <th>利用者</th>
-                <th>金額</th>
-                <th>状態</th>
-                <th>決済日時</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>#P001</td>
-                <td>#12345</td>
-                <td>山田 太郎</td>
-                <td>¥5,000</td>
-                <td><span class="status-badge active">支払済み</span></td>
-                <td>2024年3月10日 12:30</td>
-                <td><a href="#" class="btn-link">詳細</a></td>
-              </tr>
-              <tr>
-                <td>#P002</td>
-                <td>#12346</td>
-                <td>佐藤 花子</td>
-                <td>¥6,000</td>
-                <td><span class="status-badge active">支払済み</span></td>
-                <td>2024年3月3日 16:45</td>
-                <td><a href="#" class="btn-link">詳細</a></td>
-              </tr>
-              <tr class="error-row">
-                <td>#P003</td>
-                <td>#12347</td>
-                <td>鈴木 一郎</td>
-                <td>¥4,000</td>
-                <td><span class="status-badge error">決済エラー</span></td>
-                <td>2024年3月5日 14:20</td>
-                <td>
-                  <a href="#" class="btn-link">詳細</a>
-                  <button class="btn-link" onclick="viewError('P003')">エラー詳細</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="notice-box">
+          <p><strong>決済状況一覧は準備中です。</strong></p>
+          <p>この領域には固定のサンプル決済履歴が表示されていましたが、β運用者が実決済と誤認しないよう非表示にしています。</p>
+          <p>決済の実確認は Stripe Dashboard、または上部のCSVエクスポートを利用してください。</p>
         </div>
       </section>
     </div>
@@ -134,11 +89,6 @@ if (typeof checkAuth === 'function') {
         <div class="section-header">
           <h2 class="section-title">売上レポート</h2>
           <div class="filter-row">
-            <select class="form-select">
-              <option>2024年3月</option>
-              <option>2024年2月</option>
-              <option>2024年1月</option>
-            </select>
             <div class="export-buttons">
               <button class="btn btn-outline btn-small" onclick="exportRevenue(this)">CSVエクスポート</button>
               <button class="btn btn-outline btn-small" onclick="exportRevenueExcel(this)">Excelエクスポート</button>
@@ -148,57 +98,25 @@ if (typeof checkAuth === 'function') {
         <div class="sales-summary">
           <div class="summary-card">
             <div class="summary-label">今月の売上</div>
-            <div class="summary-value">¥2,450,000</div>
+            <div class="summary-value">準備中</div>
           </div>
           <div class="summary-card">
             <div class="summary-label">予約数</div>
-            <div class="summary-value">245件</div>
+            <div class="summary-value">準備中</div>
           </div>
           <div class="summary-card">
             <div class="summary-label">平均単価</div>
-            <div class="summary-value">¥10,000</div>
+            <div class="summary-value">準備中</div>
           </div>
+        </div>
+        <div class="notice-box">
+          <p><strong>売上KPI・グラフはβ版では実データ連携前です。</strong></p>
+          <p>固定の売上金額・予約数・エリア別売上は実売上と誤認されるため削除しました。売上確認はCSV/Excel出力またはStripe Dashboardで行ってください。</p>
         </div>
         <div class="chart-container">
           <div class="chart-placeholder">
-            <p>📊 売上推移グラフ</p>
-            <p class="chart-note">日次/月次売上推移グラフ（実装時はChart.js等を使用）</p>
-          </div>
-        </div>
-        <div class="sales-by-area">
-          <h3>エリア別売上</h3>
-          <div class="admin-table-container">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>エリア</th>
-                  <th>予約数</th>
-                  <th>売上</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>札幌市</td>
-                  <td>180件</td>
-                  <td>¥1,800,000</td>
-                </tr>
-                <tr>
-                  <td>江別市</td>
-                  <td>35件</td>
-                  <td>¥350,000</td>
-                </tr>
-                <tr>
-                  <td>北広島市</td>
-                  <td>20件</td>
-                  <td>¥200,000</td>
-                </tr>
-                <tr>
-                  <td>石狩市</td>
-                  <td>10件</td>
-                  <td>¥100,000</td>
-                </tr>
-              </tbody>
-            </table>
+            <p>売上推移グラフは準備中です</p>
+            <p class="chart-note">β版では実売上グラフを表示していません。</p>
           </div>
         </div>
       </section>
@@ -209,64 +127,11 @@ if (typeof checkAuth === 'function') {
       <section class="admin-section">
         <div class="section-header">
           <h2 class="section-title">ワーカー報酬管理</h2>
-          <div class="filter-row">
-            <select class="form-select">
-              <option>2024年3月</option>
-              <option>2024年2月</option>
-              <option>2024年1月</option>
-            </select>
-            <button class="btn btn-outline btn-small">CSV/Excel出力</button>
-          </div>
         </div>
-        <div class="admin-table-container">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>ワーカーID</th>
-                <th>氏名</th>
-                <th>完了件数</th>
-                <th>報酬合計</th>
-                <th>状態</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>#W001</td>
-                <td>田中 花子</td>
-                <td>12件</td>
-                <td>¥45,000</td>
-                <td><span class="status-badge active">振込済み</span></td>
-                <td>
-                  <a href="#" class="btn-link">明細</a>
-                  <button class="btn-link" onclick="downloadStatement('W001')">明細書出力</button>
-                </td>
-              </tr>
-              <tr>
-                <td>#W002</td>
-                <td>佐藤 美咲</td>
-                <td>10件</td>
-                <td>¥40,000</td>
-                <td><span class="status-badge pending">未振込</span></td>
-                <td>
-                  <a href="#" class="btn-link">明細</a>
-                  <button class="btn-link" onclick="downloadStatement('W002')">明細書出力</button>
-                  <button class="btn-link" onclick="approveRemuneration('W002')">承認</button>
-                </td>
-              </tr>
-              <tr>
-                <td>#W003</td>
-                <td>鈴木 一郎</td>
-                <td>15件</td>
-                <td>¥60,000</td>
-                <td><span class="status-badge approved">承認済み</span></td>
-                <td>
-                  <a href="#" class="btn-link">明細</a>
-                  <button class="btn-link" onclick="downloadStatement('W003')">明細書出力</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="notice-box">
+          <p><strong>ワーカー報酬・精算管理は準備中です。</strong></p>
+          <p>β版では報酬一覧、明細出力、承認、振込状態管理は実処理に接続していません。固定サンプル行と操作ボタンは誤認防止のため非表示にしました。</p>
+          <p>β運用中の精算確認は、決済/予約のCSV出力と外部管理台帳で行ってください。</p>
         </div>
       </section>
     </div>
@@ -276,51 +141,11 @@ if (typeof checkAuth === 'function') {
       <section class="admin-section">
         <div class="section-header">
           <h2 class="section-title">キャンセル料管理</h2>
-          <div class="filter-row">
-            <select class="form-select">
-              <option>すべて</option>
-              <option>回収済み</option>
-              <option>未回収</option>
-            </select>
-          </div>
         </div>
-        <div class="admin-table-container">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>予約ID</th>
-                <th>利用者</th>
-                <th>キャンセル日時</th>
-                <th>キャンセル料</th>
-                <th>理由</th>
-                <th>状態</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>#12340</td>
-                <td>山田 太郎</td>
-                <td>2024年3月10日 09:00</td>
-                <td>¥0</td>
-                <td>利用者都合（48時間前）</td>
-                <td><span class="status-badge active">回収済み</span></td>
-                <td><a href="#" class="btn-link">詳細</a></td>
-              </tr>
-              <tr>
-                <td>#12341</td>
-                <td>佐藤 花子</td>
-                <td>2024年3月8日 15:30</td>
-                <td>¥2,500</td>
-                <td>利用者都合（48-24時間前）</td>
-                <td><span class="status-badge pending">未回収</span></td>
-                <td>
-                  <a href="#" class="btn-link">詳細</a>
-                  <button class="btn-link" onclick="collectFee('12341')">回収処理</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="notice-box">
+          <p><strong>返金・キャンセル料管理は準備中です。</strong></p>
+          <p>β版ではキャンセル料の回収状態や返金操作をこの画面から実行できません。固定サンプル行と回収処理ボタンは誤認防止のため非表示にしました。</p>
+          <p>キャンセル・返金の確認は予約管理、Stripe Dashboard、運用台帳で行ってください。</p>
         </div>
       </section>
     </div>
@@ -355,28 +180,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById(tab + '-tab').classList.add('active');
   });
 });
-
-function viewError(id) {
-  alert('決済エラー詳細:\nエラーコード: ERR_CARD_DECLINED\n理由: カードが拒否されました');
-}
-
-function downloadStatement(id) {
-  alert('報酬明細書をダウンロードします（CSV/Excel）');
-}
-
-function approveRemuneration(id) {
-  if (confirm('この報酬を承認しますか？')) {
-    alert('報酬を承認しました');
-    location.reload();
-  }
-}
-
-function collectFee(id) {
-  if (confirm('キャンセル料を回収処理しますか？')) {
-    alert('回収処理を実行しました');
-    location.reload();
-  }
-}
 
 async function exportPayments(buttonElement) {
   try {
@@ -425,23 +228,8 @@ async function exportPayments(buttonElement) {
 
 async function exportRevenue(buttonElement) {
   try {
-    // 月選択から日付範囲を計算
-    const monthSelect = document.querySelector('#sales-tab select');
-    const selectedMonth = monthSelect?.value || '';
-    
+    // β版では画面上の期間フィルターを提供せず、バックエンドの既定範囲で出力する。
     const params = {};
-    if (selectedMonth) {
-      // "2024年3月"形式から日付範囲を計算
-      const match = selectedMonth.match(/(\d{4})年(\d{1,2})月/);
-      if (match) {
-        const year = parseInt(match[1]);
-        const month = parseInt(match[2]);
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 0, 23, 59, 59);
-        params.startDate = startDate.toISOString().split('T')[0];
-        params.endDate = endDate.toISOString().split('T')[0];
-      }
-    }
 
     // ローディング表示
     const button = buttonElement || document.querySelector('button[onclick*="exportRevenue"]');
