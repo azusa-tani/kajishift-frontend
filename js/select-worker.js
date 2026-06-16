@@ -572,7 +572,7 @@ function displayWorkerReviewsPreview(workerId, reviews) {
 async function checkFavoriteStatus(workerId) {
   try {
     const response = await api.checkFavorite(workerId);
-    const isFavorite = response.data?.isFavorite || false;
+    const isFavorite = getFavoriteStatus(response);
     updateFavoriteButton(workerId, isFavorite);
   } catch (error) {
     console.error('お気に入り状態確認エラー:', error);
@@ -603,7 +603,7 @@ async function toggleFavorite(workerId) {
   try {
     // 現在の状態を確認
     const checkResponse = await api.checkFavorite(workerId);
-    const isFavorite = checkResponse.data?.isFavorite || false;
+    const isFavorite = getFavoriteStatus(checkResponse);
     
     if (isFavorite) {
       // お気に入りから削除
@@ -620,6 +620,10 @@ async function toggleFavorite(workerId) {
     console.error('お気に入り操作エラー:', error);
     showError('お気に入りの操作に失敗しました: ' + (error.message || 'エラーが発生しました'));
   }
+}
+
+function getFavoriteStatus(response) {
+  return Boolean(response?.isFavorite ?? response?.data?.isFavorite);
 }
 
 // HTMLエスケープ
