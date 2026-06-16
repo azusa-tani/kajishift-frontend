@@ -40,14 +40,17 @@
     
     <section class="rewards-header">
       <h1>報酬管理</h1>
-      <p class="text-muted">あなたの報酬履歴と支払い情報を確認できます</p>
+      <p class="text-muted">β版では報酬・精算情報の詳細表示は準備中です。</p>
     </section>
 
     <!-- 今月のサマリー -->
     <section class="rewards-summary-section section-block card-standard">
       <h2 class="section-title" id="summaryTitle">今月の報酬</h2>
       <div class="rewards-summary-card reward-summary-card premium-summary-card" id="summaryCard">
-        <div class="loading-message">読み込み中...</div>
+        <div class="notice-box">
+          <p><strong>β版では報酬・精算情報の詳細表示は準備中です。</strong></p>
+          <p>報酬・精算は運営側で確認し、必要に応じて個別にご案内します。</p>
+        </div>
       </div>
     </section>
 
@@ -55,14 +58,17 @@
     <section class="payment-history section-block card-standard">
       <h2 class="section-title">支払い履歴</h2>
       <div class="payment-list" id="paymentList">
-        <div class="loading-message">読み込み中...</div>
+        <div class="notice-box">
+          <p><strong>支払い履歴・振込状態の表示は準備中です。</strong></p>
+          <p>β運用中の精算状況は、運営からの個別案内をご確認ください。</p>
+        </div>
       </div>
     </section>
 
     <!-- 今月の仕事詳細 -->
     <section class="rewards-detail section-block card-standard">
       <div class="section-header">
-        <h2 class="section-title">今月の仕事詳細</h2>
+        <h2 class="section-title">今月の完了した仕事</h2>
         <select class="filter-select" id="monthSelect" onchange="onMonthChange()">
           <!-- 動的に生成 -->
         </select>
@@ -78,25 +84,10 @@
     <section class="payment-info-section section-block card-standard">
       <h2 class="section-title">支払い情報</h2>
       <div class="payment-info-card card-standard">
-        <div class="info-row">
-          <span class="info-label">振込先銀行</span>
-          <span class="info-value">北海道銀行 中央支店</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">口座種別</span>
-          <span class="info-value">普通</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">口座番号</span>
-          <span class="info-value">****1234</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">口座名義</span>
-          <span class="info-value">タナカ ハナコ</span>
-        </div>
-        <div class="info-note">
-          <p class="text-muted">※ 報酬は毎月5日に前月分を振り込みます。</p>
-          <p class="text-muted">※ 口座情報の変更は<a href="profile.html">プロフィールページ</a>から行えます。</p>
+        <div class="notice-box">
+          <p><strong>この画面では振込先口座を表示していません。</strong></p>
+          <p>振込先口座は<a href="profile.html">プロフィールページ</a>から登録・確認してください。</p>
+          <p>固定サンプルの口座情報は、誤認防止のため削除しました。</p>
         </div>
       </div>
     </section>
@@ -121,7 +112,6 @@
 // グローバル変数
 let selectedMonth = new Date();
 let completedBookings = [];
-let payments = [];
 
 // ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
@@ -167,108 +157,32 @@ async function loadRewards() {
     // サマリータイトルを更新
     document.getElementById('summaryTitle').textContent = `${year}年${month + 1}月の報酬`;
 
-    const [bookingsResponse, paymentsResponse] = await Promise.all([
-      api.getBookings({
-        status: 'COMPLETED',
-        startDate: firstDay.toISOString().split('T')[0],
-        endDate: lastDay.toISOString().split('T')[0],
-        limit: 100
-      }),
-      api.getPayments({ limit: 100 })
-    ]);
+    const bookingsResponse = await api.getBookings({
+      status: 'COMPLETED',
+      startDate: firstDay.toISOString().split('T')[0],
+      endDate: lastDay.toISOString().split('T')[0],
+      limit: 100
+    });
 
     completedBookings = bookingsResponse.data?.bookings || [];
-    payments = paymentsResponse.data?.payments || [];
 
-    // サマリーは決済データベースで集計
-    displaySummary(payments, year, month);
+    displayRewardPreparationNotice(year, month);
     // 仕事詳細は完了予約データで表示
     displayRewardsTable(completedBookings);
-    // 決済履歴は全期間の最新を表示
-    displayPaymentHistory(payments);
   } catch (error) {
     console.error('報酬情報の読み込みエラー:', error);
-    showError('報酬情報の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
+    showError('完了した仕事の読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
   }
 }
 
-// サマリーを表示
-function displaySummary(allPayments, year, month) {
-  const monthlyPayments = allPayments.filter(payment => {
-    if (!payment?.createdAt) return false;
-    const paidAt = new Date(payment.createdAt);
-    return paidAt.getFullYear() === year && paidAt.getMonth() === month;
-  });
-  const paidPayments = monthlyPayments.filter(payment => payment.status === 'COMPLETED');
-  const unpaidPayments = monthlyPayments.filter(payment => payment.status !== 'COMPLETED');
-
-  const totalAmount = monthlyPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  const paidAmount = paidPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  const unpaidAmount = unpaidPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  
-  // 次回支払日（来月5日）
-  const nextPaymentDate = new Date(year, month + 1, 5);
-  const nextPaymentDateStr = nextPaymentDate.toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
+function displayRewardPreparationNotice(year, month) {
   document.getElementById('summaryCard').innerHTML = `
-      <div class="summary-grid">
-      <div class="summary-item">
-        <div class="summary-label">今月の合計</div>
-        <div class="summary-amount">¥${totalAmount.toLocaleString()}</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">未振込金額</div>
-        <div class="summary-amount">¥${unpaidAmount.toLocaleString()}</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">振込済み件数</div>
-        <div class="summary-count">${paidPayments.length}件</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-label">次回支払日</div>
-        <div class="summary-date">${nextPaymentDateStr}</div>
-      </div>
+    <div class="notice-box">
+      <p><strong>${year}年${month + 1}月の報酬・精算情報は準備中です。</strong></p>
+      <p>β版では報酬額、未振込額、振込済み件数、次回支払日の自動表示は行っていません。</p>
+      <p>完了した仕事の一覧は下部で確認できます。精算に関する詳細は運営から個別にご案内します。</p>
     </div>
   `;
-}
-
-// 決済履歴を表示
-function displayPaymentHistory(payments) {
-  const container = document.getElementById('paymentList');
-  
-  if (payments.length === 0) {
-    container.innerHTML = '<div class="empty-message">決済履歴がありません</div>';
-    return;
-  }
-  
-  container.innerHTML = payments.map(payment => {
-    const paymentDate = new Date(payment.createdAt);
-    const dateStr = paymentDate.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    
-    const status = payment.status === 'COMPLETED' ? '支払済み' : payment.status || '未確定';
-    const statusClass = payment.status === 'COMPLETED' ? 'active' : '';
-    
-    return `
-      <div class="payment-item card-standard">
-        <div class="payment-info">
-          <div class="payment-date">${dateStr}</div>
-          <div class="payment-amount">¥${payment.amount ? payment.amount.toLocaleString() : '-'}</div>
-        </div>
-        <div class="payment-status">
-          <span class="status-badge ${statusClass}">${status}</span>
-          ${payment.status === 'COMPLETED' ? `<div class="payment-date-detail text-muted">${dateStr} 振込完了</div>` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
 }
 
 // 報酬テーブルを表示
@@ -280,8 +194,6 @@ function displayRewardsTable(bookings) {
     return;
   }
   
-  const totalAmount = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
-  
   let html = `
     <table>
       <thead>
@@ -289,7 +201,6 @@ function displayRewardsTable(bookings) {
           <th>日付</th>
           <th>仕事内容</th>
           <th>時間</th>
-          <th>報酬</th>
           <th>状態</th>
         </tr>
       </thead>
@@ -311,8 +222,7 @@ function displayRewardsTable(bookings) {
         <td>${dateStr}</td>
         <td>${booking.serviceType || '-'}</td>
         <td>${booking.duration || 0}時間</td>
-        <td>¥${booking.totalAmount ? booking.totalAmount.toLocaleString() : '0'}</td>
-        <td><span class="status-badge active">支払予定</span></td>
+        <td><span class="status-badge active">完了</span></td>
       </tr>
     `;
   });
@@ -321,9 +231,7 @@ function displayRewardsTable(bookings) {
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="3" class="total-label">合計</td>
-          <td class="total-amount">¥${totalAmount.toLocaleString()}</td>
-          <td></td>
+          <td colspan="4" class="total-label">完了した仕事: ${bookings.length}件</td>
         </tr>
       </tfoot>
     </table>
