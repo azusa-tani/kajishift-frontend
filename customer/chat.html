@@ -370,7 +370,8 @@ function displayMessages(messages) {
       minute: '2-digit'
     });
 
-    const imageUrl = message.imageUrl || message.image;
+    const imageUrl = getMessageImageUrl(message);
+    const messageText = getMessageText(message);
     
     if (isSent) {
       html += `
@@ -381,8 +382,8 @@ function displayMessages(messages) {
                 <img src="${imageUrl}" class="chat-image-clickable" alt="送信された画像" onclick="openImageModal('${imageUrl}')" />
               </div>
             ` : ''}
-            ${message.content && message.content !== '[画像]' ? `
-              <div class="message-text">${escapeHtml(message.content)}</div>
+            ${messageText ? `
+              <div class="message-text">${escapeHtml(messageText)}</div>
             ` : ''}
             <div class="message-time">${timeStr}</div>
           </div>
@@ -399,8 +400,8 @@ function displayMessages(messages) {
                 <img src="${imageUrl}" class="chat-image-clickable" alt="受信した画像" onclick="openImageModal('${imageUrl}')" />
               </div>
             ` : ''}
-            ${message.content && message.content !== '[画像]' ? `
-              <div class="message-text">${escapeHtml(message.content)}</div>
+            ${messageText ? `
+              <div class="message-text">${escapeHtml(messageText)}</div>
             ` : ''}
             <div class="message-time">${timeStr}</div>
           </div>
@@ -500,15 +501,17 @@ async function sendImageMessage(file) {
     return;
   }
 
+  const tempId = 'temp-image-' + Date.now();
   try {
     // プレビューを表示（楽観的更新）
     const reader = new FileReader();
     reader.onload = function(event) {
       const imageUrl = event.target.result;
-      const tempId = 'temp-image-' + Date.now();
+      tempMessageIds.add(tempId);
       const tempMessage = {
         id: tempId,
-        content: '[画像を送信中...]',
+        content: imageUrl,
+        fileType: 'image',
         imageUrl: imageUrl,
         senderId: currentUserId,
         createdAt: new Date().toISOString()
@@ -518,7 +521,7 @@ async function sendImageMessage(file) {
     reader.readAsDataURL(file);
 
     // 画像をアップロード
-    const uploadResponse = await api.uploadFile(file, 'MESSAGE');
+    const uploadResponse = await api.uploadFile(file, 'GENERAL');
     const imageUrl = uploadResponse.data?.url || uploadResponse.data?.fileUrl;
     
     if (!imageUrl) {
@@ -526,19 +529,20 @@ async function sendImageMessage(file) {
     }
 
     // メッセージとして送信
-    await api.sendMessage({
+    const response = await api.sendMessage({
       bookingId: bookingId,
-      content: '[画像]',
-      imageUrl: imageUrl
+      content: imageUrl,
+      fileType: 'image'
     });
 
-    // 一時メッセージを削除（実際のメッセージがWebSocketで来るため）
-    setTimeout(() => {
-      const tempElement = document.getElementById('temp-image-' + Date.now());
+    if (response?.data?.id) {
+      const tempElement = tempId ? document.getElementById(tempId) : null;
       if (tempElement) {
-        tempElement.remove();
+        tempElement.id = response.data.id;
       }
-    }, 1000);
+      loadedMessageIds.add(response.data.id);
+      if (tempId) tempMessageIds.delete(tempId);
+    }
   } catch (error) {
     console.error('画像送信エラー:', error);
     showError('画像の送信に失敗しました: ' + (error.message || 'エラーが発生しました'));
@@ -592,7 +596,8 @@ function addMessageToUI(text, type, message, options = {}) {
     minute: '2-digit'
   });
   
-  const imageUrl = message.imageUrl || message.image;
+  const imageUrl = getMessageImageUrl(message);
+  const messageText = getMessageText({ ...message, content: text || message.content });
   
   if (type === 'sent') {
     messageDiv.innerHTML = `
@@ -602,8 +607,8 @@ function addMessageToUI(text, type, message, options = {}) {
             <img src="${imageUrl}" class="chat-image-clickable" alt="送信された画像" onclick="openImageModal('${imageUrl}')" />
           </div>
         ` : ''}
-        ${text && text !== '[画像]' && text !== '[画像を送信中...]' ? `
-          <div class="message-text">${escapeHtml(text)}</div>
+        ${messageText ? `
+          <div class="message-text">${escapeHtml(messageText)}</div>
         ` : ''}
         <div class="message-time">${timeStr}</div>
       </div>
@@ -618,8 +623,8 @@ function addMessageToUI(text, type, message, options = {}) {
             <img src="${imageUrl}" class="chat-image-clickable" alt="受信した画像" onclick="openImageModal('${imageUrl}')" />
           </div>
         ` : ''}
-        ${text && text !== '[画像]' ? `
-          <div class="message-text">${escapeHtml(text)}</div>
+        ${messageText ? `
+          <div class="message-text">${escapeHtml(messageText)}</div>
         ` : ''}
         <div class="message-time">${timeStr}</div>
       </div>
@@ -662,6 +667,20 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function getMessageImageUrl(message) {
+  if (!message) return '';
+  if (message.fileType === 'image') {
+    return message.imageUrl || message.content || '';
+  }
+  return message.imageUrl || message.image || '';
+}
+
+function getMessageText(message) {
+  if (!message || message.fileType === 'image') return '';
+  const content = message.content || '';
+  return content === '[画像]' || content === '[画像を送信中...]' ? '' : content;
 }
 
 // スクロールを最下部に

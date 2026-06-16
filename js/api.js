@@ -892,14 +892,14 @@ class ApiClient {
   /**
    * ファイルをアップロード
    */
-  async uploadFile(file, category = 'GENERAL') {
+  async uploadFile(file, fileType = 'GENERAL') {
     if (window.KajishiftOps && typeof window.KajishiftOps.ensureOperationAllowed === 'function') {
       window.KajishiftOps.ensureOperationAllowed('uploadFile');
     }
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('category', category);
+    formData.append('fileType', fileType);
 
     const url = `${this.baseURL}/upload`;
     const headers = {};
