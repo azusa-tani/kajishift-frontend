@@ -124,63 +124,12 @@ if (typeof checkAuth === 'function') {
     <div class="tab-content" id="system-settings-tab">
       <section class="admin-section">
         <h2 class="section-title">システム設定</h2>
-        
-        <!-- 通知メールテンプレート -->
         <div class="settings-card">
-          <h3>通知メールテンプレート</h3>
-          <div class="form-group">
-            <label>予約確定通知</label>
-            <div class="template-editor">
-              <input type="text" class="form-input" placeholder="件名" value="【KAJISHIFT】予約が確定しました" />
-              <textarea class="form-textarea" rows="8" placeholder="本文">こんにちは、{{user_name}}さん。
-
-ご予約ありがとうございます。
-以下の予約が確定いたしました。
-
-【予約内容】
-日時: {{booking_date}} {{booking_time}}
-サービス: {{service_name}}
-ワーカー: {{worker_name}}
-
-よろしくお願いいたします。
-KAJISHIFT</textarea>
-            </div>
+          <div class="notice-box">
+            <p><strong>β版ではメールテンプレート・プッシュ通知・連絡先設定の編集は準備中です。</strong></p>
+            <p>この画面から変更しても実運用には反映されないため、固定フォームと保存ボタンは誤認防止のため非表示にしました。</p>
+            <p>β運用中のメール文面・通知文・問い合わせ連絡先の変更は、運用担当者がコード・環境設定を確認して対応してください。</p>
           </div>
-          <div class="form-group">
-            <label>作業前日リマインダー</label>
-            <div class="template-editor">
-              <input type="text" class="form-input" placeholder="件名" value="【KAJISHIFT】明日の予約について" />
-              <textarea class="form-textarea" rows="6" placeholder="本文">こんにちは、{{user_name}}さん。
-
-明日の予約についてお知らせします。
-...</textarea>
-            </div>
-          </div>
-          <button class="btn btn-primary">保存</button>
-        </div>
-
-        <!-- プッシュ通知設定 -->
-        <div class="settings-card">
-          <h3>プッシュ通知設定</h3>
-          <div class="form-group">
-            <label>通知文テンプレート</label>
-            <textarea class="form-textarea" rows="4" placeholder="通知文を入力">新しい予約依頼が届きました</textarea>
-          </div>
-          <button class="btn btn-primary">保存</button>
-        </div>
-
-        <!-- 問い合わせ連絡先 -->
-        <div class="settings-card">
-          <h3>問い合わせ連絡先</h3>
-          <div class="form-group">
-            <label>電話番号</label>
-            <input type="tel" class="form-input" value="011-123-4567" />
-          </div>
-          <div class="form-group">
-            <label>メールアドレス</label>
-            <input type="email" class="form-input" value="support@kajishift.jp" />
-          </div>
-          <button class="btn btn-primary">保存</button>
         </div>
       </section>
     </div>
@@ -190,62 +139,10 @@ KAJISHIFT</textarea>
       <section class="admin-section">
         <div class="section-header">
           <h2 class="section-title">操作ログ</h2>
-          <div class="filter-row">
-            <input type="date" class="form-input" />
-            <select class="form-select">
-              <option value="">すべて</option>
-              <option value="status-change">ステータス変更</option>
-              <option value="cancel">キャンセル</option>
-              <option value="approval">承認変更</option>
-            </select>
-            <select class="form-select">
-              <option value="">すべての担当者</option>
-              <option value="1">管理者 太郎</option>
-              <option value="2">オペレーター 花子</option>
-            </select>
-            <button class="btn btn-outline btn-small">CSVエクスポート</button>
-          </div>
         </div>
-        <div class="admin-table-container">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>日時</th>
-                <th>担当者</th>
-                <th>操作種別</th>
-                <th>対象</th>
-                <th>内容</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>2024年3月15日 10:30</td>
-                <td>管理者 太郎</td>
-                <td>ステータス変更</td>
-                <td>予約 #12345</td>
-                <td>状態を「確定」に変更</td>
-              </tr>
-              <tr>
-                <td>2024年3月15日 09:15</td>
-                <td>オペレーター 花子</td>
-                <td>承認変更</td>
-                <td>ワーカー #W001</td>
-                <td>ワーカーを「承認済み」に変更</td>
-              </tr>
-              <tr>
-                <td>2024年3月14日 16:45</td>
-                <td>管理者 太郎</td>
-                <td>キャンセル</td>
-                <td>予約 #12340</td>
-                <td>予約をキャンセル（運営都合）</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="pagination">
-          <button class="btn btn-outline" disabled>前へ</button>
-          <span class="page-info">1 / 50</span>
-          <button class="btn btn-outline">次へ</button>
+        <div class="notice-box">
+          <p><strong>操作ログ検索・CSV出力は準備中です。</strong></p>
+          <p>固定サンプルの操作ログは、実データとの誤認防止のため削除しました。β運用中の操作確認は、必要に応じてサーバーログや管理者間の運用記録を確認してください。</p>
         </div>
       </section>
     </div>
