@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="../css/style.css" />
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/config.js"></script>
-  <script src="https://js.stripe.com/v3/"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
   <script src="../js/socket.js" defer></script>
@@ -46,10 +45,14 @@
     <section class="payment-method-section">
       <div class="section-header">
         <h2 class="section-title">支払い方法</h2>
-        <button class="btn btn-primary btn-small" onclick="openCardModal()">カードを追加</button>
+        <button class="btn btn-outline btn-small" type="button" disabled aria-disabled="true">カード登録は準備中</button>
       </div>
       <div class="payment-method-card" id="paymentMethodCard">
-        <div class="loading-message">読み込み中...</div>
+        <div class="notice-box">
+          <p><strong>β版ではカード登録は現在利用できません。</strong></p>
+          <p>本番決済・カード登録はセキュリティ対応完了後に開始予定です。</p>
+          <p>現在は問い合わせ・事前登録・β利用希望受付のみ受け付けています。</p>
+        </div>
       </div>
     </section>
 
@@ -98,89 +101,6 @@
   </div>
 </main>
 
-<!-- カード追加モーダル -->
-<div class="modal" id="cardModal">
-  <div class="modal-content">
-    <h2 id="cardModalTitle">クレジットカードを追加</h2>
-    <form class="card-form" id="cardForm" onsubmit="handleCardSubmit(event)">
-      <div class="form-group">
-        <label>カード名義人 <span class="required">必須</span></label>
-        <input type="text" id="cardholderName" class="form-input" placeholder="YAMADA TARO" autocomplete="cc-name" required />
-      </div>
-      <div class="form-group">
-        <label>カード情報 <span class="required">必須</span></label>
-        <div id="stripeCardElement" class="stripe-card-element"></div>
-        <p id="stripeCardErrors" class="form-error" role="alert"></p>
-        <p class="form-hint">カード番号はKAJISHIFTのサーバーへ送信・保存されません。β版ではStripeテストカードのみ使用してください。</p>
-      </div>
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="isDefault" />
-          <span>デフォルトカードに設定する</span>
-        </label>
-      </div>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-outline" onclick="closeCardModal()">キャンセル</button>
-        <button type="submit" class="btn btn-primary" id="cardSubmitBtn">追加する</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- カード編集モーダル -->
-<div class="modal" id="editCardModal">
-  <div class="modal-content">
-    <h2>クレジットカードを編集</h2>
-    <form class="card-form" id="editCardForm" onsubmit="handleCardUpdate(event)">
-      <input type="hidden" id="editCardId" />
-      <div class="form-group">
-        <label>カード番号</label>
-        <input type="text" class="form-input" value="**** **** **** " id="editCardLast4" disabled />
-        <p class="form-hint">セキュリティのため、カード番号の一部のみ表示されます</p>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>有効期限 <span class="required">必須</span></label>
-          <div class="form-row">
-            <select id="editExpiryMonth" class="form-select" required>
-              <option value="">月</option>
-              <option value="01">01</option>
-              <option value="02">02</option>
-              <option value="03">03</option>
-              <option value="04">04</option>
-              <option value="05">05</option>
-              <option value="06">06</option>
-              <option value="07">07</option>
-              <option value="08">08</option>
-              <option value="09">09</option>
-              <option value="10">10</option>
-              <option value="11">11</option>
-              <option value="12">12</option>
-            </select>
-            <select id="editExpiryYear" class="form-select" required>
-              <option value="">年</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>カード名義人 <span class="required">必須</span></label>
-          <input type="text" id="editCardholderName" class="form-input" required />
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="editIsDefault" />
-          <span>デフォルトカードに設定する</span>
-        </label>
-      </div>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-outline" onclick="closeModal('editCardModal')">キャンセル</button>
-        <button type="submit" class="btn btn-primary" id="editCardSubmitBtn">更新する</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <footer>
   <div class="container">
     <div class="footer-links">
@@ -198,8 +118,6 @@
 // グローバル変数
 let allPayments = [];
 let selectedMonth = null;
-let stripe = null;
-let cardElement = null;
 
   // ページ読み込み時の処理
 document.addEventListener('DOMContentLoaded', async function() {
@@ -211,15 +129,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 月選択を初期化
   initMonthFilter();
   
-  // 有効期限の年を生成
-  initExpiryYear();
-  
-  // Stripe Elementsを初期化
-  initStripeElements();
-  
   // データを読み込み
   await loadPayments();
-  await loadCards();
+  renderCardRegistrationUnavailable();
   await updateHeaderUnreadCount();
 });
 
@@ -407,337 +319,17 @@ function displayMonthlySummary(payments) {
   `;
 }
 
-// 有効期限の年を生成
-function initExpiryYear() {
-  const currentYear = new Date().getFullYear();
-  const yearSelects = document.querySelectorAll('#expiryYear, #editExpiryYear');
-  
-  yearSelects.forEach(select => {
-    // 既存のオプションをクリア（「年」オプションを除く）
-    while (select.children.length > 1) {
-      select.removeChild(select.lastChild);
-    }
-    
-    // 現在年から10年後まで生成
-    for (let i = 0; i <= 10; i++) {
-      const year = currentYear + i;
-      const option = document.createElement('option');
-      option.value = year;
-      option.textContent = year;
-      select.appendChild(option);
-    }
-  });
-}
-
-function initStripeElements() {
-  const publishableKey = window.STRIPE_PUBLISHABLE_KEY;
-  const errorEl = document.getElementById('stripeCardErrors');
-
-  if (!window.Stripe || !publishableKey || publishableKey === 'pk_test_replace_me') {
-    if (errorEl) {
-      errorEl.textContent = 'Stripe公開キーが未設定です。管理者に連絡してください。';
-    }
-    return;
-  }
-
-  stripe = window.Stripe(publishableKey);
-  const elements = stripe.elements();
-  cardElement = elements.create('card', {
-    hidePostalCode: true,
-    style: {
-      base: {
-        fontSize: '16px',
-        color: '#2C3E50',
-        '::placeholder': { color: '#8A95A5' }
-      },
-      invalid: { color: '#dc3545' }
-    }
-  });
-  cardElement.mount('#stripeCardElement');
-  cardElement.on('change', (event) => {
-    if (errorEl) {
-      errorEl.textContent = event.error ? event.error.message : '';
-    }
-  });
-}
-
-// カード一覧を読み込む
-async function loadCards() {
-  try {
-    const response = await api.getCards();
-    const cards = response.data || [];
-    displayCards(cards);
-  } catch (error) {
-    console.error('カード読み込みエラー:', error);
-    const container = document.getElementById('paymentMethodCard');
-    container.innerHTML = '<div class="error-message">カードの読み込みに失敗しました</div>';
-  }
-}
-
-// カード一覧を表示
-function displayCards(cards) {
+function renderCardRegistrationUnavailable() {
   const container = document.getElementById('paymentMethodCard');
-  
-  if (cards.length === 0) {
-    container.innerHTML = `
-      <div class="info-note">
-        <p>登録されているカードがありません</p>
-        <p>カードを追加すると、決済時に使用できます</p>
-      </div>
-    `;
-    return;
-  }
+  if (!container) return;
 
-  const brandMap = {
-    'visa': 'Visa',
-    'mastercard': 'Mastercard',
-    'amex': 'American Express',
-    'jcb': 'JCB',
-    'discover': 'Discover',
-    'unknown': 'その他'
-  };
-
-  container.innerHTML = `<div class="payment-cards">` + cards.map(card => {
-    const brand = brandMap[card.brand] || card.brand;
-    const brandKey = String(card.brand || 'unknown').toLowerCase();
-    const expiryDate = `${String(card.expiryMonth).padStart(2, '0')}/${String(card.expiryYear).slice(-2)}`;
-    const defaultBadge = card.isDefault ? '<span class="status-badge active">デフォルト</span>' : '';
-
-    return `
-      <div class="credit-card card-brand-${brandKey}" data-card-id="${card.id}">
-        <div class="credit-card__brand-row">
-          <span class="credit-card__brand" data-brand="${brandKey}">${brand}</span>
-          ${defaultBadge}
-        </div>
-        <div class="credit-card__number">•••• •••• •••• ${card.last4}</div>
-        <div class="credit-card__meta">
-          <span>EXP ${expiryDate}</span>
-          <span>${escapeHtml(card.cardholderName)}</span>
-        </div>
-        <div class="credit-card__actions">
-          ${!card.isDefault ? `<button class="btn-link" onclick="setDefaultCard('${card.id}')">デフォルトに設定</button>` : ''}
-          <button class="btn-link" onclick="editCard('${card.id}')">編集</button>
-          <button class="btn btn-danger btn-small" onclick="deleteCard('${card.id}')">削除</button>
-        </div>
-      </div>
-    `;
-  }).join('') + `</div>`;
-}
-
-// モーダル関連
-let currentEditCardId = null;
-
-function openCardModal() {
-  if (window.KajishiftOps && (!window.KajishiftOps.canCreateSetupIntents() || !window.KajishiftOps.canWriteCards())) {
-    showError(window.KajishiftOps.getMessage() || '現在、カード登録を一時停止しています。');
-    window.KajishiftOps.renderPausedPanel();
-    return;
-  }
-  document.getElementById('cardForm').reset();
-  document.getElementById('cardModalTitle').textContent = 'クレジットカードを追加';
-  document.getElementById('cardSubmitBtn').textContent = '追加する';
-  document.getElementById('cardModal').classList.add('is-open');
-}
-
-function closeCardModal() {
-  document.getElementById('cardModal').classList.remove('is-open');
-  document.getElementById('cardForm').reset();
-  currentEditCardId = null;
-}
-
-function closeModal(modalId) {
-  document.getElementById(modalId).classList.remove('is-open');
-  if (modalId === 'editCardModal') {
-    document.getElementById('editCardForm').reset();
-    currentEditCardId = null;
-  }
-}
-
-// カード追加・更新
-async function handleCardSubmit(event) {
-  event.preventDefault();
-  if (window.KajishiftOps && (!window.KajishiftOps.canCreateSetupIntents() || !window.KajishiftOps.canWriteCards())) {
-    showError(window.KajishiftOps.getMessage() || '現在、カード登録を一時停止しています。');
-    return;
-  }
-  const cardholderName = document.getElementById('cardholderName').value;
-  const isDefault = document.getElementById('isDefault').checked;
-
-  if (!stripe || !cardElement) {
-    showError('カード入力の初期化に失敗しました。画面を再読み込みしてください。');
-    return;
-  }
-
-  try {
-    const submitBtn = document.getElementById('cardSubmitBtn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = '追加中...';
-
-    const setupResponse = await api.createCardSetupIntent();
-    const clientSecret = setupResponse.data?.clientSecret || setupResponse.clientSecret;
-    if (!clientSecret) {
-      throw new Error('カード登録の準備に失敗しました');
-    }
-
-    const result = await stripe.confirmCardSetup(clientSecret, {
-      payment_method: {
-        card: cardElement,
-        billing_details: {
-          name: cardholderName
-        }
-      }
-    });
-
-    if (result.error) {
-      throw new Error(result.error.message || 'カード認証に失敗しました');
-    }
-
-    const paymentMethodId = result.setupIntent?.payment_method;
-    if (!paymentMethodId) {
-      throw new Error('カード情報の取得に失敗しました');
-    }
-
-    await api.addStripeCard(paymentMethodId, isDefault);
-
-    showSuccess('カードを追加しました');
-    closeCardModal();
-    cardElement.clear();
-    await loadCards();
-  } catch (error) {
-    console.error('カード追加エラー:', error);
-    showError('カードの追加に失敗しました: ' + (error.message || 'エラーが発生しました'));
-  } finally {
-    const submitBtn = document.getElementById('cardSubmitBtn');
-    submitBtn.disabled = false;
-    submitBtn.textContent = '追加する';
-    if (window.KajishiftOps) window.KajishiftOps.applyPageGuards();
-  }
-}
-
-// カード編集
-async function editCard(cardId) {
-  try {
-    const response = await api.getCards();
-    const cards = response.data || [];
-    const card = cards.find(c => c.id === cardId);
-
-    if (!card) {
-      showError('カードが見つかりません');
-      return;
-    }
-
-    currentEditCardId = cardId;
-    document.getElementById('editCardId').value = cardId;
-    document.getElementById('editCardLast4').value = `**** **** **** ${card.last4}`;
-    document.getElementById('editExpiryMonth').value = String(card.expiryMonth).padStart(2, '0');
-    document.getElementById('editExpiryYear').value = card.expiryYear;
-    document.getElementById('editCardholderName').value = card.cardholderName;
-    document.getElementById('editIsDefault').checked = card.isDefault;
-
-    document.getElementById('editCardModal').classList.add('is-open');
-  } catch (error) {
-    console.error('カード編集エラー:', error);
-    showError('カード情報の取得に失敗しました');
-  }
-}
-
-// カード更新
-async function handleCardUpdate(event) {
-  event.preventDefault();
-  if (window.KajishiftOps && !window.KajishiftOps.canWriteCards()) {
-    showError(window.KajishiftOps.getMessage() || '現在、カード管理を一時停止しています。');
-    return;
-  }
-
-  const cardId = document.getElementById('editCardId').value;
-  const expiryMonth = document.getElementById('editExpiryMonth').value;
-  const expiryYear = document.getElementById('editExpiryYear').value;
-  const cardholderName = document.getElementById('editCardholderName').value;
-  const isDefault = document.getElementById('editIsDefault').checked;
-
-  try {
-    const submitBtn = document.getElementById('editCardSubmitBtn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = '更新中...';
-
-    await api.updateCard(cardId, {
-      expiryMonth: parseInt(expiryMonth),
-      expiryYear: parseInt(expiryYear),
-      cardholderName,
-      isDefault
-    });
-
-    showSuccess('カードを更新しました');
-    closeModal('editCardModal');
-    await loadCards();
-  } catch (error) {
-    console.error('カード更新エラー:', error);
-    showError('カードの更新に失敗しました: ' + (error.message || 'エラーが発生しました'));
-  } finally {
-    const submitBtn = document.getElementById('editCardSubmitBtn');
-    submitBtn.disabled = false;
-    submitBtn.textContent = '更新する';
-    if (window.KajishiftOps) window.KajishiftOps.applyPageGuards();
-  }
-}
-
-// カード削除
-async function deleteCard(cardId) {
-  if (window.KajishiftOps && !window.KajishiftOps.canWriteCards()) {
-    showError(window.KajishiftOps.getMessage() || '現在、カード管理を一時停止しています。');
-    return;
-  }
-  if (!confirm('このカードを削除しますか？')) {
-    return;
-  }
-
-  try {
-    await api.deleteCard(cardId);
-    showSuccess('カードを削除しました');
-    await loadCards();
-  } catch (error) {
-    console.error('カード削除エラー:', error);
-    showError('カードの削除に失敗しました: ' + (error.message || 'エラーが発生しました'));
-  }
-}
-
-// デフォルトカードに設定
-async function setDefaultCard(cardId) {
-  if (window.KajishiftOps && !window.KajishiftOps.canWriteCards()) {
-    showError(window.KajishiftOps.getMessage() || '現在、カード管理を一時停止しています。');
-    return;
-  }
-  try {
-    await api.updateCard(cardId, { isDefault: true });
-    showSuccess('デフォルトカードに設定しました');
-    await loadCards();
-  } catch (error) {
-    console.error('デフォルトカード設定エラー:', error);
-    showError('デフォルトカードの設定に失敗しました: ' + (error.message || 'エラーが発生しました'));
-  }
-}
-
-// カード番号の自動フォーマット
-function setupCardNumberFormat() {
-  const cardNumberInput = document.getElementById('cardNumber');
-  if (cardNumberInput) {
-    cardNumberInput.addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\s/g, '');
-      // 数字のみを許可
-      value = value.replace(/\D/g, '');
-      // 4桁ごとにスペースを挿入
-      value = value.replace(/(.{4})/g, '$1 ').trim();
-      e.target.value = value;
-    });
-  }
-}
-
-// HTMLエスケープ
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  container.innerHTML = `
+    <div class="notice-box">
+      <p><strong>β版ではカード登録は現在利用できません。</strong></p>
+      <p>本番決済・カード登録はセキュリティ対応完了後に開始予定です。</p>
+      <p>現在は問い合わせ・事前登録・β利用希望受付のみ受け付けています。</p>
+    </div>
+  `;
 }
 
 // 領収書をダウンロード
@@ -769,12 +361,6 @@ async function downloadReceipt(paymentId) {
       button.disabled = false;
       button.textContent = '領収書';
     }
-  }
-}
-
-window.onclick = function(event) {
-  if (event.target.classList.contains('modal')) {
-    event.target.classList.remove('is-open');
   }
 }
 </script>
