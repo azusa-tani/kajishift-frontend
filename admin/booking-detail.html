@@ -344,7 +344,7 @@ function displayBookingDetail(booking) {
     document.getElementById('customerName').textContent = booking.customer.name || '-';
     document.getElementById('customerEmail').textContent = booking.customer.email || '-';
     document.getElementById('customerPhone').textContent = booking.customer.phone || '-';
-    document.getElementById('customerDetailLink').href = `user-detail?id=${booking.customer.id}`;
+    document.getElementById('customerDetailLink').href = `user-detail.html?id=${booking.customer.id}`;
   } else {
     document.getElementById('customerName').textContent = '-';
     document.getElementById('customerEmail').textContent = '-';
@@ -357,7 +357,7 @@ function displayBookingDetail(booking) {
     document.getElementById('workerName').textContent = booking.worker.name || '-';
     document.getElementById('workerEmail').textContent = booking.worker.email || '-';
     document.getElementById('workerRating').textContent = booking.worker.rating ? `⭐ ${booking.worker.rating.toFixed(1)}` : '-';
-    document.getElementById('workerDetailLink').href = `worker-detail?id=${booking.worker.id}`;
+    document.getElementById('workerDetailLink').href = `worker-detail.html?id=${booking.worker.id}`;
   } else {
     document.getElementById('workerSection').classList.add('is-hidden');
   }

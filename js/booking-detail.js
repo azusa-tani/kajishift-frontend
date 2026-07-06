@@ -342,8 +342,8 @@ function displayBookingDetail(booking) {
   } else {
     // 今後の予約
     actionsHtml = `
-      ${booking.worker ? `<button class="btn btn--outline btn-action" onclick="window.location.href='chat?booking=${booking.id}'">チャット</button>` : ''}
-      <button class="btn btn--outline btn-action" onclick="window.location.href='booking?id=${encodeURIComponent(booking.id)}'">予約変更</button>
+      ${booking.worker ? `<button class="btn btn--outline btn-action" onclick="window.location.href='chat.html?booking=${booking.id}'">チャット</button>` : ''}
+      <button class="btn btn--outline btn-action" onclick="window.location.href='booking.html?id=${encodeURIComponent(booking.id)}'">予約変更</button>
       <button class="btn btn--outline btn-action danger" onclick="openCancelModal()">キャンセル</button>
     `;
   }
@@ -416,7 +416,7 @@ function displayBookingDetail(booking) {
   } else if (booking.worker && booking.status !== 'COMPLETED' && booking.status !== 'CANCELLED') {
     fixedBar.classList.remove('is-hidden');
     fixedBar.innerHTML = `
-      <button class="btn btn-primary btn-action" onclick="window.location.href='chat?booking=${booking.id}'">チャットで連絡</button>
+      <button class="btn btn-primary btn-action" onclick="window.location.href='chat.html?booking=${booking.id}'">チャットで連絡</button>
     `;
   } else {
     fixedBar.classList.add('is-hidden');
@@ -471,7 +471,7 @@ function displayWorkerInfo(worker) {
   profileBtnEl.textContent = 'プロフィールを見る';
   if (status === 'PENDING' && currentBooking && currentBooking.id) {
     profileBtnEl.addEventListener('click', () => {
-      window.location.href = `select-worker?id=${encodeURIComponent(currentBooking.id)}`;
+      window.location.href = `select-worker.html?id=${encodeURIComponent(currentBooking.id)}`;
     });
   } else {
     profileBtnEl.addEventListener('click', () => openWorkerProfileModal(worker.id));
@@ -484,7 +484,7 @@ function displayWorkerInfo(worker) {
     chatBtn.className = 'btn btn-primary btn-action';
     chatBtn.textContent = 'チャットで連絡';
     chatBtn.addEventListener('click', () => {
-      window.location.href = `chat?booking=${currentBooking.id}`;
+      window.location.href = `chat.html?booking=${currentBooking.id}`;
     });
     workerActions.appendChild(chatBtn);
   }
