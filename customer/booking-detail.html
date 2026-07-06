@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="../css/style.css" />
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="../js/config.js"></script>
-  <script src="https://js.stripe.com/v3/"></script>
   <script src="../js/api.js" defer></script>
   <script src="../js/auth.js" defer></script>
   <script src="../js/socket.js" defer></script>
@@ -20,7 +19,7 @@
     <div class="logo">KAJISHIFT</div>
     <nav class="nav">
       <a href="dashboard.html">マイページ</a>
-      <a href="booking.html">予約する</a>
+      <a href="booking.html">β利用希望</a>
       <a href="bookings.html">予約一覧</a>
       <a href="payment.html">決済・履歴</a>
     </nav>
@@ -171,19 +170,16 @@
   </div>
 </div>
 
-<!-- Stripe決済モーダル -->
+<!-- 決済準備中モーダル -->
 <div class="modal" id="stripePaymentModal">
   <div class="modal-content card-standard">
-    <h2>カードで決済</h2>
-    <p class="form-hint">β版ではStripeテストカードのみ使用します。実際の課金は発生しません。</p>
-    <div class="form-group">
-      <label>カード情報 <span class="required">*</span></label>
-      <div id="stripePaymentCardElement" class="stripe-card-element"></div>
-      <p id="stripePaymentErrors" class="form-error" role="alert"></p>
+    <h2>決済は準備中です</h2>
+    <div class="notice-box">
+      <p><strong>現在は本番決済・正式予約は開始していません。</strong></p>
+      <p>本番カード登録・本番決済は、セキュリティ対応完了後に別途ご案内します。</p>
     </div>
     <div class="modal-actions">
-      <button type="button" class="btn btn--outline btn-action" onclick="closeModal('stripePaymentModal')">キャンセル</button>
-      <button type="button" class="btn btn-primary btn-action js-payment-confirm-btn" onclick="submitStripePayment()">決済する</button>
+      <button type="button" class="btn btn--outline btn-action" onclick="closeModal('stripePaymentModal')">閉じる</button>
     </div>
   </div>
 </div>

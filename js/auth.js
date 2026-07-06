@@ -259,7 +259,7 @@ function injectBetaBanner() {
   const banner = document.createElement('div');
   banner.className = 'beta-banner';
   banner.setAttribute('role', 'status');
-  banner.textContent = 'β版公開中：決済はStripeテストモードです。実際の課金は発生しません。';
+  banner.textContent = 'KAJISHIFT β版受付中：現在は本番決済・正式予約は未開始です。事前登録・β利用希望・お問い合わせのみ受け付けています。';
   document.body.insertBefore(banner, document.body.firstChild);
 }
 

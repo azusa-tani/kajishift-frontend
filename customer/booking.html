@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>予約する｜KAJISHIFT</title>
+  <title>β利用希望｜KAJISHIFT</title>
   <link rel="preload" href="../css/style.css" as="style" />
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="preload" href="../js/validation.js" as="script" />
@@ -21,7 +21,7 @@
     <div class="logo">KAJISHIFT</div>
     <nav class="nav">
       <a href="dashboard.html">マイページ</a>
-      <a href="booking.html" class="active">予約する</a>
+      <a href="booking.html" class="active">β利用希望</a>
       <a href="bookings.html">予約一覧</a>
       <a href="payment.html">決済・履歴</a>
     </nav>
@@ -39,8 +39,16 @@
   <div class="container">
     
     <section class="booking-header">
-      <h1>家事代行を予約</h1>
-      <p>希望の日時と内容を選択してください</p>
+      <h1>β利用希望の受付について</h1>
+      <p>現在は正式な有料予約受付を開始していません</p>
+      <div class="notice-box">
+        <p><strong>本番決済・正式予約は未開始です。</strong></p>
+        <p>β利用を希望される方は、事前登録またはお問い合わせからご連絡ください。この画面から予約作成はできません。</p>
+        <div class="btn-group mt-md">
+          <a href="register.html" class="btn btn-primary btn-action">β版の事前登録をする</a>
+          <a href="support.html" class="btn btn--outline btn-action">お問い合わせする</a>
+        </div>
+      </div>
     </section>
 
     <div class="error-message" id="formError"></div>
@@ -82,7 +90,7 @@
               aria-required="true"
               aria-label="予約日付"
               aria-describedby="date-hint" />
-            <p id="date-hint" class="form-hint">※ 当日から3ヶ月先まで予約可能です</p>
+            <p id="date-hint" class="form-hint">※ 正式予約は準備中です。β利用希望の参考情報として入力できます</p>
           </div>
           
           <div class="form-group">
@@ -257,7 +265,7 @@
               <li>48時間〜24時間前のキャンセルは50%のキャンセル料がかかります</li>
               <li>24時間以内のキャンセルは100%のキャンセル料がかかります</li>
               <li>買い物代行の立替上限は10,000円です</li>
-              <li>作業完了後に自動決済されます</li>
+              <li>本番決済・自動決済は現在開始していません</li>
             </ul>
           </div>
         </div>
@@ -268,7 +276,7 @@
         <button type="button" class="btn btn-outline" id="btn-prev" disabled>戻る</button>
         <div class="wizard-actions__spacer"></div>
         <button type="button" class="btn btn-primary" id="btn-next">次へ</button>
-        <button type="submit" class="btn btn-primary btn-action is-hidden" id="btn-submit">ワーカーを探す</button>
+        <button type="submit" class="btn btn-primary btn-action is-hidden" id="btn-submit" disabled aria-disabled="true">β利用希望は事前登録・お問い合わせへ</button>
       </div>
 
     </form>

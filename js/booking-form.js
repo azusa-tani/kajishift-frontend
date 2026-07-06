@@ -1,4 +1,23 @@
-﻿// ページ読み込み時にバリデーションを設定
+﻿function isAPlanLimitedPublic() {
+  return window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true;
+}
+
+function applyAPlanBookingPause() {
+  if (!isAPlanLimitedPublic()) return;
+  const submitBtn = document.getElementById('btn-submit');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.setAttribute('aria-disabled', 'true');
+    submitBtn.textContent = 'β利用希望は事前登録・お問い合わせへ';
+  }
+  const formError = document.getElementById('formError');
+  if (formError) {
+    formError.textContent = '現在は本番決済・正式予約は未開始です。事前登録・β利用希望・お問い合わせのみ受け付けています。';
+    formError.style.display = 'block';
+  }
+}
+
+// ページ読み込み時にバリデーションを設定
 document.addEventListener('DOMContentLoaded', function() {
   // 日付の最小値を今日に設定、最大値を3ヶ月後に設定
   const today = new Date().toISOString().split('T')[0];
@@ -17,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setupRealTimeValidation(document.getElementById('address-pref'), Validators.required);
   setupRealTimeValidation(document.getElementById('address-city'), Validators.required);
   setupRealTimeValidation(document.getElementById('address-detail'), Validators.required);
+  applyAPlanBookingPause();
 });
 
 // 買い物オプションの表示/非表示
@@ -117,6 +137,12 @@ async function loadBookingForEdit(bookingId) {
 // フォーム送信時のバリデーションとAPI連携
 document.getElementById('booking-wizard').addEventListener('submit', async function(e) {
   e.preventDefault();
+
+  if (isAPlanLimitedPublic()) {
+    showError('現在は本番決済・正式予約は未開始です。β利用希望は事前登録またはお問い合わせからご連絡ください。');
+    applyAPlanBookingPause();
+    return;
+  }
 
   const urlParams = new URLSearchParams(window.location.search);
   const bookingId = urlParams.get('id');
@@ -361,13 +387,17 @@ async function setupQuickBookingMode(workerId) {
 
     const header = document.querySelector('.booking-header p');
     if (header && worker) {
-      header.textContent = `${worker.name || '選択済みワーカー'}さんを指名して最短で予約できます`;
+      header.textContent = `${worker.name || '選択済みワーカー'}さんへの正式予約は準備中です。β利用希望は事前登録・お問い合わせからご連絡ください。`;
     }
 
     // 送信ボタン文言を調整
     const submitBtn = document.getElementById('btn-submit');
     if (submitBtn) {
-      submitBtn.textContent = '予約を確定する';
+      submitBtn.textContent = isAPlanLimitedPublic() ? 'β利用希望は事前登録・お問い合わせへ' : '予約を確定する';
+      if (isAPlanLimitedPublic()) {
+        submitBtn.disabled = true;
+        submitBtn.setAttribute('aria-disabled', 'true');
+      }
     }
 
     // 住所の自動補完（ユーザープロフィールから）

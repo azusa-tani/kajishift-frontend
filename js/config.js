@@ -26,7 +26,8 @@ const selectedConfig = isLocalFrontend ? LOCAL_CONFIG : PRODUCTION_CONFIG;
 window.API_BASE_URL = selectedConfig.apiBaseUrl;
 window.SOCKET_SERVER_URL = selectedConfig.socketServerUrl;
 
-// β版設定（Stripe Test Modeのみ。実課金は行わない）
+// A案「本番決済なし限定公開」設定
+window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC = true;
 window.STRIPE_PUBLISHABLE_KEY = window.STRIPE_PUBLISHABLE_KEY || 'pk_test_51TYG38FX94mMTqKmoEWEDqVdxvlClqSlws84ay5MNZL7CvpwJ2LqxhrBmqUNI7he0OXrPBcri0riYSdq3jduiLPE00zxOcKfjI';
 window.BETA_MODE = true;
 window.KAJISHIFT_SUPPORT_EMAIL = window.KAJISHIFT_SUPPORT_EMAIL || 'support@kajishift.jp';

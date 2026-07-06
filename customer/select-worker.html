@@ -20,7 +20,7 @@
     <div class="logo">KAJISHIFT</div>
     <nav class="nav">
       <a href="dashboard.html">マイページ</a>
-      <a href="booking.html">予約する</a>
+      <a href="booking.html">β利用希望</a>
       <a href="bookings.html">予約一覧</a>
       <a href="payment.html">決済・履歴</a>
     </nav>
@@ -94,14 +94,14 @@
             <span id="totalPrice">¥0</span>
           </div>
         </div>
-        <p class="price-note">※ 作業完了後に自動決済されます</p>
+        <p class="price-note">※ 現在は本番決済・正式予約を開始していません</p>
       </div>
     </section>
 
     <!-- 確定ボタン -->
     <div class="selection-actions">
       <button type="button" class="btn btn--outline btn-action" onclick="goBackFromWorkerSelection()">戻る</button>
-      <button class="btn btn-primary btn-large btn-action" onclick="confirmBooking()">このワーカーで予約確定</button>
+      <button class="btn btn-primary btn-large btn-action" type="button" disabled aria-disabled="true">予約確定は準備中</button>
     </div>
 
   </div>

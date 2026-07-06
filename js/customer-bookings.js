@@ -95,7 +95,7 @@
 
     const statusText =
       {
-        PENDING: '予約確定',
+        PENDING: '受付中',
         CONFIRMED: '予約確定',
         IN_PROGRESS: '進行中',
         COMPLETED: '完了',
@@ -131,12 +131,19 @@
       `;
       }
     } else {
-      actionsHtml = `
-      <button type="button" class="btn btn--outline btn-action" onclick="window.__customerBookings.goToChangeBooking('${bid}')">予約変更</button>
-      <button type="button" class="btn btn--outline btn-action" onclick="window.__customerBookings.openChat('${bid}')">チャット</button>
-      <button type="button" class="btn btn--outline btn-action danger" onclick="window.__customerBookings.openCancelModal('${bid}')">キャンセル</button>
-      <a href="booking-detail.html?id=${bid}" class="btn btn-primary">詳細を見る</a>
-    `;
+      if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+        actionsHtml = `
+        <span class="text-muted">β版では予約変更・キャンセル操作は準備中です</span>
+        <a href="booking-detail.html?id=${bid}" class="btn btn-primary">詳細を見る</a>
+      `;
+      } else {
+        actionsHtml = `
+        <button type="button" class="btn btn--outline btn-action" onclick="window.__customerBookings.goToChangeBooking('${bid}')">予約変更</button>
+        <button type="button" class="btn btn--outline btn-action" onclick="window.__customerBookings.openChat('${bid}')">チャット</button>
+        <button type="button" class="btn btn--outline btn-action danger" onclick="window.__customerBookings.openCancelModal('${bid}')">キャンセル</button>
+        <a href="booking-detail.html?id=${bid}" class="btn btn-primary">詳細を見る</a>
+      `;
+      }
     }
 
     card.innerHTML = `
@@ -181,7 +188,7 @@
       }
 
       <div class="booking-price">
-        <span class="price-label">${st === 'COMPLETED' || st === 'CANCELLED' ? '支払済み' : '料金'}</span>
+        <span class="price-label">${window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true ? '参考料金' : (st === 'COMPLETED' || st === 'CANCELLED' ? '支払済み' : '料金')}</span>
         <span class="price-amount">${price > 0 ? '¥' + Number(price).toLocaleString() : '未確定'}</span>
       </div>
 
@@ -201,8 +208,8 @@
           ? `
       <div class="cancellation-info">
         <p class="info-text">
-          <strong>予約変更について:</strong> 48時間前まで無料で変更可能です<br>
-          <strong>キャンセル料:</strong> 48-24時間前は50%、24時間以内は100%
+          <strong>β版での注意:</strong> 現在は本番決済・正式予約は未開始です<br>
+          <strong>正式予約・キャンセル料:</strong> 開始時期と条件は別途ご案内します
         </p>
       </div>
       `
@@ -222,6 +229,10 @@
    * 予約変更：まず日時・住所の確認・変更（booking.html）へ（PUT 後にワーカー選択へ進む）
    */
   function goToChangeBooking(bookingId) {
+    if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+      if (typeof showError === 'function') showError('現在は正式予約の変更操作を停止しています。');
+      return;
+    }
     if (!bookingId) {
       if (typeof showError === 'function') showError('予約IDが取得できませんでした');
       return;
@@ -235,6 +246,10 @@
   }
 
   function openCancelModal(id) {
+    if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+      if (typeof showError === 'function') showError('現在は正式予約のキャンセル操作を停止しています。');
+      return;
+    }
     currentCancelBookingId = id;
     const el = document.getElementById('cancelModal');
     if (el) el.classList.add('is-open');
@@ -255,6 +270,10 @@
   }
 
   async function confirmCancel() {
+    if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+      if (typeof showError === 'function') showError('現在は正式予約のキャンセル操作を停止しています。');
+      return;
+    }
     if (!currentCancelBookingId) return;
     if (!confirm('本当にキャンセルしますか？')) return;
 

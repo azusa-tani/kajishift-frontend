@@ -45,6 +45,10 @@ let currentBooking = null;
 let stripe = null;
 let paymentCardElement = null;
 
+function isAPlanLimitedPublic() {
+  return window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true;
+}
+
 /** 確定後で決済が未完了（payment なし、または status が COMPLETED 以外。PENDING 含む） */
 function isPayableBookingPaymentIncomplete(booking) {
   if (!booking || !['CONFIRMED', 'IN_PROGRESS'].includes(booking.status)) return false;
@@ -57,6 +61,7 @@ function isPayableBookingPaymentIncomplete(booking) {
  * 「Stripe決済」API を呼べる状態（バックエンドは PENDING 中の再実行を拒否するため除外）
  */
 function canCustomerSubmitPaymentConfirmation(booking) {
+  if (isAPlanLimitedPublic()) return false;
   if (window.KajishiftOps && !window.KajishiftOps.canCreatePaymentIntents()) return false;
   if (!isPayableBookingPaymentIncomplete(booking)) return false;
   const st = booking.payment && booking.payment.status;
@@ -67,6 +72,10 @@ function canCustomerSubmitPaymentConfirmation(booking) {
 let paymentProcessLocked = false;
 
 async function startPaymentProcess() {
+  if (isAPlanLimitedPublic()) {
+    showError('現在は本番決済・正式予約は未開始です。決済受付は行っていません。');
+    return;
+  }
   if (window.KajishiftOps && !window.KajishiftOps.canCreatePaymentIntents()) {
     showError(window.KajishiftOps.getMessage() || '現在、決済受付を一時停止しています。');
     return;
@@ -80,6 +89,10 @@ async function startPaymentProcess() {
 }
 
 async function submitStripePayment() {
+  if (isAPlanLimitedPublic()) {
+    showError('現在は本番決済・正式予約は未開始です。決済受付は行っていません。');
+    return;
+  }
   if (window.KajishiftOps && !window.KajishiftOps.canCreatePaymentIntents()) {
     showError(window.KajishiftOps.getMessage() || '現在、決済受付を一時停止しています。');
     return;
@@ -270,7 +283,7 @@ function displayBookingDetail(booking) {
   }
   
   const statusText = {
-    'PENDING': '予約確定',
+    'PENDING': '受付中',
     'CONFIRMED': '予約確定',
     'IN_PROGRESS': '進行中',
     'COMPLETED': '完了',
@@ -285,17 +298,22 @@ function displayBookingDetail(booking) {
   const workerName = booking.worker ? booking.worker.name : '未割り当て';
   const workerRating = booking.worker && booking.worker.rating ? booking.worker.rating.toFixed(1) : null;
   
-  const paymentConfirmLabel = `💳 カードで決済する (¥${price.toLocaleString()})`;
+  const paymentConfirmLabel = `カードで決済する (¥${price.toLocaleString()})`;
 
   const paymentNoticeHtml = `
     <div class="info-note booking-detail-payment-method">
-      <p>β版の決済はStripeテストモードのカード決済のみ対応しています。</p>
-      <p>カード番号はKAJISHIFTには保存されません。</p>
+      <p><strong>現在は本番決済・正式予約は未開始です。</strong></p>
+      <p>本番カード登録・本番決済は、セキュリティ対応完了後に別途ご案内します。</p>
     </div>
   `;
 
   let actionsHtml = '';
-  if (canCustomerSubmitPaymentConfirmation(booking)) {
+  if (isAPlanLimitedPublic()) {
+    actionsHtml = `
+      ${paymentNoticeHtml}
+      <a href="bookings.html" class="btn btn--outline btn-action">予約一覧に戻る</a>
+    `;
+  } else if (canCustomerSubmitPaymentConfirmation(booking)) {
     actionsHtml = `
       ${paymentNoticeHtml}
       <button type="button" class="btn btn-primary btn-action btn-large js-payment-confirm-btn" onclick="startPaymentProcess()">${paymentConfirmLabel}</button>
@@ -357,7 +375,7 @@ function displayBookingDetail(booking) {
     </div>
     <ol class="status-steps">
       <li class="step ${['CONFIRMED','PENDING','IN_PROGRESS','COMPLETED'].includes(booking.status) ? 'is-active' : ''}">
-        <span class="step-dot"></span><span class="step-label">予約確定</span>
+        <span class="step-dot"></span><span class="step-label">受付・調整中</span>
       </li>
       <li class="step ${['IN_PROGRESS','COMPLETED'].includes(booking.status) ? 'is-active' : ''}">
         <span class="step-dot"></span><span class="step-label">作業中</span>

@@ -20,7 +20,7 @@
     <div class="logo">KAJISHIFT</div>
     <nav class="nav">
       <a href="dashboard.html">ダッシュボード</a>
-      <a href="jobs.html">仕事を探す</a>
+      <a href="jobs.html">仕事情報</a>
       <a href="calendar.html">カレンダー</a>
       <a href="rewards.html">報酬</a>
       <a href="profile.html">プロフィール</a>
@@ -50,6 +50,10 @@
     <!-- 依頼者情報 -->
     <section class="client-info-card section-block card-standard is-hidden" id="clientInfoCard">
       <h2>依頼者情報</h2>
+      <div class="notice-box">
+        <p><strong>β版では正式な仕事受注・作業開始は準備中です。</strong></p>
+        <p>詳細情報の公開範囲は今後調整します。</p>
+      </div>
       <div class="client-details" id="clientDetails">
         <!-- 動的に生成 -->
       </div>
@@ -236,7 +240,13 @@ function displayJobDetail(booking) {
     </div>
 
     <div class="job-detail-actions">
-      ${booking.status === 'COMPLETED' ? `
+      ${window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true ? `
+        <div class="notice-box">
+          <p><strong>現在は正式な仕事受注・作業開始はできません。</strong></p>
+          <p>β利用の範囲や今後の開始時期は、運営から個別にご案内します。</p>
+        </div>
+        <button class="btn btn-primary btn-large btn-action" type="button" disabled aria-disabled="true">受注は準備中</button>
+      ` : booking.status === 'COMPLETED' ? `
         <button class="btn btn--outline btn-large btn-action" disabled>作業完了済み</button>
       ` : booking.status === 'IN_PROGRESS' || booking.status === 'CONFIRMED' ? `
         <button class="btn btn-primary btn-large btn-action" onclick="completeJob('${booking.id}')">作業を完了する</button>
@@ -277,6 +287,10 @@ function displayClientInfo(customer) {
 
 // 仕事を承諾
 async function acceptJob(bookingId) {
+  if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+    alert('現在は正式な仕事受注・作業開始はできません。β利用の範囲は運営から個別にご案内します。');
+    return;
+  }
   if (!confirm('この仕事を承諾しますか？')) {
     return;
   }
@@ -294,6 +308,10 @@ async function acceptJob(bookingId) {
 
 // 仕事を辞退
 function rejectJob(bookingId) {
+  if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+    alert('現在は正式な仕事受注・辞退操作はできません。β利用の範囲は運営から個別にご案内します。');
+    return;
+  }
   // モーダルを表示
   document.getElementById('rejectJobModal').classList.add('is-open');
   if (currentBooking) {
@@ -334,6 +352,10 @@ async function confirmRejectJob(bookingId) {
 
 // 作業を完了
 async function completeJob(bookingId) {
+  if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+    alert('現在は正式な作業完了操作はできません。β利用の範囲は運営から個別にご案内します。');
+    return;
+  }
   if (!confirm('作業を完了しますか？\n完了後、依頼者に通知されます。')) {
     return;
   }

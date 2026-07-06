@@ -19,8 +19,8 @@
     <div class="auth-box">
       <div class="auth-header">
         <a href="../index.html" class="auth-logo">KAJISHIFT</a>
-        <h1>ワーカー登録</h1>
-        <p class="text-muted">家事スキルを活かして働きませんか？</p>
+        <h1>ワーカー事前登録</h1>
+        <p class="text-muted">β版のワーカー利用希望を受け付けています。正式な仕事受注はまだ開始していません。</p>
       </div>
 
       <div class="error-message" id="errorMessage"></div>
@@ -192,7 +192,7 @@
           </label>
         </div>
 
-        <button type="submit" class="btn btn--primary btn--block btn-action register-submit-btn">登録する</button>
+        <button type="submit" class="btn btn--primary btn--block btn-action register-submit-btn">事前登録する</button>
 
         <p class="auth-footer">
           すでにアカウントをお持ちですか？ <a href="login.html">ログイン</a>
@@ -364,7 +364,7 @@
             api.setUser(response.data.user);
           }
 
-          alert('登録が完了しました。審査完了後、メールでお知らせします。');
+          alert('事前登録が完了しました。審査・β参加可否は運営から個別にお知らせします。');
           window.location.href = 'login.html';
         } else {
           throw new Error('登録に失敗しました');
@@ -380,7 +380,7 @@
         showError('登録に失敗しました: ' + errMsg, document.getElementById('errorMessage'));
       } finally {
         submitButton.disabled = false;
-        submitButton.textContent = '登録する';
+        submitButton.textContent = '事前登録する';
       }
     });
 

@@ -19,7 +19,7 @@
     <div class="logo">KAJISHIFT</div>
     <nav class="nav">
       <a href="dashboard.html">マイページ</a>
-      <a href="booking.html">予約する</a>
+      <a href="booking.html">β利用希望</a>
       <a href="bookings.html">予約一覧</a>
       <a href="payment.html">決済・履歴</a>
     </nav>
@@ -117,9 +117,11 @@ async function loadFavorites(page = 1) {
     updateFavoritesPagination(pagination);
   } catch (error) {
     console.error('お気に入り読み込みエラー:', error);
-    showError('お気に入りの読み込みに失敗しました: ' + (error.message || 'エラーが発生しました'));
-    document.getElementById('favoritesList').innerHTML = 
-      '<div class="error-message">お気に入りの読み込みに失敗しました</div>';
+    showError('お気に入り情報を取得できませんでした: ' + (error.message || 'エラーが発生しました'));
+    const favoritesGrid = document.getElementById('favorites-grid');
+    if (favoritesGrid) {
+      favoritesGrid.innerHTML = '<div class="error-message">お気に入り情報を取得できませんでした</div>';
+    }
   }
 }
 
@@ -190,7 +192,7 @@ function displayFavorites(favorites) {
         </div>
 
         <div class="favorite-actions">
-          <button class="btn btn-primary" onclick="bookWithWorker('${worker.id}')">予約する</button>
+          <button class="btn btn-primary" onclick="bookWithWorker('${worker.id}')">β利用を希望する</button>
           <button class="btn btn-outline" onclick="viewWorkerProfile('${worker.id}')">詳細を見る</button>
         </div>
       </article>
@@ -206,7 +208,7 @@ function displayEmptyFavorites() {
       <div class="empty-icon">♡</div>
       <h2>まだお気に入りのワーカーがいません</h2>
       <p>気になるワーカーを見つけて、お気に入りに追加してみましょう。</p>
-      <a href="select-worker.html" class="btn btn-primary btn-large">ワーカーを探す</a>
+      <a href="support.html" class="btn btn-primary btn-large">β利用について問い合わせる</a>
     </div>
   `;
 }
@@ -245,7 +247,11 @@ async function removeFavorite(favoriteId, workerId, cardElement) {
 
 // ワーカーで予約する
 function bookWithWorker(workerId) {
-  // 予約ページに遷移（ワーカーIDをパラメータとして渡す）
+  if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+    alert('現在は本番決済・正式予約は未開始です。β利用希望はお問い合わせからご連絡ください。');
+    window.location.href = 'support.html';
+    return;
+  }
   window.location.href = `booking.html?workerId=${workerId}`;
 }
 

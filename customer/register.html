@@ -19,8 +19,8 @@
     <div class="auth-box">
       <div class="auth-header">
         <a href="../index.html" class="auth-logo">KAJISHIFT</a>
-        <h1>依頼者登録</h1>
-        <p>家事代行サービスを始めましょう</p>
+        <h1>依頼者 事前登録</h1>
+        <p>β版の事前登録・β利用希望を受け付けています</p>
       </div>
 
       <div class="error-message"></div>
@@ -160,7 +160,7 @@
           <p id="terms-hint" class="sr-only">利用規約とプライバシーポリシーへの同意が必要です</p>
         </div>
 
-        <button type="submit" class="btn btn--primary btn--block">登録する</button>
+        <button type="submit" class="btn btn--primary btn--block">事前登録する</button>
 
         <p class="auth-footer">
           すでにアカウントをお持ちですか？ <a href="login.html">ログイン</a>
@@ -261,7 +261,7 @@
         const response = await api.register(formData);
 
         if (response.data && response.data.user) {
-          showSuccess('登録が完了しました。ログインしています...');
+          showSuccess('事前登録が完了しました。ログインしています...');
 
           setTimeout(() => {
             window.location.href = 'dashboard.html';

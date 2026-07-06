@@ -31,7 +31,7 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
     <nav class="nav" role="navigation" aria-label="メインナビゲーション">
       <a href="dashboard.html" class="active" aria-current="page">ダッシュボード</a>
       <a href="screening-test.html">審査テスト</a>
-      <a href="jobs.html">仕事を探す</a>
+      <a href="jobs.html">仕事情報</a>
       <a href="calendar.html">カレンダー</a>
       <a href="rewards.html">報酬</a>
       <a href="profile.html">プロフィール</a>
@@ -70,8 +70,8 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
       <div class="action-grid">
         <a href="jobs.html" class="action-card">
           <div class="action-icon">🔍</div>
-          <h3>仕事を探す</h3>
-          <p class="text-muted">新しい依頼を確認</p>
+          <h3>仕事情報</h3>
+          <p class="text-muted">正式受注は準備中</p>
         </a>
         <a href="calendar.html" class="action-card">
           <div class="action-icon">📅</div>
@@ -104,7 +104,7 @@ if (!sessionStorage.getItem('workerLoggedIn') && !localStorage.getItem('token'))
     <!-- 新しい仕事の依頼 -->
     <section class="new-jobs-section section-block card-standard">
       <div class="section-header">
-        <h2 class="section-title">新しい仕事の依頼</h2>
+      <h2 class="section-title">β版の仕事情報</h2>
         <a href="jobs.html" class="link-more">すべて見る →</a>
       </div>
       <div class="job-request-list" id="jobRequestList">
@@ -230,7 +230,7 @@ async function renderScreeningTestBanner(user) {
 function renderWelcome(user, pendingCount) {
   const name = user.name || 'ワーカーさん';
   document.getElementById('welcomeName').textContent = `おかえりなさい、${name}`;
-  document.getElementById('welcomeMessage').textContent = `今日もお疲れ様です。新しい仕事の依頼が${pendingCount}件あります。`;
+    document.getElementById('welcomeMessage').textContent = `今日もお疲れ様です。β版では正式な仕事受注は準備中です。参考情報が${pendingCount}件あります。`;
 }
 
 function renderPendingJobs(bookings) {
@@ -275,7 +275,7 @@ function renderPendingJobs(bookings) {
         <p class="job-request-description">${escapeHtml(booking.notes || '特記事項なし')}</p>
         <div class="job-actions">
           <a href="job-detail.html?id=${booking.id}" class="btn btn--outline btn-action">詳細を見る</a>
-          <button class="btn btn-primary btn-action" onclick="acceptJob('${booking.id}')">承諾する</button>
+          <button class="btn btn-primary btn-action" type="button" disabled aria-disabled="true">受注は準備中</button>
         </div>
       </article>
     `;
@@ -381,6 +381,10 @@ function escapeHtml(text) {
 }
 
 async function acceptJob(bookingId) {
+  if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+    alert('現在は正式な仕事受注・作業開始はできません。β利用の範囲は運営から個別にご案内します。');
+    return;
+  }
   if (!confirm('この仕事を承諾しますか？')) {
     return;
   }

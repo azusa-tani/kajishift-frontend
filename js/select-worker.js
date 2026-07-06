@@ -323,6 +323,11 @@ function updatePriceSummary(workerId) {
 
 // 予約を確定
 async function confirmBooking() {
+  if (window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true) {
+    alert('現在は本番決済・正式予約は未開始です。β利用希望は事前登録またはお問い合わせからご連絡ください。');
+    return;
+  }
+
   const selectedWorker = document.querySelector('input[name="worker"]:checked');
   if (!selectedWorker) {
     alert('ワーカーを選択してください');
