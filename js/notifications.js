@@ -162,10 +162,10 @@ function resolveNotificationNavigateUrl(notification) {
   const type = notification.type;
 
   if (type === 'MESSAGE' && relatedId) {
-    return `chat?bookingId=${encodeURIComponent(relatedId)}`;
+    return `chat.html?bookingId=${encodeURIComponent(relatedId)}`;
   }
   if (relatedId && (relatedType === 'BOOKING' || relatedType === 'BOOKING_ID')) {
-    return `booking-detail?id=${encodeURIComponent(relatedId)}`;
+    return `booking-detail.html?id=${encodeURIComponent(relatedId)}`;
   }
   if (
     relatedId &&
@@ -176,7 +176,7 @@ function resolveNotificationNavigateUrl(notification) {
       type === 'PAYMENT' ||
       type === 'PAYMENT_FAILED')
   ) {
-    return `booking-detail?id=${encodeURIComponent(relatedId)}`;
+    return `booking-detail.html?id=${encodeURIComponent(relatedId)}`;
   }
   return null;
 }

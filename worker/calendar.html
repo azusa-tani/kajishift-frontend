@@ -452,7 +452,7 @@ function displayCalendar(year, month, list) {
         const endTime = new Date(date);
         endTime.setHours(hours + duration, minutes || 0, 0, 0);
         const endTimeStr = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-        html += `<div class="calendar-job" onclick="window.location.href='job-detail?id=${booking.id}'">${startTime}-${endTimeStr}<br>${booking.serviceType || '-'}</div>`;
+        html += `<div class="calendar-job" onclick="window.location.href='job-detail.html?id=${booking.id}'">${startTime}-${endTimeStr}<br>${booking.serviceType || '-'}</div>`;
       });
     }
     html += '</div>';
@@ -510,7 +510,7 @@ function renderWeekView() {
       endDt.setHours((hours || 0) + (Number(booking.duration) || 0), minutes || 0, 0, 0);
       const endStr = endDt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
       const label = escapeHtml(booking.serviceType || '予約');
-      cols += `<a class="week-booking-block" style="top:${top}px;height:${h}px" href="job-detail?id=${booking.id}" title="${label}">${escapeHtml(st)}〜${escapeHtml(endStr)} ${label}</a>`;
+      cols += `<a class="week-booking-block" style="top:${top}px;height:${h}px" href="job-detail.html?id=${booking.id}" title="${label}">${escapeHtml(st)}〜${escapeHtml(endStr)} ${label}</a>`;
     });
     cols += '</div>';
 
@@ -563,7 +563,7 @@ function renderDayView() {
     bookingsHtml += `
       <div class="day-booking-card" style="top:${top}px;height:${h}px">
         <div class="day-booking-time">${escapeHtml(st)} 〜 ${escapeHtml(endStr)}</div>
-        <div><a href="job-detail?id=${booking.id}">${svc}</a></div>
+        <div><a href="job-detail.html?id=${booking.id}">${svc}</a></div>
         <div class="day-booking-meta">${escapeHtml(addr)}</div>
         ${custLine}
         <div class="schedule-status" style="margin-top:6px"><span class="status-badge ${status.class}">${escapeHtml(status.text)}</span></div>
@@ -659,7 +659,7 @@ function displayWeeklySchedule(list) {
           </div>
         </div>
         <div class="schedule-actions">
-          <a href="job-detail?id=${booking.id}" class="btn btn-small btn--outline btn-action">詳細</a>
+          <a href="job-detail.html?id=${booking.id}" class="btn btn-small btn--outline btn-action">詳細</a>
         </div>
       </div>`;
     })

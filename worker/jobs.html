@@ -271,7 +271,7 @@ function displayJobs(bookings) {
           <span class="tag">${booking.serviceType || '-'}</span>
         </div>
         <div class="job-actions">
-          <a href="job-detail?id=${booking.id}" class="btn btn--outline btn-action">詳細を見る</a>
+          <a href="job-detail.html?id=${booking.id}" class="btn btn--outline btn-action">詳細を見る</a>
           <button class="btn btn-primary btn-action" onclick="acceptJob('${booking.id}')">承諾する</button>
         </div>
       </div>

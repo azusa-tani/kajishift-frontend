@@ -195,7 +195,7 @@ function setupChatMenu() {
   if (viewBookingDetailBtn) {
     viewBookingDetailBtn.addEventListener('click', function() {
       if (bookingId) {
-        window.location.href = `job-detail?id=${encodeURIComponent(bookingId)}`;
+        window.location.href = `job-detail.html?id=${encodeURIComponent(bookingId)}`;
       } else {
         alert('予約IDが取得できません');
       }
