@@ -44,12 +44,16 @@ if (!localStorage.getItem('token')) {
   <div class="container">
     <section class="page-header">
       <h1 class="page-header__title">お問い合わせ</h1>
-      <p class="page-header__subtitle">ご利用中にお困りのことがあれば、こちらからお問い合わせください。</p>
+      <p class="page-header__subtitle">事前登録・β利用希望・正式開始前のご質問はこちらからお問い合わせください。</p>
     </section>
 
     <section class="form-section section-block card-standard">
       <div id="supportErrorMessage" class="text-error is-hidden" role="alert"></div>
       <div id="supportSuccessMessage" class="text-error auth-message-success is-hidden" role="status"></div>
+      <div class="notice-box">
+        <p><strong>お問い合わせの送信では、正式予約・契約成立・決済は発生しません。</strong></p>
+        <p>内容を確認後、運営から個別にご案内します。通常3営業日以内を目安に返信します。</p>
+      </div>
 
       <form id="supportForm" novalidate>
         <div class="form-group">
@@ -62,10 +66,10 @@ if (!localStorage.getItem('token')) {
           <label for="category">問い合わせ種別 <span class="required">*</span></label>
           <select id="category" class="form-select" required>
             <option value="">選択してください</option>
-            <option value="予約について">予約について</option>
-            <option value="決済について">決済について</option>
+            <option value="β利用希望について">β利用希望について</option>
+            <option value="事前登録について">事前登録について</option>
+            <option value="正式開始前の質問">正式開始前の質問</option>
             <option value="アカウントについて">アカウントについて</option>
-            <option value="ワーカーについて">ワーカーについて</option>
             <option value="その他">その他</option>
           </select>
         </div>
