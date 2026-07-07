@@ -72,6 +72,36 @@ function noticeBadgeHtml(type, label) {
   return `<span class="${cls}">${escapeHtml(label)}</span>`;
 }
 
+function isAPlanLimitedPublic() {
+  return window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true;
+}
+
+function sanitizeAPlanNoticeText(text, field) {
+  const value = text == null ? '' : String(text);
+  if (!isAPlanLimitedPublic()) return value;
+
+  if (/作業.*完了/.test(value)) {
+    return 'β確認ステータスが更新されました';
+  }
+  if (/予約.*確定/.test(value)) {
+    return field === 'title'
+      ? 'β利用希望を確認しました'
+      : 'β利用希望の確認状況が更新されました。';
+  }
+  if (/予約.*承認|承認しました/.test(value)) {
+    return 'β利用希望の確認状況が更新されました。';
+  }
+  return value;
+}
+
+function sanitizeAPlanNoticeLabel(type, label) {
+  if (!isAPlanLimitedPublic()) return label;
+  if (['BOOKING_UPDATE', 'BOOKING_CREATED', 'BOOKING_CANCELLED'].includes(type)) {
+    return 'β利用希望';
+  }
+  return label;
+}
+
 // 認証チェック
 document.addEventListener('DOMContentLoaded', async function() {
   if (!checkAuth('customer')) {
@@ -447,7 +477,9 @@ function renderDashboardNotifications(notifications) {
 
   mount.innerHTML = notifications
     .map((n) => {
-      const typeLabel = typeLabels[n.type] || n.type || 'お知らせ';
+      const typeLabel = sanitizeAPlanNoticeLabel(n.type, typeLabels[n.type] || n.type || 'お知らせ');
+      const noticeTitle = sanitizeAPlanNoticeText(n.title, 'title');
+      const noticeContent = sanitizeAPlanNoticeText(n.content, 'content');
       const rel = formatNoticeTime(n.createdAt);
       const iso = n.createdAt ? new Date(n.createdAt).toISOString() : '';
       return `
@@ -455,10 +487,10 @@ function renderDashboardNotifications(notifications) {
           <div class="notice-icon" aria-hidden="true">${noticeIconForType(n.type)}</div>
           <div class="notice-content">
             <div class="notice-title-row">
-              <h4 class="notice-title">${escapeHtml(n.title || '')}</h4>
+              <h4 class="notice-title">${escapeHtml(noticeTitle)}</h4>
               ${noticeBadgeHtml(n.type, typeLabel)}
             </div>
-            <p class="notice-text">${escapeHtml(n.content || '')}</p>
+            <p class="notice-text">${escapeHtml(noticeContent)}</p>
             <time class="notice-time" datetime="${escapeHtml(iso)}">${escapeHtml(rel)}</time>
           </div>
         </article>
