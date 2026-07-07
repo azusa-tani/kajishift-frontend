@@ -96,7 +96,7 @@
     const statusText =
       {
         PENDING: '受付中',
-        CONFIRMED: '予約確定',
+        CONFIRMED: window.KAJISHIFT_A_PLAN_LIMITED_PUBLIC === true ? 'β確認済み（正式予約は未開始）' : '予約確定',
         IN_PROGRESS: '進行中',
         COMPLETED: '完了',
         CANCELLED: 'キャンセル',
