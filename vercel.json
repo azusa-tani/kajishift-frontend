@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "builds": [
     {
@@ -6,14 +7,45 @@
       "use": "@vercel/static"
     }
   ],
-  "routes": [
+  "redirects": [
     {
-      "src": "/",
-      "dest": "/index.html"
+      "source": "/admin",
+      "has": [
+        {
+          "type": "host",
+          "value": "kajishift-frontend.vercel.app"
+        }
+      ],
+      "destination": "https://kajishift.com/admin",
+      "permanent": false
     },
     {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "source": "/admin/",
+      "has": [
+        {
+          "type": "host",
+          "value": "kajishift-frontend.vercel.app"
+        }
+      ],
+      "destination": "https://kajishift.com/admin/",
+      "permanent": false
+    },
+    {
+      "source": "/admin/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "kajishift-frontend.vercel.app"
+        }
+      ],
+      "destination": "https://kajishift.com/admin/:path*",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
     }
   ]
 }
